@@ -1618,16 +1618,6 @@ export default function ArchiveView({
           </div>
         </div>
       )}
-
-      <footer
-        className="flex-none bg-blue-900 text-white text-center py-2.5 text-[11px] font-bold tracking-wider shadow-[0_-5px_15px_rgba(0,0,0,0.3)] z-50 relative border-t border-white/10"
-        style={{
-          textShadow:
-            "1px 1px 0 #000, 2px 2px 0 #000, 3px 3px 0 #000, 4px 4px 4px rgba(0,0,0,0.5)",
-        }}
-      >
-        Desenvolvido por fttripas - 2025-2026 | @todos os direitos reservados
-      </footer>
     </div>
   );
 }

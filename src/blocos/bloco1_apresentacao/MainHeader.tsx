@@ -183,7 +183,7 @@ export default function MainHeader({
 
   // Cores dinâmicas derivadas do logótipo da instituição
   const primaryBg = activeInst?.headerColor || activeInst?.primaryColor || "#0a0f1d";
-  const secondaryBg = "#7f1d1d"; // Cor de fundo do relógio (vinho conforme imagem)
+  const secondaryBg = "rgba(0, 0, 0, 0.40)"; // Fundo neutro integrado ao cabeçalho (sem fundo vermelho sob a área do dia da semana)
   const accentColor = activeInst?.footerColor || activeInst?.accentColor || "#FFB800";
 
   const isSuperAdmin = Boolean(
@@ -593,10 +593,10 @@ export default function MainHeader({
             )}
 
             <div className="relative z-10 w-full flex flex-col items-center leading-none">
-              {/* Linha Superior: DIA DA SEMANA | HORA COM ESPAÇAMENTO */}
+              {/* Linha Superior: DIA DA SEMANA | HORA COM ESPAÇAMENTO (Sem fundo vermelho sob o dia da semana) */}
               <div className="w-full flex items-center justify-center gap-1.5 sm:gap-2">
                 <span 
-                  className="text-[#FFB800] font-serif font-black text-xs sm:text-[13px] tracking-[0.16em] uppercase whitespace-nowrap"
+                  className="text-[#FFB800] font-serif font-black text-xs sm:text-[13px] tracking-[0.16em] uppercase whitespace-nowrap bg-transparent"
                   style={{ textShadow: "1.5px 1.5px 0px #000000" }}
                 >
                   {rawDayOfWeek.toUpperCase()}
@@ -636,43 +636,53 @@ export default function MainHeader({
 
           {/* Right - User and Controls */}
           <div className="flex items-center gap-4 flex-1 justify-end">
-            {/* User Profile - Nome e Foto Reais do Utilizador Logado */}
+            {/* User Profile - Nome e Foto Reais do Utilizador Logado - Clicável para abrir modal de atualização de perfil e foto */}
             {user ? (
               <div className="flex items-center gap-3 mr-2 animate-in fade-in duration-300">
                 <div className="relative">
-                  <button
-                    onClick={() => setShowMenu(!showMenu)}
-                    className="flex items-center gap-3 p-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/10 group cursor-pointer"
-                    title={`Utilizador: ${activeRealUserName} (${realUserCargo})`}
-                  >
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-full border-2 border-blue-500/50 overflow-hidden shadow-lg group-hover:border-blue-400 transition-all flex items-center justify-center bg-slate-800/40">
-                        {activeRealUserPhoto ? (
-                          <img 
-                            src={activeRealUserPhoto} 
-                            alt={activeRealUserName}
-                            className="w-full h-full object-cover" 
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          // Mostra a área da foto vazia (sem foto nem iniciais), mas o nome sim
-                          <div className="w-full h-full bg-transparent"></div>
-                        )}
+                  <div className="flex items-center rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/10 group">
+                    <button
+                      type="button"
+                      onClick={() => setShowColabProfileModal(true)}
+                      className="flex items-center gap-2.5 p-1 pr-3 cursor-pointer text-left"
+                      title={`Clique para atualizar o perfil e fotografia de: ${activeRealUserName}`}
+                    >
+                      <div className="relative shrink-0">
+                        <div className="w-10 h-10 rounded-full border-2 border-blue-500/50 overflow-hidden shadow-lg group-hover:border-blue-400 transition-all flex items-center justify-center bg-slate-800/40">
+                          {activeRealUserPhoto ? (
+                            <img 
+                              src={activeRealUserPhoto} 
+                              alt={activeRealUserName}
+                              className="w-full h-full object-cover" 
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs font-black text-white/90">
+                              {userInitials}
+                            </div>
+                          )}
+                        </div>
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0a0f1d] rounded-full shadow-sm"></div>
                       </div>
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0a0f1d] rounded-full shadow-sm"></div>
-                    </div>
-                    <div className="hidden lg:flex flex-col items-start leading-none text-left">
-                      <span className="text-[11px] font-black text-white tracking-wide uppercase">
-                        {shortRealUserName}
-                      </span>
-                      <span className="text-[8px] font-bold text-emerald-400 uppercase mt-0.5">
-                        ON-LINE
-                      </span>
-                    </div>
-                    <ChevronDown size={14} className="text-white/40 group-hover:text-white transition-colors" />
-                  </button>
+                      <div className="flex flex-col items-start leading-none text-left max-w-[140px] sm:max-w-[220px]">
+                        <span className="text-[11px] font-black text-white tracking-wide uppercase group-hover:text-amber-400 transition-colors truncate">
+                          {shortRealUserName}
+                        </span>
+                        <span className="text-[8px] font-bold text-emerald-400 uppercase mt-0.5 tracking-wider truncate">
+                          ON-LINE • EDITAR DADOS & FOTO
+                        </span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setShowMenu(!showMenu)}
+                      className="p-2 text-white/40 hover:text-white transition-colors cursor-pointer border-l border-white/5"
+                      title="Mais opções da conta"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
 
                   {/* Dropdown Menu Dinâmico do Utilizador Logado */}
                   <AnimatePresence>

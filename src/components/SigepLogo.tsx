@@ -35,93 +35,30 @@ export const SigepLogo: React.FC<SigepLogoProps> = ({
     return "/image.png";
   });
 
+  // Carregamento oficial do logotipo apenas do Firestore (fonte única de verdade controlada pelo admin)
   useEffect(() => {
     firestoreService.getSystemLogoUrl().then((url) => {
       if (url) setActiveSystemLogo(url);
     }).catch(() => {});
   }, []);
 
-  const [customColors, setCustomColors] = useState<any>(() => {
-    if (instituicaoData?.logoCustomColors) return instituicaoData.logoCustomColors;
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(instituicaoId ? `logoCustomColors_${instituicaoId}` : "logoCustomColors");
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
-  });
-
-  const [selectedColorToApply, setSelectedColorToApply] = useState<string | null>(null);
-
   useEffect(() => {
-    if (instituicaoData?.logoCustomColors) {
-      setCustomColors(instituicaoData.logoCustomColors);
-    }
-  }, [instituicaoData]);
-
-  useEffect(() => {
-    if (customLogo !== undefined) {
-      if (customLogo) {
-        removeImageBackground(customLogo).then(setActiveSystemLogo);
-      } else {
-        setActiveSystemLogo(null);
-      }
-      return;
-    }
-
-    const handleCustomLogoEvent = (e: any) => {
-      if (e.detail && e.detail.logo !== undefined) {
-        if (e.detail.logo) {
-          removeImageBackground(e.detail.logo).then(setActiveSystemLogo);
-        } else {
-          setActiveSystemLogo(null);
-        }
-      } else {
-        const stored = localStorage.getItem("systemLogo");
-        if (stored) {
-          removeImageBackground(stored).then(setActiveSystemLogo);
-        } else {
-          setActiveSystemLogo(null);
-        }
-      }
-    };
-
-    const handleColorUpdate = (e: any) => {
-      if (e.detail && e.detail.colors) {
-        if (instituicaoId && e.detail.instituicaoId === instituicaoId) {
-          setCustomColors(e.detail.colors);
-        } else if (!instituicaoId && !e.detail.instituicaoId) {
-          setCustomColors(e.detail.colors);
-        }
-      }
-    };
-
-    window.addEventListener("sigep_system_logo_updated", handleCustomLogoEvent);
-    window.addEventListener("sigep_logo_colors_updated", handleColorUpdate);
-
     // Subscrever às configurações globais do sistema SIGEP (Apenas se não for contexto de instituição)
     let unsubscribe: (() => void) | undefined;
     if (!instituicaoId) {
       try {
         unsubscribe = firestoreService.config.subscribe("main_config", (data) => {
-          if (data) {
-            if (data.systemLogo !== undefined) {
-              setActiveSystemLogo(data.systemLogo || null);
-            }
-            if (data.logoCustomColors) {
-              setCustomColors(data.logoCustomColors);
-              localStorage.setItem("logoCustomColors", JSON.stringify(data.logoCustomColors));
-            }
+          if (data && data.systemLogo !== undefined) {
+            setActiveSystemLogo(data.systemLogo || null);
           }
         });
       } catch (err) {}
     }
 
     return () => {
-      window.removeEventListener("sigep_system_logo_updated", handleCustomLogoEvent);
-      window.removeEventListener("sigep_logo_colors_updated", handleColorUpdate);
       if (unsubscribe) unsubscribe();
     };
-  }, [customLogo, instituicaoId]);
+  }, [instituicaoId]);
 
   const defaultColors = {
     s: "#16a34a",
@@ -138,68 +75,7 @@ export const SigepLogo: React.FC<SigepLogoProps> = ({
     windows: "#38bdf8"
   };
 
-  const colors = { ...defaultColors, ...customColors };
-
-  const handleApplyColor = async (part: string) => {
-    if (!selectedColorToApply) return;
-
-    const newColors = { ...colors };
-    const instUpdates: any = {};
-
-    if (part === "left") {
-      newColors.s = selectedColorToApply;
-      newColors.ribbonInner = selectedColorToApply;
-      newColors.towers = [selectedColorToApply, colors.towers[1], colors.towers[2]];
-    } else if (part === "center") {
-      newColors.i = selectedColorToApply;
-      newColors.g = selectedColorToApply;
-      newColors.ribbonMid = selectedColorToApply;
-      newColors.towers = [colors.towers[0], selectedColorToApply, colors.towers[2]];
-    } else if (part === "right") {
-      newColors.e = selectedColorToApply;
-      newColors.p = selectedColorToApply;
-      newColors.ribbonOuter = selectedColorToApply;
-      newColors.towers = [colors.towers[0], colors.towers[1], selectedColorToApply];
-    } else if (part === "header") {
-      instUpdates.primaryColor = selectedColorToApply;
-      instUpdates.headerColor = selectedColorToApply;
-    } else if (part === "sidebar") {
-      instUpdates.secondaryColor = selectedColorToApply;
-      instUpdates.sidebarColor = selectedColorToApply;
-    } else if (part === "footer") {
-      instUpdates.accentColor = selectedColorToApply;
-      instUpdates.footerColor = selectedColorToApply;
-    }
-
-    setCustomColors(newColors);
-    const storageKey = instituicaoId ? `logoCustomColors_${instituicaoId}` : "logoCustomColors";
-    localStorage.setItem(storageKey, JSON.stringify(newColors));
-    setSelectedColorToApply(null);
-
-    // Persistir no Firestore
-    try {
-      if (instituicaoId) {
-        // Se for uma instituição, atualizar o documento da instituição
-        await firestoreService.instituicoes.update(instituicaoId, {
-          logoCustomColors: newColors,
-          ...instUpdates
-        });
-        window.dispatchEvent(new CustomEvent("sigep_logo_colors_updated", { 
-          detail: { colors: newColors, instituicaoId } 
-        }));
-        window.dispatchEvent(new CustomEvent("sigep_estrutura_updated"));
-        window.dispatchEvent(new CustomEvent("instituicao_updated"));
-      } else {
-        // Se não houver instituição (contexto global), salvar no main_config
-        await firestoreService.config.set("main_config", {
-          logoCustomColors: newColors
-        });
-        window.dispatchEvent(new CustomEvent("sigep_logo_colors_updated", { detail: { colors: newColors } }));
-      }
-    } catch (err) {
-      console.error("Erro ao salvar cores:", err);
-    }
-  };
+  const colors = { ...defaultColors };
 
   // Cores únicas existentes no logotipo para a paleta
   const existingColors = Array.from(new Set([
@@ -433,76 +309,7 @@ export const SigepLogo: React.FC<SigepLogoProps> = ({
       </svg>
       </div>
 
-      {/* Color Customization Palette - Shown for large logos (like in admin login) */}
-      {size === "xl" && (
-        <div className="mt-8 flex flex-col items-center gap-4 bg-black/40 p-4 rounded-3xl border border-white/10 backdrop-blur-md">
-          <div className="flex gap-2">
-            {existingColors.map((c, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedColorToApply(c)}
-                className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColorToApply === c ? "border-white scale-125 shadow-[0_0_10px_white]" : "border-transparent hover:scale-110"}`}
-                style={{ backgroundColor: c }}
-                title={`Cor: ${c}`}
-              />
-            ))}
-          </div>
 
-          {selectedColorToApply && (
-            <div className="flex flex-wrap justify-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <button 
-                onClick={() => handleApplyColor("left")}
-                className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/20 transition-all"
-              >
-                Aplicar Lado Esquerdo
-              </button>
-              <button 
-                onClick={() => handleApplyColor("center")}
-                className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/20 transition-all"
-              >
-                Aplicar ao Centro
-              </button>
-              <button 
-                onClick={() => handleApplyColor("right")}
-                className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/20 transition-all"
-              >
-                Aplicar Lado Direito
-              </button>
-
-              {/* Novos botões de personalização do sistema */}
-              <button 
-                onClick={() => handleApplyColor("header")}
-                className="px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-200 text-[10px] font-black uppercase tracking-widest rounded-full border border-indigo-500/30 transition-all"
-              >
-                Aplicar ao Cabeçalho
-              </button>
-              <button 
-                onClick={() => handleApplyColor("sidebar")}
-                className="px-3 py-1 bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 text-[10px] font-black uppercase tracking-widest rounded-full border border-purple-500/30 transition-all"
-              >
-                Aplicar à Lateral
-              </button>
-              <button 
-                onClick={() => handleApplyColor("footer")}
-                className="px-3 py-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-500/30 transition-all"
-              >
-                Aplicar ao Rodapé
-              </button>
-
-              <button 
-                onClick={() => setSelectedColorToApply(null)}
-                className="px-3 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-200 text-[10px] font-black uppercase tracking-widest rounded-full border border-red-500/30 transition-all"
-              >
-                Cancelar
-              </button>
-            </div>
-          )}
-          
-          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-            Personalizar Cores do Logotipo
-          </p>
-        </div>
-      )}
     </div>
   );
 };

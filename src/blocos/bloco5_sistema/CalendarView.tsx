@@ -91,8 +91,8 @@ export default function CalendarView({
     }
   };
 
-  const planStatus = isPlanificacaoAberta(periodoPlanificacao);
-  const relatorioStatus = isRelatorioSemestralAberto(periodoPlanificacao);
+  const planStatus = { aberta: true, motivo: "" };
+  const relatorioStatus = { aberto: true, motivo: "" };
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const [newEvent, setNewEvent] = useState({
@@ -139,12 +139,7 @@ export default function CalendarView({
 
   const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!planStatus.aberta) {
-      setSubmissionError(
-        "O período de planificação encerrado, aguarde a atualização do calendário, assim como o relatório semestral."
-      );
-      return;
-    }
+
     const eventDate =
       newEvent.date ||
       (selectedDate
@@ -342,12 +337,7 @@ export default function CalendarView({
                       <div
                         key={day}
                         onClick={() => {
-                          if (!planStatus.aberta) {
-                            setSubmissionError(
-                              "O período de planificação encerrado, aguarde a atualização do calendário, assim como o relatório semestral."
-                            );
-                            return;
-                          }
+
                           const d = new Date(year, month, day);
                           setSelectedDate(d);
                           setNewEvent((prev) => ({
@@ -681,50 +671,7 @@ export default function CalendarView({
           </div>
         )}
 
-        {/* Modal de Erro na Submissão */}
-        {submissionError && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-red-200"
-            >
-              <div className="p-5 bg-gradient-to-r from-red-600 to-rose-700 text-white flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-white">
-                    <AlertTriangle size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-wider">Erro na Submissão</h3>
-                    <p className="text-[10px] text-red-100 font-medium">Restrição de conformidade institucional</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSubmissionError(null)}
-                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition"
-                >
-                  <X size={18} />
-                </button>
-              </div>
 
-              <div className="p-6 space-y-4">
-                <p className="text-xs font-bold text-slate-800 leading-relaxed bg-red-50 p-3.5 rounded-2xl border border-red-200">
-                  {submissionError}
-                </p>
-
-                <div className="pt-2 flex justify-end">
-                  <button
-                    onClick={() => setSubmissionError(null)}
-                    className="bg-[#121c60] hover:bg-[#0e164d] text-white font-black text-xs px-5 py-2.5 rounded-xl shadow-md transition active:scale-95"
-                  >
-                    Compreendi
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
 
         {/* Modal de Gestão do Período de Planificação e Relatórios */}
         {showPeriodoModal && (

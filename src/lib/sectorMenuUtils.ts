@@ -362,46 +362,31 @@ export function getSectorSidebarItems(
     upperTitle.includes("RH") ||
     upperTitle.includes("PESSOAL");
 
+  // 1. Definições de Permissões para Gestão Académica
+  const isHeadOfDivision = 
+    upperUserRole.includes("CHEFE DA DIVISÃO") || 
+    upperUserRole.includes("CHEFE DE DIVISÃO");
+  
   const isUserCourseDirector =
     upperUserRole.includes("DIRETOR DO CURSO") ||
     upperUserRole.includes("DIRETOR DE CURSO") ||
     upperUserRole.includes("DIRECTOR DO CURSO") ||
-    upperUserRole.includes("DIRECTOR DE CURSO") ||
-    upperUserRole.includes("DIRETOR DOS CURSOS") ||
-    upperUserRole.includes("DIRECTOR DOS CURSOS");
+    upperUserRole.includes("DIRECTOR DE CURSO");
 
-  const isCourseOrAcademicTitle =
-    upperTitle.includes("CURSO") ||
-    upperTitle.includes("ENGENHARIA") ||
-    upperTitle.includes("DEPARTAMENTO DE ENGENHARIA") ||
-    upperTitle.includes("DEPARTAMENTO DE PESQUISA") ||
-    upperTitle.includes("DIVISÃO DE ENGENHARIA") ||
-    upperTitle.includes("DIVISAO DE ENGENHARIA") ||
-    upperTitle.includes("DEE") ||
-    upperTitle.includes("DECC") ||
-    upperTitle.includes("DECM") ||
-    upperTitle.includes("DPE") ||
-    upperTitle.includes("ELETROTÉCNICA") ||
-    upperTitle.includes("ELETROTECNICA") ||
-    upperTitle.includes("ELETRÓNICA") ||
-    upperTitle.includes("ELETRONICA") ||
-    upperTitle.includes("TELECOMUNICAÇÕES") ||
-    upperTitle.includes("TELECOMUNICACOES") ||
-    upperTitle.includes("CONSTRUÇÃO CIVIL") ||
-    upperTitle.includes("CONSTRUCO CIVIL") ||
-    upperTitle.includes("CONSTRUÇÃO MECÂNICA") ||
-    upperTitle.includes("CONSTRUCAO MECANICA") ||
-    upperTitle.includes("HIDRÁULICA") ||
-    upperTitle.includes("HIDRAULICA") ||
-    upperTitle.includes("TERMOTÉCNICA") ||
-    upperTitle.includes("TERMOTECNICA") ||
-    upperTitle.includes("ENERGIAS RENOVÁVEIS") ||
-    upperTitle.includes("ENERGIAS RENOVAVEIS") ||
-    upperTitle.includes("DISCIPLINAS GERAIS") ||
-    upperTitle.includes("DDG") ||
-    upperTitle.includes("LICENCIATURA");
+  const hasMenuAccess = (menuId: string) => {
+    if (!user.atribuicaoMenu) return true; // Se não tiver restrições, assume acesso padrão baseado em cargo
+    return user.atribuicaoMenu.includes(menuId);
+  };
 
-  const isAuthorizedAcademic = !isRHUser && (isUserCourseDirector || isCourseOrAcademicTitle);
+  const isDiretorAdjuntoPedagogico = 
+    upperUserRole.includes("DIRETOR ADJUNTO PEDAGÓGICO") ||
+    upperUserRole.includes("DIRECTOR ADJUNTO PEDAGÓGICO");
+
+  const isDiretorDivisaoEngenharia = 
+    upperUserRole.includes("DIRETOR DA DIVISÃO DE ENGENHARIA") ||
+    upperUserRole.includes("DIRECTOR DA DIVISÃO DE ENGENHARIA");
+
+  const isAuthorizedAcademic = (isUserCourseDirector || isDiretorAdjuntoPedagogico || isDiretorDivisaoEngenharia) && hasMenuAccess("gestao_academica");
 
   if (isAuthorizedAcademic) {
     if (!items.some((i) => i.title === "Gestão Académica")) {
@@ -413,7 +398,7 @@ export function getSectorSidebarItems(
         subItems: [
           { id: "docentes", title: "Docentes", icon: Users, description: "Corpo docente e afetação" },
           { id: "alocacao", title: "Alocação", icon: ClipboardList, description: "Alocação a turmas e módulos" },
-          { id: "horario", title: "Horário", icon: Clock, description: "Distribuição de horários das aulas" },
+          ...(isUserCourseDirector ? [{ id: "horario", title: "Horário", icon: Clock, description: "Distribuição de horários das aulas" }] : []),
           { id: "calendario_exame", title: "Calendário de Exame", icon: BookMarked, description: "Épocas e exames letivos" },
           { id: "graduados", title: "Graduados", icon: GraduationCap, description: "Registo e dados de finalistas" },
           { id: "disciplina", title: "Disciplina", icon: BookOpen, description: "Fichas e programas de disciplinas" },
@@ -434,7 +419,7 @@ export function getSectorSidebarItems(
     upperUserRole.includes("REGISTO ACADEMICO") ||
     upperUserRole.includes("DRA");
 
-  if (isDRA) {
+  if (isDRA && hasMenuAccess("gestao_estudantil")) {
     if (!items.some((i) => i.title === "Gestão Estudantil")) {
       items.push({
         id: "gestao_estudantil",

@@ -8,6 +8,232 @@ export interface UnifiedProduct extends ProdutoMercado {
   rubrica?: string;
   necessidade?: string;
   categoria?: string;
+  funcaoUtilizacao?: string; // Enquadramento segundo a sua função ou utilização
+}
+
+export const FUNCOES_UTILIZACAO = [
+  "Material de Escritório e Expediente",
+  "Equipamento Informático, Tecnológico e Acessórios",
+  "Mobiliário e Equipamento de Escritório",
+  "Material de Limpeza, Higiene e Desinfeção",
+  "Combustíveis, Óleos e Lubrificantes",
+  "Consumíveis de Manutenção, Elétricos e Ferramentas",
+  "Alimentação, Copa e Hotelaria",
+  "Fardamento, Uniformes e Equipamento de Proteção (EPI)",
+  "Medicamentos e Material de Primeiros Socorros",
+  "Serviços Especializados, Manutenção e Conservação",
+  "Comunicação, Internet, Telecomunicações e Software",
+  "Passagens, Diárias e Deslocações em Serviço",
+  "Outros Bens e Serviços Gerais",
+] as const;
+
+export type FuncaoUtilizacao = typeof FUNCOES_UTILIZACAO[number];
+
+export function inferirFuncaoUtilizacao(
+  nome?: string,
+  rubrica?: string,
+  necessidade?: string
+): FuncaoUtilizacao {
+  const text = `${nome || ""} ${necessidade || ""} ${rubrica || ""}`.toLowerCase();
+
+  if (
+    text.includes("papel") ||
+    text.includes("caneta") ||
+    text.includes("pasta") ||
+    text.includes("toner") ||
+    text.includes("caderno") ||
+    text.includes("marcador") ||
+    text.includes("grampo") ||
+    text.includes("agrafador") ||
+    text.includes("resma") ||
+    text.includes("envelope") ||
+    text.includes("carimbo") ||
+    text.includes("tesoura") ||
+    text.includes("bloco") ||
+    text.includes("lápis") ||
+    text.includes("esferográfica") ||
+    text.includes("tinteiro")
+  ) {
+    return "Material de Escritório e Expediente";
+  }
+
+  if (
+    text.includes("computador") ||
+    text.includes("laptop") ||
+    text.includes("portátil") ||
+    text.includes("teclado") ||
+    text.includes("rato") ||
+    text.includes("mouse") ||
+    text.includes("monitor") ||
+    text.includes("impressora") ||
+    text.includes("scanner") ||
+    text.includes("switch") ||
+    text.includes("router") ||
+    text.includes("cabo de rede") ||
+    text.includes("disco") ||
+    text.includes("pen drive") ||
+    text.includes("flash") ||
+    text.includes("projetor") ||
+    text.includes("nobreak") ||
+    text.includes("ups") ||
+    text.includes("informátic") ||
+    text.includes("hardware")
+  ) {
+    return "Equipamento Informático, Tecnológico e Acessórios";
+  }
+
+  if (
+    text.includes("mesa") ||
+    text.includes("secretária") ||
+    text.includes("cadeira") ||
+    text.includes("armário") ||
+    text.includes("gaveteiro") ||
+    text.includes("estante") ||
+    text.includes("sofá") ||
+    text.includes("arquivo") ||
+    text.includes("mobiliário") ||
+    text.includes("móvel")
+  ) {
+    return "Mobiliário e Equipamento de Escritório";
+  }
+
+  if (
+    text.includes("sabão") ||
+    text.includes("detergente") ||
+    text.includes("desinfetante") ||
+    text.includes("vassoura") ||
+    text.includes("balde") ||
+    text.includes("papel higiénico") ||
+    text.includes("esfregona") ||
+    text.includes("lixívia") ||
+    text.includes("saco de lixo") ||
+    text.includes("desodorizante") ||
+    text.includes("limpeza") ||
+    text.includes("higiene")
+  ) {
+    return "Material de Limpeza, Higiene e Desinfeção";
+  }
+
+  if (
+    text.includes("gasóleo") ||
+    text.includes("gasolina") ||
+    text.includes("combustível") ||
+    text.includes("lubrificante") ||
+    text.includes("óleo de motor") ||
+    text.includes("combustiveis")
+  ) {
+    return "Combustíveis, Óleos e Lubrificantes";
+  }
+
+  if (
+    text.includes("lâmpada") ||
+    text.includes("disjuntor") ||
+    text.includes("interruptor") ||
+    text.includes("cabo elétrico") ||
+    text.includes("fechadura") ||
+    text.includes("torneira") ||
+    text.includes("tinta") ||
+    text.includes("pincel") ||
+    text.includes("cimento") ||
+    text.includes("ferramenta") ||
+    text.includes("chave") ||
+    text.includes("alicate") ||
+    text.includes("parafuso")
+  ) {
+    return "Consumíveis de Manutenção, Elétricos e Ferramentas";
+  }
+
+  if (
+    text.includes("água mineral") ||
+    text.includes("café") ||
+    text.includes("chá") ||
+    text.includes("açúcar") ||
+    text.includes("leite") ||
+    text.includes("bolacha") ||
+    text.includes("refeição") ||
+    text.includes("almoço") ||
+    text.includes("lanche") ||
+    text.includes("coffee break") ||
+    text.includes("copa") ||
+    text.includes("aliment")
+  ) {
+    return "Alimentação, Copa e Hotelaria";
+  }
+
+  if (
+    text.includes("farda") ||
+    text.includes("fardamento") ||
+    text.includes("bota") ||
+    text.includes("capacete") ||
+    text.includes("luva") ||
+    text.includes("bata") ||
+    text.includes("colete") ||
+    text.includes("uniforme") ||
+    text.includes("epi")
+  ) {
+    return "Fardamento, Uniformes e Equipamento de Proteção (EPI)";
+  }
+
+  if (
+    text.includes("medicamento") ||
+    text.includes("paracetamol") ||
+    text.includes("gaze") ||
+    text.includes("ligadura") ||
+    text.includes("álcool") ||
+    text.includes("primeiros socorros") ||
+    text.includes("seringa") ||
+    text.includes("farmácia")
+  ) {
+    return "Medicamentos e Material de Primeiros Socorros";
+  }
+
+  if (
+    text.includes("internet") ||
+    text.includes("software") ||
+    text.includes("licença") ||
+    text.includes("telecomunicação") ||
+    text.includes("domínio") ||
+    text.includes("hospedagem") ||
+    text.includes("antivirus")
+  ) {
+    return "Comunicação, Internet, Telecomunicações e Software";
+  }
+
+  if (
+    text.includes("passagem") ||
+    text.includes("diária") ||
+    text.includes("deslocação") ||
+    text.includes("alojamento") ||
+    text.includes("hospedagem")
+  ) {
+    return "Passagens, Diárias e Deslocações em Serviço";
+  }
+
+  if (
+    text.includes("manutenção") ||
+    text.includes("reparação") ||
+    text.includes("assistência") ||
+    text.includes("consultoria") ||
+    text.includes("segurança privada") ||
+    text.includes("transporte") ||
+    text.includes("serviço")
+  ) {
+    return "Serviços Especializados, Manutenção e Conservação";
+  }
+
+  // Enquadramento por Rúbrica se não identificado por palavras-chave
+  const rLower = (rubrica || "").toLowerCase();
+  if (rLower.includes("121") || rLower.includes("bens")) {
+    return "Material de Escritório e Expediente";
+  }
+  if (rLower.includes("122") || rLower.includes("serviços")) {
+    return "Serviços Especializados, Manutenção e Conservação";
+  }
+  if (rLower.includes("112") || rLower.includes("pessoal")) {
+    return "Passagens, Diárias e Deslocações em Serviço";
+  }
+
+  return "Outros Bens e Serviços Gerais";
 }
 
 export function getCategoryForRubricaOrNecessidade(rubrica?: string, necessidade?: string): string {
@@ -172,6 +398,8 @@ export async function getUnifiedProducts(): Promise<UnifiedProduct[]> {
           if (!deletedKeys.has(key)) {
             const rubrica = p.rubrica || "Bens - 121";
             const necessidade = p.necessidade || "Geral";
+            const categoria = p.categoria || getCategoryForRubricaOrNecessidade(rubrica, necessidade);
+            const funcao = p.funcaoUtilizacao || inferirFuncaoUtilizacao(singularName, rubrica, necessidade);
             map.set(key, {
               id: p.id,
               nome: singularName,
@@ -180,7 +408,8 @@ export async function getUnifiedProducts(): Promise<UnifiedProduct[]> {
               especificacao: p.especificacao || "",
               rubrica: rubrica,
               necessidade: necessidade,
-              categoria: p.categoria || getCategoryForRubricaOrNecessidade(rubrica, necessidade),
+              categoria: categoria,
+              funcaoUtilizacao: funcao,
               updatedAt: p.updatedAt,
             });
           }
@@ -197,6 +426,8 @@ export async function getUnifiedProducts(): Promise<UnifiedProduct[]> {
       const singularName = toSingularProductName(p.nome);
       const key = singularName.trim().toLowerCase();
       if (!deletedKeys.has(key) && !map.has(key)) {
+        const categoria = getCategoryForRubricaOrNecessidade(rubrica, necessidade);
+        const funcao = inferirFuncaoUtilizacao(singularName, rubrica, necessidade);
         map.set(key, {
           nome: singularName,
           preco: p.preco || 0,
@@ -204,7 +435,8 @@ export async function getUnifiedProducts(): Promise<UnifiedProduct[]> {
           especificacao: p.especificacao || "",
           rubrica: rubrica,
           necessidade: necessidade,
-          categoria: getCategoryForRubricaOrNecessidade(rubrica, necessidade),
+          categoria: categoria,
+          funcaoUtilizacao: funcao,
         });
       }
     });
@@ -317,7 +549,18 @@ export async function deduplicateDatabaseProducts(): Promise<{ totalUnique: numb
   }
 }
 
-export async function saveUnifiedProduct(product: { nome: string; preco: number; unidade: string; especificacao: string; rubrica?: string; necessity?: string; necessidade?: string; categoria?: string; originalNome?: string }) {
+export async function saveUnifiedProduct(product: {
+  nome: string;
+  preco: number;
+  unidade: string;
+  especificacao: string;
+  rubrica?: string;
+  necessity?: string;
+  necessidade?: string;
+  categoria?: string;
+  funcaoUtilizacao?: string;
+  originalNome?: string;
+}) {
   try {
     const current = await getUnifiedProducts();
     const singularName = toSingularProductName(product.nome);
@@ -347,6 +590,7 @@ export async function saveUnifiedProduct(product: { nome: string; preco: number;
     const rubrica = product.rubrica || existing?.rubrica || "Bens - 121";
     const necessidade = product.necessidade || product.necessity || existing?.necessidade || "Geral";
     const categoria = product.categoria || existing?.categoria || getCategoryForRubricaOrNecessidade(rubrica, necessidade);
+    const funcaoUtilizacao = product.funcaoUtilizacao || existing?.funcaoUtilizacao || inferirFuncaoUtilizacao(singularName, rubrica, necessidade);
 
     const updatedProduct: UnifiedProduct = {
       nome: singularName,
@@ -356,6 +600,7 @@ export async function saveUnifiedProduct(product: { nome: string; preco: number;
       rubrica: rubrica,
       necessidade: necessidade,
       categoria: categoria,
+      funcaoUtilizacao: funcaoUtilizacao,
       updatedAt: new Date().toISOString(),
     };
 
@@ -378,9 +623,13 @@ export async function saveUnifiedProduct(product: { nome: string; preco: number;
     localStorage.setItem("sigep_unified_products", safeJSONStringify(newList));
 
     // Sincronização global de preços e nomes em TODOS os planos de actividades (assíncrono)
-    syncGlobalProductUpdates(key, oldKey, updatedProduct).catch(err => {
+    await syncGlobalProductUpdates(key, oldKey, updatedProduct).catch(err => {
       console.error("Erro na sincronização global de preços:", err);
     });
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("produtos_precos_updated", { detail: updatedProduct }));
+    }
 
     return getUnifiedProducts();
   } catch (e) {
@@ -389,123 +638,236 @@ export async function saveUnifiedProduct(product: { nome: string; preco: number;
   }
 }
 
-async function syncGlobalProductUpdates(key: string, oldKey: string, updatedProduct: UnifiedProduct) {
+export async function syncGlobalProductUpdates(
+  key: string,
+  oldKey: string,
+  updatedProduct: UnifiedProduct
+) {
   try {
-    const allActs = await firestoreService.actividades.get();
-    
-    for (const act of allActs) {
-      if (!act.id) continue;
-      if (Array.isArray(act.rubricas)) {
-        let actChanged = false;
-        const newRubricas = act.rubricas.map((r: any) => {
-          const rProdName = toSingularProductName(r.nomeProduto || "").toLowerCase();
-          const matchesKey =
-            rProdName === key ||
-            rProdName === oldKey ||
-            (oldKey && oldKey.length > 2 && rProdName.includes(oldKey)) ||
-            (key && key.length > 2 && rProdName.includes(key));
+    const newPreco = Number(updatedProduct.preco) || 0;
+    const newUnidade = updatedProduct.unidade || "Unidade";
+    const newSpec = updatedProduct.especificacao || "";
+    const newNome = updatedProduct.nome;
 
-          if (matchesKey) {
-            const newPreco = Number(updatedProduct.preco) || 0;
-            const newUnidade = updatedProduct.unidade || r.detalhes;
-            const newSpec = updatedProduct.especificacao || r.especificacao;
-            const newNome = updatedProduct.nome;
+    const matchesProduct = (nomeToCheck: string) => {
+      if (!nomeToCheck) return false;
+      const rProdName = toSingularProductName(nomeToCheck).toLowerCase().trim();
+      return (
+        rProdName === key ||
+        rProdName === oldKey ||
+        (oldKey && oldKey.length > 2 && rProdName.includes(oldKey)) ||
+        (key && key.length > 2 && rProdName.includes(key))
+      );
+    };
 
-            if (
-              r.precoUnitario !== newPreco ||
-              r.detalhes !== newUnidade ||
-              r.especificacao !== newSpec ||
-              r.nomeProduto !== newNome
-            ) {
+    // 1. ATUALIZAR EM ACTIVIDADES DO PLANO ('actividades')
+    try {
+      const allActs = await firestoreService.actividades.get();
+      for (const act of allActs) {
+        if (!act.id) continue;
+        if (Array.isArray(act.rubricas) && act.rubricas.length > 0) {
+          let actChanged = false;
+          const newRubricas = act.rubricas.map((r: any) => {
+            if (matchesProduct(r.nomeProduto)) {
               actChanged = true;
               const qtd = Number(r.quantidade) || 1;
               return {
                 ...r,
                 nomeProduto: newNome,
                 precoUnitario: newPreco,
-                detalhes: newUnidade,
-                especificacao: newSpec,
+                detalhes: newUnidade || r.detalhes,
+                especificacao: newSpec || r.especificacao,
                 quantidade: qtd,
                 valorTotal: qtd * newPreco,
               };
             }
+            return r;
+          });
+
+          if (actChanged) {
+            const newTotalRubricas = newRubricas.reduce(
+              (sum: number, r: any) => sum + (Number(r.valorTotal) || 0),
+              0
+            );
+            const totalGasoleo = Number(act.valorTotalGasoleo) || 0;
+            const newOrcamentoTotal = newTotalRubricas + totalGasoleo;
+
+            await firestoreService.actividades.update(act.id, {
+              rubricas: newRubricas,
+              valorTotal: newOrcamentoTotal > 0 ? newOrcamentoTotal : act.valorTotal,
+              orcamentoTotal: newOrcamentoTotal > 0 ? newOrcamentoTotal : act.orcamentoTotal,
+              valor: newOrcamentoTotal > 0 ? newOrcamentoTotal : act.valor,
+              updatedAt: new Date().toISOString(),
+              syncSource: "product_price_update",
+            }).catch(() => {});
           }
-          return r;
-        });
+        }
+      }
+    } catch (errAct) {
+      console.warn("Aviso ao sincronizar actividades:", errAct);
+    }
+
+    // 2. ATUALIZAR EM MATRIX ACTIVITIES ('matrix_activities' - PLANOS DE AÇÃO E PLANOS UGEA)
+    try {
+      const allMatrixActs = await firestoreService.matrixActivities.get();
+      let matrixUpdatedCount = 0;
+      for (const act of allMatrixActs) {
+        if (!act.id) continue;
+        let actChanged = false;
+        let newRubricas = act.rubricas;
+
+        if (Array.isArray(act.rubricas) && act.rubricas.length > 0) {
+          newRubricas = act.rubricas.map((r: any) => {
+            if (matchesProduct(r.nomeProduto)) {
+              actChanged = true;
+              const qtd = Number(r.quantidade) || 1;
+              return {
+                ...r,
+                nomeProduto: newNome,
+                precoUnitario: newPreco,
+                detalhes: newUnidade || r.detalhes,
+                especificacao: newSpec || r.especificacao,
+                quantidade: qtd,
+                valorTotal: qtd * newPreco,
+              };
+            }
+            return r;
+          });
+        }
+
+        // Caso a própria atividade contenha nomeProduto direto
+        if (matchesProduct(act.nomeProduto)) {
+          actChanged = true;
+        }
 
         if (actChanged) {
-          const newTotalRubricas = newRubricas.reduce(
-            (sum: number, r: any) => sum + (Number(r.valorTotal) || 0),
-            0
-          );
+          matrixUpdatedCount++;
+          const newTotalRubricas = Array.isArray(newRubricas)
+            ? newRubricas.reduce((sum: number, r: any) => sum + (Number(r.valorTotal) || 0), 0)
+            : 0;
           const totalGasoleo = Number(act.valorTotalGasoleo) || 0;
           const newOrcamentoTotal = newTotalRubricas + totalGasoleo;
 
-          await firestoreService.actividades.update(act.id, { 
+          await firestoreService.matrixActivities.update(act.id, {
             rubricas: newRubricas,
+            precoUnitario: matchesProduct(act.nomeProduto) ? newPreco : act.precoUnitario,
             valorTotal: newOrcamentoTotal > 0 ? newOrcamentoTotal : act.valorTotal,
             orcamentoTotal: newOrcamentoTotal > 0 ? newOrcamentoTotal : act.orcamentoTotal,
+            total: newOrcamentoTotal > 0 ? newOrcamentoTotal : (act.total || act.valor),
             valor: newOrcamentoTotal > 0 ? newOrcamentoTotal : act.valor,
             updatedAt: new Date().toISOString(),
-            syncSource: "product_price_update"
-          });
+            syncSource: "product_price_update",
+          }).catch(() => {});
         }
       }
+      console.log(`☁️ Preço propagado para ${matrixUpdatedCount} planos em matrix_activities`);
+    } catch (errMatrix) {
+      console.warn("Aviso ao sincronizar matrix_activities:", errMatrix);
     }
 
-    // Também atualizar rascunhos (Drafts)
-    const allDrafts = await firestoreService.drafts.get();
-    for (const d of allDrafts) {
-      if (!d.id) continue;
-      if (Array.isArray(d.rubricas)) {
-        let draftChanged = false;
-        const newDraftRubricas = d.rubricas.map((r: any) => {
-          const rProdName = toSingularProductName(r.nomeProduto || "").toLowerCase();
-          const matchesKey =
-            rProdName === key ||
-            rProdName === oldKey ||
-            (oldKey && oldKey.length > 2 && rProdName.includes(oldKey)) ||
-            (key && key.length > 2 && rProdName.includes(key));
-
-          if (matchesKey) {
-            const newPreco = Number(updatedProduct.preco) || 0;
-            const newUnidade = updatedProduct.unidade || r.detalhes;
-            const newSpec = updatedProduct.especificacao || r.especificacao;
-            const newNome = updatedProduct.nome;
-
-            if (
-              r.precoUnitario !== newPreco ||
-              r.detalhes !== newUnidade ||
-              r.especificacao !== newSpec ||
-              r.nomeProduto !== newNome
-            ) {
+    // 3. ATUALIZAR EM RASCUNHOS ('drafts')
+    try {
+      const allDrafts = await firestoreService.drafts.get();
+      for (const d of allDrafts) {
+        if (!d.id) continue;
+        if (Array.isArray(d.rubricas)) {
+          let draftChanged = false;
+          const newDraftRubricas = d.rubricas.map((r: any) => {
+            if (matchesProduct(r.nomeProduto)) {
               draftChanged = true;
               const qtd = Number(r.quantidade) || 1;
               return {
                 ...r,
                 nomeProduto: newNome,
                 precoUnitario: newPreco,
-                detalhes: newUnidade,
-                especificacao: newSpec,
+                detalhes: newUnidade || r.detalhes,
+                especificacao: newSpec || r.especificacao,
                 quantidade: qtd,
                 valorTotal: qtd * newPreco,
               };
             }
-          }
-          return r;
-        });
-
-        if (draftChanged) {
-          await firestoreService.drafts.update(d.id, { 
-            rubricas: newDraftRubricas,
-            updatedAt: new Date().toISOString()
+            return r;
           });
+
+          if (draftChanged) {
+            await firestoreService.drafts.update(d.id, {
+              rubricas: newDraftRubricas,
+              updatedAt: new Date().toISOString(),
+            }).catch(() => {});
+          }
         }
       }
+    } catch (errDrafts) {
+      console.warn("Aviso ao sincronizar drafts:", errDrafts);
+    }
+
+    // 4. ATUALIZAR CACHE LOCAL EM LOCALSTORAGE
+    if (typeof window !== "undefined") {
+      const updateStoredActs = (storageKey: string) => {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (!raw) return;
+          const acts = JSON.parse(raw);
+          if (!Array.isArray(acts)) return;
+          let changed = false;
+          const updated = acts.map((act: any) => {
+            if (Array.isArray(act.rubricas)) {
+              let rChanged = false;
+              const rubricas = act.rubricas.map((r: any) => {
+                if (matchesProduct(r.nomeProduto)) {
+                  rChanged = true;
+                  changed = true;
+                  const qtd = Number(r.quantidade) || 1;
+                  return {
+                    ...r,
+                    nomeProduto: newNome,
+                    precoUnitario: newPreco,
+                    detalhes: newUnidade || r.detalhes,
+                    especificacao: newSpec || r.especificacao,
+                    valorTotal: qtd * newPreco,
+                  };
+                }
+                return r;
+              });
+              if (rChanged) {
+                const total = rubricas.reduce((s: number, r: any) => s + (Number(r.valorTotal) || 0), 0);
+                return { ...act, rubricas, valorTotal: total, orcamentoTotal: total, total };
+              }
+            }
+            return act;
+          });
+          if (changed) {
+            localStorage.setItem(storageKey, safeJSONStringify(updated));
+          }
+        } catch (_) {}
+      };
+
+      updateStoredActs("sigep_local_matrix_activities");
+      updateStoredActs("sigep_matrix_activities");
+      updateStoredActs("sigep_local_actividades");
+      updateStoredActs("sigep_actividades");
+
+      // 5. DISPARAR EVENTOS GLOBAIS EM TEMPO REAL PARA TODO O SISTEMA
+      window.dispatchEvent(new CustomEvent("matrix_activities_updated", { detail: { updatedProduct } }));
+      window.dispatchEvent(new CustomEvent("sigep_actividades_updated", { detail: { updatedProduct } }));
+      window.dispatchEvent(new CustomEvent("produtos_precos_updated", { detail: updatedProduct }));
     }
   } catch (syncError) {
     console.error("Erro na sincronização global de preços:", syncError);
   }
+}
+
+export async function updateProductPriceEverywhere(productName: string, newPrice: number) {
+  const products = await getUnifiedProducts();
+  const singular = toSingularProductName(productName).toLowerCase().trim();
+  const existing = products.find(p => toSingularProductName(p.nome).toLowerCase().trim() === singular);
+  if (!existing) {
+    throw new Error(`Produto "${productName}" não encontrado para atualização de preço.`);
+  }
+  return saveUnifiedProduct({
+    ...existing,
+    preco: newPrice,
+  });
 }
 
 export async function collectProductFromRubric(rubrica: { nomeProduto?: string; precoUnitario?: number; detalhes?: string; especificacao?: string; rubrica?: string; necessidade?: string }) {

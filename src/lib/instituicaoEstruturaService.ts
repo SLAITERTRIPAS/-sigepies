@@ -6,13 +6,19 @@ import { baseMenuItems } from "../constants/menuHierarchy";
 export interface ReparticaoModel {
   id?: string;
   nome: string;
+  descricao?: string;
+  estado?: "Activo" | "Inactivo";
+  instituicaoId?: string;
   isCustom?: boolean;
 }
 
 export interface DepartamentoModel {
   id?: string;
   nome: string;
-  reparticoes: string[];
+  descricao?: string;
+  estado?: "Activo" | "Inactivo";
+  instituicaoId?: string;
+  reparticoes: (string | ReparticaoModel)[];
   isCustom?: boolean;
 }
 
@@ -21,6 +27,9 @@ export interface DirecaoModel {
   nome: string;
   rawTitle: string;
   sigla?: string;
+  descricao?: string;
+  estado?: "Activo" | "Inactivo";
+  instituicaoId?: string;
   responsavel?: string;
   email?: string;
   telefone?: string;
@@ -34,6 +43,9 @@ export interface OrgaoModel {
   id?: string;
   nome: string;
   tipo: string;
+  descricao?: string;
+  estado?: "Activo" | "Inactivo";
+  instituicaoId?: string;
   direcoes: DirecaoModel[];
   isCustom?: boolean;
 }
@@ -1027,7 +1039,7 @@ export function getReparticoesPorDepartamento(departamentoNome?: string, direcao
           cleanDept.includes(dept.nome.toLowerCase());
 
         if (match) {
-          return dept.reparticoes;
+          return dept.reparticoes.map((r) => (typeof r === "string" ? r : r.nome));
         }
       }
     }
@@ -1088,8 +1100,9 @@ export function findDirecaoPorDepartamento(
 
 /**
  * Hook React para consumir a estrutura da Gestão das Instituições em tempo real
+ * RN-011: Por defeito, apresenta apenas estruturas activas da instituição
  */
-export function useInstituicaoEstrutura(targetInstId?: string) {
+export function useInstituicaoEstrutura(targetInstId?: string, onlyActive = true) {
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
@@ -1109,22 +1122,54 @@ export function useInstituicaoEstrutura(targetInstId?: string) {
   }, []);
 
   const orgaos = buildEstruturaInstituicao(targetInstId);
-  const orgaosNomes = orgaos.map((o) => o.nome);
+  const orgaosFiltrados = onlyActive
+    ? orgaos.filter((o) => o.estado !== "Inactivo")
+    : orgaos;
+  const orgaosNomes = orgaosFiltrados.map((o) => o.nome);
 
   const getDirecoes = (orgaoNome?: string): string[] => {
-    return getDirecoesPorOrgao(orgaoNome, targetInstId);
+    const dirs = getDirecoesPorOrgao(orgaoNome, targetInstId);
+    if (!onlyActive) return dirs;
+    return dirs.filter((dirName) => {
+      const match = cachedCustomDirecoes.find(
+        (cd) =>
+          (cd.title === dirName || cd.rawTitle === dirName) &&
+          (cd.instituicaoId || "isps") === (targetInstId || getActiveInstituicaoId())
+      );
+      return !match || match.estado !== "Inactivo";
+    });
   };
 
   const getDepartamentos = (direcaoNome?: string): string[] => {
-    return getDepartamentosPorDirecao(direcaoNome, targetInstId);
+    const depts = getDepartamentosPorDirecao(direcaoNome, targetInstId);
+    if (!onlyActive) return depts;
+    return depts.filter((deptName) => {
+      const match = cachedAdicionais.find(
+        (ad) =>
+          ad.type === "departamento" &&
+          ad.name === deptName &&
+          (ad.instituicaoId || "isps") === (targetInstId || getActiveInstituicaoId())
+      );
+      return !match || match.estado !== "Inactivo";
+    });
   };
 
   const getReparticoes = (departamentoNome?: string): string[] => {
-    return getReparticoesPorDepartamento(departamentoNome, targetInstId);
+    const reps = getReparticoesPorDepartamento(departamentoNome, undefined, targetInstId);
+    if (!onlyActive) return reps;
+    return reps.filter((repName) => {
+      const match = cachedAdicionais.find(
+        (ad) =>
+          (ad.type === "reparticao" || ad.type === "setor") &&
+          ad.name === repName &&
+          (ad.instituicaoId || "isps") === (targetInstId || getActiveInstituicaoId())
+      );
+      return !match || match.estado !== "Inactivo";
+    });
   };
 
   return {
-    orgaos,
+    orgaos: orgaosFiltrados,
     orgaosNomes,
     getDirecoes,
     getDepartamentos,
@@ -1430,4 +1475,432 @@ export function validarEOrganizarHierarquia(item: any, user: any): any {
 
   return validatedItem;
 }
+
+// =========================================================================================
+// REQUISITOS FUNCIONAIS RF-EST-001 E RF-EST-002
+// PRINCÍPIO FUNDAMENTAL: ESTRUTURA ORGANIZACIONAL GERIDA EXCLUSIVAMENTE POR INTERVENÇÃO HUMANA
+// PROIBIDA A CRIAÇÃO AUTOMÁTICA DE ESTRUTURAS PELO SISTEMA (RN-001, RN-002, RN-004, RN-009)
+// =========================================================================================
+
+export interface AuditoriaEstruturaRecord {
+  id: string;
+  acao: "CRIAR" | "EDITAR" | "ATIVAR" | "DESATIVAR" | "ELIMINAR" | "MUDANCA_SECTOR";
+  tipo: "orgao" | "direcao" | "departamento" | "reparticao" | "setor";
+  nome: string;
+  nomeAnterior?: string;
+  instituicaoId: string;
+  autorId: string;
+  autorNome: string;
+  autorEmail?: string;
+  timestamp: string;
+  detalhes?: string;
+  ipOuOrigem?: string;
+}
+
+/**
+ * RN-012: Registar histórico de auditoria para ações na estrutura organizacional
+ */
+export async function registrarAuditoriaEstrutura(params: {
+  acao: AuditoriaEstruturaRecord["acao"];
+  tipo: AuditoriaEstruturaRecord["tipo"];
+  nome: string;
+  nomeAnterior?: string;
+  instituicaoId: string;
+  autor?: any;
+  detalhes?: string;
+}): Promise<void> {
+  try {
+    const autorId = params.autor?.id || params.autor?.uid || "admin";
+    const autorNome = params.autor?.nome || params.autor?.nomeReal || params.autor?.name || params.autor?.email || "Administrador da Instituição";
+    const docId = `audit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const auditRecord: AuditoriaEstruturaRecord = {
+      id: docId,
+      acao: params.acao,
+      tipo: params.tipo,
+      nome: params.nome.trim(),
+      nomeAnterior: params.nomeAnterior?.trim(),
+      instituicaoId: params.instituicaoId || getActiveInstituicaoId(),
+      autorId,
+      autorNome,
+      autorEmail: params.autor?.email,
+      timestamp: new Date().toISOString(),
+      detalhes: params.detalhes || "",
+      ipOuOrigem: "SIGEP Web App",
+    };
+
+    await firestoreService.addToCollection("historico_auditoria", auditRecord).catch(() => {});
+  } catch (err) {
+    console.warn("Aviso ao registar histórico de auditoria da estrutura:", err);
+  }
+}
+
+/**
+ * RN-006: Impedir o registo de estruturas duplicadas dentro da mesma instituição
+ */
+export function validarEstruturaDuplicada(
+  instituicaoId: string,
+  tipo: "orgao" | "direcao" | "departamento" | "reparticao" | "setor",
+  nome: string,
+  parentTitle?: string,
+  excludeId?: string
+): { isDuplicate: boolean; message?: string } {
+  if (!nome || !nome.trim()) return { isDuplicate: false };
+  const targetInstId = instituicaoId || getActiveInstituicaoId();
+  const cleanNome = nome.trim().toLowerCase();
+
+  // 1. Verificar em órgãos customizados
+  if (tipo === "orgao") {
+    const duplicate = cachedCustomOrgaos.some(
+      (co) =>
+        (co.instituicaoId || "isps") === targetInstId &&
+        co.id !== excludeId &&
+        String(co.title || co.nome || "").trim().toLowerCase() === cleanNome
+    );
+    if (duplicate) {
+      return {
+        isDuplicate: true,
+        message: `Já existe um órgão com o nome "${nome.trim()}" nesta instituição. O sistema bloqueia a duplicação (RN-006).`,
+      };
+    }
+  }
+
+  // 2. Verificar em Direções
+  if (tipo === "direcao") {
+    const duplicateCustom = cachedCustomDirecoes.some(
+      (cd) =>
+        (cd.instituicaoId || "isps") === targetInstId &&
+        cd.id !== excludeId &&
+        String(cd.title || cd.rawTitle || cd.nome || "").trim().toLowerCase() === cleanNome
+    );
+    if (duplicateCustom) {
+      return {
+        isDuplicate: true,
+        message: `Já existe uma direção com o nome "${nome.trim()}" nesta instituição. O sistema bloqueia a duplicação (RN-006).`,
+      };
+    }
+  }
+
+  // 3. Verificar em Departamentos e Repartições / Setores em estrutura_adicionais
+  if (tipo === "departamento" || tipo === "reparticao" || tipo === "setor") {
+    const targetType = tipo === "setor" ? "reparticao" : tipo;
+    const cleanParent = (parentTitle || "").trim().toLowerCase();
+
+    const duplicateAdicional = cachedAdicionais.some((ad) => {
+      if ((ad.instituicaoId || "isps") !== targetInstId) return false;
+      if (ad.id && ad.id === excludeId) return false;
+      if (ad.type !== targetType) return false;
+
+      const adNameClean = String(ad.name || ad.title || "").trim().toLowerCase();
+      if (adNameClean !== cleanNome) return false;
+
+      // Se especificado parent, verifica duplicação dentro da mesma dependência
+      if (cleanParent) {
+        const adParent = String(ad.parentDepartmentTitle || ad.directionTitle || "").trim().toLowerCase();
+        if (adParent && adParent === cleanParent) return true;
+      }
+      return true;
+    });
+
+    if (duplicateAdicional) {
+      const label = tipo === "departamento" ? "departamento" : "sector/repartição";
+      return {
+        isDuplicate: true,
+        message: `Já existe um ${label} com o nome "${nome.trim()}" registado nesta instituição. O sistema bloqueia a duplicação (RN-006).`,
+      };
+    }
+  }
+
+  return { isDuplicate: false };
+}
+
+/**
+ * RN-008: A eliminação de uma estrutura organizacional só pode ocorrer quando
+ * não existirem colaboradores vinculados à mesma ou após a sua reatribuição.
+ */
+export async function verificarColaboradoresVinculados(
+  instituicaoId: string,
+  tipo: "orgao" | "direcao" | "departamento" | "reparticao" | "setor",
+  nome: string
+): Promise<{ hasColaboradores: boolean; count: number; colaboradores: string[] }> {
+  if (!nome || !nome.trim()) return { hasColaboradores: false, count: 0, colaboradores: [] };
+  const targetInstId = instituicaoId || getActiveInstituicaoId();
+  const cleanNome = nome.trim().toLowerCase();
+
+  try {
+    const colabs = await firestoreService.colaboradores.get();
+    const matched = (colabs || []).filter((c: any) => {
+      // Filtrar apenas da mesma instituição se existir instituicaoId
+      if (c.instituicaoId && c.instituicaoId !== targetInstId && targetInstId !== "isps") {
+        return false;
+      }
+
+      const cDir = String(c.direcao || "").trim().toLowerCase();
+      const cDept = String(c.departamento || "").trim().toLowerCase();
+      const cRep = String(c.reparticao || "").trim().toLowerCase();
+      const cSetor = String(c.sector || c.setor || "").trim().toLowerCase();
+      const cArea = String(c.areaDeAfetacao || "").trim().toLowerCase();
+      const cUnidade = String(c.unidade || "").trim().toLowerCase();
+
+      if (tipo === "direcao" && (cDir === cleanNome || cArea === cleanNome)) return true;
+      if (tipo === "departamento" && (cDept === cleanNome || cArea === cleanNome)) return true;
+      if (
+        (tipo === "reparticao" || tipo === "setor") &&
+        (cRep === cleanNome || cSetor === cleanNome || cArea === cleanNome)
+      ) {
+        return true;
+      }
+      if (tipo === "orgao" && cUnidade === cleanNome) return true;
+
+      return false;
+    });
+
+    const nomesColab = matched.map((c: any) => c.nome || c.name || "Colaborador sem nome").slice(0, 5);
+
+    return {
+      hasColaboradores: matched.length > 0,
+      count: matched.length,
+      colaboradores: nomesColab,
+    };
+  } catch (err) {
+    console.warn("Aviso ao verificar vínculos de colaboradores:", err);
+    return { hasColaboradores: false, count: 0, colaboradores: [] };
+  }
+}
+
+/**
+ * Criação Manual de Estruturas Organizacionais pelo Administrador (RF-EST-001)
+ */
+export async function criarEstruturaManual(params: {
+  instituicaoId: string;
+  tipo: "orgao" | "direcao" | "departamento" | "reparticao" | "setor";
+  nome: string;
+  sigla?: string;
+  descricao?: string;
+  estado?: "Activo" | "Inactivo";
+  unitType?: string;
+  directionTitle?: string;
+  parentDepartmentTitle?: string;
+  autor: any;
+}): Promise<{ success: boolean; error?: string; id?: string }> {
+  const { instituicaoId, tipo, nome, sigla, descricao, estado = "Activo", unitType, directionTitle, parentDepartmentTitle, autor } = params;
+
+  if (!nome || !nome.trim()) {
+    return { success: false, error: "O nome da estrutura é de preenchimento obrigatório." };
+  }
+
+  // RN-006: Bloquear duplicação
+  const dupCheck = validarEstruturaDuplicada(
+    instituicaoId,
+    tipo,
+    nome,
+    tipo === "departamento" ? directionTitle : parentDepartmentTitle
+  );
+  if (dupCheck.isDuplicate) {
+    return { success: false, error: dupCheck.message };
+  }
+
+  const cleanName = nome.trim();
+  const nowIso = new Date().toISOString();
+
+  try {
+    let newId = "";
+
+    if (tipo === "orgao") {
+      newId = `org_${instituicaoId}_${Date.now()}`;
+      await firestoreService.orgaos_custom.set(newId, {
+        id: newId,
+        title: cleanName,
+        nome: cleanName,
+        type: unitType || "Unidade Estrutural Principal",
+        descricao: descricao || "",
+        estado,
+        instituicaoId,
+        criadoPor: autor?.nome || autor?.email || "Administrador",
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      });
+    } else if (tipo === "direcao") {
+      newId = `dir_${instituicaoId}_${Date.now()}`;
+      await firestoreService.direcoes_organicas.set(newId, {
+        id: newId,
+        title: cleanName,
+        rawTitle: cleanName,
+        sigla: sigla ? sigla.trim().toUpperCase() : undefined,
+        unitType: unitType || "Órgão de Direção e Gestão",
+        descricao: descricao || "",
+        estado,
+        instituicaoId,
+        criadoPor: autor?.nome || autor?.email || "Administrador",
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      });
+    } else {
+      // departamento ou reparticao/setor
+      const actualType = tipo === "setor" ? "reparticao" : tipo;
+      newId = `${actualType}_${instituicaoId}_${Date.now()}`;
+      await firestoreService.estrutura_adicionais.set(newId, {
+        id: newId,
+        type: actualType,
+        name: cleanName,
+        title: cleanName,
+        directionTitle: directionTitle || "",
+        parentDepartmentTitle: parentDepartmentTitle || "",
+        descricao: descricao || "",
+        estado,
+        instituicaoId,
+        criadoPor: autor?.nome || autor?.email || "Administrador",
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      });
+    }
+
+    // Registar no Histórico de Auditoria (RN-012 / Critérios de Aceitação)
+    await registrarAuditoriaEstrutura({
+      acao: "CRIAR",
+      tipo,
+      nome: cleanName,
+      instituicaoId,
+      autor,
+      detalhes: `Estrutura "${cleanName}" (${tipo}) criada com sucesso com estado ${estado}.`,
+    });
+
+    notifyEstruturaUpdated();
+    return { success: true, id: newId };
+  } catch (err: any) {
+    console.error("Erro ao criar estrutura manual:", err);
+    return { success: false, error: err?.message || "Falha ao gravar a estrutura no sistema." };
+  }
+}
+
+/**
+ * Atualização Manual de Estruturas Organizacionais pelo Administrador (RF-EST-001)
+ */
+export async function atualizarEstruturaManual(params: {
+  id?: string;
+  instituicaoId: string;
+  tipo: "orgao" | "direcao" | "departamento" | "reparticao" | "setor";
+  nome: string;
+  nomeAnterior?: string;
+  sigla?: string;
+  descricao?: string;
+  estado: "Activo" | "Inactivo";
+  autor: any;
+}): Promise<{ success: boolean; error?: string }> {
+  const { id, instituicaoId, tipo, nome, nomeAnterior, sigla, descricao, estado, autor } = params;
+
+  if (!nome || !nome.trim()) {
+    return { success: false, error: "O nome da estrutura é obrigatório." };
+  }
+
+  // RN-006: Se o nome mudou, verificar se não duplica
+  if (nomeAnterior && nome.trim().toLowerCase() !== nomeAnterior.trim().toLowerCase()) {
+    const dupCheck = validarEstruturaDuplicada(instituicaoId, tipo, nome, undefined, id);
+    if (dupCheck.isDuplicate) {
+      return { success: false, error: dupCheck.message };
+    }
+  }
+
+  const cleanName = nome.trim();
+  const nowIso = new Date().toISOString();
+
+  try {
+    if (tipo === "direcao" && id) {
+      await firestoreService.direcoes_organicas.update(id, {
+        title: cleanName,
+        rawTitle: cleanName,
+        sigla: sigla ? sigla.trim().toUpperCase() : "",
+        descricao: descricao || "",
+        estado,
+        updatedAt: nowIso,
+        updatedBy: autor?.nome || autor?.email,
+      });
+    } else if (tipo === "orgao" && id) {
+      await firestoreService.orgaos_custom.update(id, {
+        title: cleanName,
+        nome: cleanName,
+        descricao: descricao || "",
+        estado,
+        updatedAt: nowIso,
+        updatedBy: autor?.nome || autor?.email,
+      });
+    } else if (id) {
+      await firestoreService.estrutura_adicionais.update(id, {
+        name: cleanName,
+        title: cleanName,
+        descricao: descricao || "",
+        estado,
+        updatedAt: nowIso,
+        updatedBy: autor?.nome || autor?.email,
+      });
+    }
+
+    const acaoAudit = estado === "Inactivo" ? "DESATIVAR" : "EDITAR";
+    await registrarAuditoriaEstrutura({
+      acao: acaoAudit,
+      tipo,
+      nome: cleanName,
+      nomeAnterior: nomeAnterior || cleanName,
+      instituicaoId,
+      autor,
+      detalhes: `Estrutura "${cleanName}" atualizada para estado ${estado}.`,
+    });
+
+    notifyEstruturaUpdated();
+    return { success: true };
+  } catch (err: any) {
+    console.error("Erro ao atualizar estrutura manual:", err);
+    return { success: false, error: err?.message || "Falha ao atualizar na base de dados." };
+  }
+}
+
+/**
+ * Eliminação Manual de Estruturas Organizacionais com Validação RN-008
+ */
+export async function eliminarEstruturaManual(params: {
+  id?: string;
+  instituicaoId: string;
+  tipo: "orgao" | "direcao" | "departamento" | "reparticao" | "setor";
+  nome: string;
+  isCustom?: boolean;
+  autor: any;
+}): Promise<{ success: boolean; error?: string }> {
+  const { id, instituicaoId, tipo, nome, isCustom, autor } = params;
+
+  // RN-008: Verificar se existem colaboradores vinculados à estrutura
+  const vinculos = await verificarColaboradoresVinculados(instituicaoId, tipo, nome);
+  if (vinculos.hasColaboradores) {
+    const nomesExemplo = vinculos.colaboradores.join(", ");
+    return {
+      success: false,
+      error: `BLOQUEIO DE SEGURANÇA (RN-008): Não é permitido eliminar "${nome}", pois existem ${vinculos.count} colaborador(es) vinculado(s) a esta estrutura (ex.: ${nomesExemplo}). Reatribua os colaboradores a outra estrutura antes de eliminar.`,
+    };
+  }
+
+  try {
+    if (tipo === "direcao") {
+      await firestoreService.deleteDirectionAndCascade(nome, !!isCustom, id, instituicaoId);
+    } else if (tipo === "orgao" && id) {
+      await firestoreService.orgaos_custom.delete(id);
+    } else if (id) {
+      await firestoreService.estrutura_adicionais.delete(id);
+    }
+
+    await registrarAuditoriaEstrutura({
+      acao: "ELIMINAR",
+      tipo,
+      nome,
+      instituicaoId,
+      autor,
+      detalhes: `Estrutura "${nome}" (${tipo}) eliminada com sucesso pelo Administrador.`,
+    });
+
+    notifyEstruturaUpdated();
+    return { success: true };
+  } catch (err: any) {
+    console.error("Erro ao eliminar estrutura:", err);
+    return { success: false, error: err?.message || "Falha ao eliminar estrutura da base de dados." };
+  }
+}
+
 

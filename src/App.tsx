@@ -1074,11 +1074,26 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("open_quantum_copilot", handleOpenQuantumEvent);
 
+    const handleMatrixSyncEvent = () => {
+      try {
+        const mat = localStorage.getItem("sigep_local_matrix_activities") || localStorage.getItem("sigep_matrix_activities");
+        if (mat) setMatrixActivities(JSON.parse(mat));
+        const act = localStorage.getItem("sigep_local_actividades") || localStorage.getItem("sigep_actividades");
+        if (act) setActivities(JSON.parse(act));
+      } catch (_) {}
+    };
+    window.addEventListener("matrix_activities_updated", handleMatrixSyncEvent);
+    window.addEventListener("sigep_actividades_updated", handleMatrixSyncEvent);
+    window.addEventListener("produtos_precos_updated", handleMatrixSyncEvent);
+
     return () => {
       window.removeEventListener("sigep_data_restored", handleDataRestored);
       window.removeEventListener("open_view", handleOpenViewEvent);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("open_quantum_copilot", handleOpenQuantumEvent);
+      window.removeEventListener("matrix_activities_updated", handleMatrixSyncEvent);
+      window.removeEventListener("sigep_actividades_updated", handleMatrixSyncEvent);
+      window.removeEventListener("produtos_precos_updated", handleMatrixSyncEvent);
     };
   }, []);
 
@@ -2006,6 +2021,9 @@ export default function App() {
   return (
     <div
       className={`h-screen w-full flex flex-col font-serif relative ${view === "home" || view === "presentation" ? "bg-[#04092b] text-white" : "bg-white text-black"}`}
+      style={{
+        backgroundColor: activeInst?.headerColor || activeInst?.primaryColor || "#0a0f1d",
+      }}
     >
       <AnimatePresence mode="wait">
           {!isMinimized ? (
@@ -2060,7 +2078,7 @@ export default function App() {
               />
             )}
 
-            <div className={`flex-grow relative flex flex-col min-h-0 overflow-y-auto mt-0 ${(view === "dashboard" || view === "menu") ? "pb-14" : ""}`}>
+            <div className="flex-grow relative flex flex-col min-h-0 overflow-y-auto mt-0">
           <ViewRenderer
             view={view}
             user={currentUser}
@@ -2115,74 +2133,6 @@ export default function App() {
             onSelectSector={handleSelectSector}
           />
             </div>
-
-            {/* Rodapé Institucional com Logotipo SIGEP - FIXO E SÓ DISPONÍVEL NA ÁREA DE TRABALHO */}
-            {(view === "dashboard" || view === "menu") && (
-              <footer
-                onClick={() => setShowFooterInfoModal(true)}
-                className="fixed bottom-0 left-0 right-0 w-full bg-[#050B35] border-t-2 border-[#FFD700] py-2 overflow-hidden z-[40] flex items-center justify-center select-none shadow-[inset_0_0_20px_rgba(255,215,0,0.25)] cursor-pointer hover:bg-[#080F42] transition-colors group print:hidden"
-                title={currentLang === "en" ? "Click to view version and copyright info" : "Clique para ver os detalhes da versão e informações de copyright"}
-              >
-                <div className="flex items-center justify-center gap-12">
-                  {[...Array(4)].map((_, idx) => (
-                    <div key={idx} className="flex items-center gap-6 shrink-0">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-5 h-5 shrink-0">
-                          <SigepLogo size="xs" showText={false} className="!w-5 !h-5" />
-                        </div>
-                        <span 
-                          className="text-[10px] font-black tracking-widest uppercase"
-                          style={{ 
-                            color: "#FFD700",
-                            textShadow: "1px 1px 0px #000000",
-                          }}
-                        >
-                          {currentLang === "en"
-                            ? "SIGEP - Integrated Process Management System"
-                            : "SIGEP - Sistema Integrado de Gestão de processo"}
-                        </span>
-                      </div>
-
-                      {/* Separador vertical sólido */}
-                      <span className="h-4 w-[2px] bg-[#FFD700] shrink-0"></span>
-
-                      <span
-                        className="text-[9px] font-black uppercase tracking-widest shrink-0"
-                        style={{ 
-                          color: "#FFD700",
-                          textShadow: "1px 1px 0px #000000",
-                        }}
-                      >
-                        {currentLang === "en"
-                          ? "Developed by Slaiter Tripas"
-                          : "Desenvolvido por Slaiter Tripas"}
-                      </span>
-
-                      {/* Separador vertical sólido */}
-                      <span className="h-4 w-[2px] bg-[#FFD700] shrink-0"></span>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className="text-[9px] font-black uppercase tracking-widest"
-                          style={{ 
-                            color: "#FFD700",
-                            textShadow: "1px 1px 0px #000000",
-                          }}
-                        >
-                          {currentLang === "en"
-                            ? "Quantum Version 2026.9.1"
-                            : "Versão 2026.9.1 Quântica"}
-                        </span>
-                        <FirebaseStatusIndicator />
-                      </div>
-
-                      {/* Separador de transição sólido */}
-                      <span className="text-[#FFD700] text-xs font-black px-2 shrink-0">✦</span>
-                    </div>
-                  ))}
-                </div>
-              </footer>
-            )}
           </motion.div>
         ) : (
           <div className="fixed inset-0 z-[10000] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-slate-100">

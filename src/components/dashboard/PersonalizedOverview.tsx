@@ -155,9 +155,18 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
   const isSuperAdmin = isSuperBossUser(user);
   const defaultProfile = useMemo(() => detectUserProfile(user, title), [user, title]);
   const [activeProfile, setActiveProfile] = useState<ProfileType>(defaultProfile);
+  const [selectedCurso, setSelectedCurso] = useState("todos");
 
-  // Filtro de Curso para o Coordenador de Curso
-  const [selectedCurso, setSelectedCurso] = useState<string>("todos");
+  const CardButton = ({ title, value, detail, color = "slate", icon: Icon, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className={`w-full text-left bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a] hover:bg-slate-50 transition`}
+  >
+    <span className="text-[10px] font-black uppercase text-slate-500 block">{title}</span>
+    <span className={`text-2xl font-black text-${color}-900`}>{value}</span>
+    {detail && <span className="text-[10px] font-bold text-emerald-600 block mt-1">{detail}</span>}
+  </button>
+);
 
   // Estatísticas de Base
   const stats = useMemo(() => {
@@ -320,31 +329,11 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
 
           {/* Métricas Chave do Administrador Geral */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Total Utilizadores</span>
-              <span className="text-2xl font-black text-slate-900">{stats.totalUsers}</span>
-              <span className="text-[10px] font-bold text-emerald-600 block mt-1">+12% este semestre</span>
-            </div>
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Total Estudantes</span>
-              <span className="text-2xl font-black text-indigo-900">{stats.totalEstudantes}</span>
-              <span className="text-[10px] font-bold text-indigo-600 block mt-1">Efetivo geral ativo</span>
-            </div>
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Total Docentes</span>
-              <span className="text-2xl font-black text-blue-900">{stats.totalDocentes}</span>
-              <span className="text-[10px] font-bold text-blue-600 block mt-1">Quadro e colaboradores</span>
-            </div>
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Total de Cursos</span>
-              <span className="text-2xl font-black text-purple-900">{stats.totalCursos}</span>
-              <span className="text-[10px] font-bold text-purple-600 block mt-1">Licenciaturas e Técnicos</span>
-            </div>
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Candidaturas</span>
-              <span className="text-2xl font-black text-amber-900">540</span>
-              <span className="text-[10px] font-bold text-amber-600 block mt-1">Processadas no ciclo</span>
-            </div>
+            <CardButton title="Total Utilizadores" value={stats.totalUsers} detail="+12% este semestre" color="slate" onClick={() => onNavigate("Utilizadores")} />
+            <CardButton title="Total Estudantes" value={stats.totalEstudantes} color="indigo" onClick={() => onNavigate("Estudantes")} />
+            <CardButton title="Total Docentes" value={stats.totalDocentes} color="blue" onClick={() => onNavigate("Colaboradores")} />
+            <CardButton title="Total de Cursos" value={stats.totalCursos} color="purple" onClick={() => onNavigate("Cursos")} />
+            <CardButton title="Candidaturas" value="540" color="amber" onClick={() => onNavigate("Candidaturas")} />
           </div>
 
           {/* Widgets Específicos: Administrador Geral */}
@@ -450,26 +439,10 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
 
           {/* Métricas Chave do Diretor */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Estudantes Matriculados</span>
-              <span className="text-3xl font-black text-blue-950">{stats.totalEstudantes}</span>
-              <span className="text-[10px] font-bold text-slate-500 block mt-1">100% regulares no sistema</span>
-            </div>
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Taxa de Aprovação</span>
-              <span className="text-3xl font-black text-emerald-700">{stats.taxaAprovacao}%</span>
-              <span className="text-[10px] font-bold text-emerald-600 block mt-1">+2.1% face ao ano anterior</span>
-            </div>
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Taxa de Abandono</span>
-              <span className="text-3xl font-black text-amber-600">{stats.taxaAbandono}%</span>
-              <span className="text-[10px] font-bold text-amber-700 block mt-1">Dentro da meta institucional</span>
-            </div>
-            <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
-              <span className="text-[10px] font-black uppercase text-slate-500 block">Cursos Mais Procurados</span>
-              <span className="text-lg font-black text-purple-900 truncate block">Eng. Elétrica & Hidráulica</span>
-              <span className="text-[10px] font-bold text-purple-700 block mt-1">Maior rácio candidato/vaga</span>
-            </div>
+            <CardButton title="Estudantes Matriculados" value={stats.totalEstudantes} color="blue" onClick={() => onNavigate("Estudantes")} />
+            <CardButton title="Taxa de Aprovação" value={`${stats.taxaAprovacao}%`} detail="+2.1% face ao ano anterior" color="emerald" onClick={() => onNavigate("Resultados Acadêmicos")} />
+            <CardButton title="Taxa de Abandono" value={`${stats.taxaAbandono}%`} detail="Dentro da meta institucional" color="amber" onClick={() => onNavigate("Abandono Discente")} />
+            <CardButton title="Cursos Mais Procurados" value="Eng. Elétrica & Hidráulica" detail="Maior rácio candidato/vaga" color="purple" onClick={() => onNavigate("Cursos")} />
           </div>
 
           {/* Gráficos Institucionais & Indicadores de Desempenho */}

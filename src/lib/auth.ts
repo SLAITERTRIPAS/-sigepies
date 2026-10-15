@@ -776,6 +776,11 @@ export const isHRBossUser = (user: any) => {
   );
 };
 
+export const canViewDetailedDashboard = (user: any) => {
+  if (!user) return false;
+  return isSuperBossUser(user) || isHRBossUser(user);
+};
+
 
 /**
  * Checks if a user is a boss (Director, Chief, etc.) based on their name/role.

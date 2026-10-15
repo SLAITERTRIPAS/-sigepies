@@ -1224,10 +1224,6 @@ export default function LibraryVisitForm({
           </motion.div>
         </div>
       </main>
-
-      <footer className="flex-none bg-blue-900 text-white text-center py-3 text-[10px] md:text-xs z-10">
-        Sistema de Gestão de Biblioteca - DICOSSER
-      </footer>
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { firestoreService } from "../../lib/firestoreService";
 import { optimizeImageForFirestore } from "../../lib/imageUtils";
 import { hasChefiaPosition, generateCollaboratorId, safeJSONParse } from "../../lib/utils";
 import { DEPARTAMENTOS, NIVEIS_ACADEMICOS } from "../../constants/formOptions";
+import { useInstituicaoEstrutura, registrarAuditoriaEstrutura } from "../../lib/instituicaoEstruturaService";
 
 interface AtualizarDadosColaboradorModalProps {
   isOpen: boolean;
@@ -75,6 +76,10 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
     ) || null;
   }, [user, matchedColaborador, processos]);
 
+  // Estruturas Ativas da Instituição (RN-005, RN-011)
+  const userInstId = user?.instituicaoId || matchedColaborador?.instituicaoId;
+  const { orgaosNomes, getDirecoes, getDepartamentos, getReparticoes } = useInstituicaoEstrutura(userInstId, true);
+
   // Estados do formulário
   const [formData, setFormData] = useState({
     nome: "",
@@ -99,6 +104,7 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
     tipoContrato: "Tempo Inteiro",
     vinculoContractual: "Quadro",
     fotoUrl: "",
+    atribuicaoMenu: [] as string[],
   });
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -160,6 +166,7 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
       tipoContrato: baseColab.tipoContrato || procData.tipoContrato || "Tempo Inteiro",
       vinculoContractual: baseColab.vinculoContractual || baseColab.tipoRelacaoContractual || procData.vinculoContractual || "Quadro",
       fotoUrl: initialPhoto,
+      atribuicaoMenu: baseColab.atribuicaoMenu || [],
     });
 
     setErrorMessage(null);
@@ -255,6 +262,27 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
 
       // 2. Gravar no Firestore na coleção de 'colaboradores'
       await firestoreService.colaboradores.replace(colabId, updatedColaboradorData);
+
+      // RN-012: Registar auditoria se o sector/departamento/direção mudou
+      const prevSector = matchedColaborador?.sector || matchedColaborador?.reparticao || user?.sector || "";
+      const prevDept = matchedColaborador?.departamento || user?.departamento || "";
+      const prevDir = matchedColaborador?.direcao || user?.direcao || "";
+
+      if (
+        (formData.sector && formData.sector !== prevSector) ||
+        (formData.departamento && formData.departamento !== prevDept) ||
+        (formData.direcao && formData.direcao !== prevDir)
+      ) {
+        await registrarAuditoriaEstrutura({
+          acao: "MUDANCA_SECTOR",
+          tipo: "setor",
+          nome: formData.sector || formData.departamento || formData.direcao,
+          nomeAnterior: prevSector || prevDept || prevDir,
+          instituicaoId: userInstId || "",
+          autor: user,
+          detalhes: `Colaborador "${formData.nome}" mudou de afetação organizacional: [${prevDir} > ${prevDept} > ${prevSector}] para [${formData.direcao} > ${formData.departamento} > ${formData.sector || formData.reparticao}].`,
+        });
+      }
 
       // 3. Atualizar no Processo Individual ('processos_individuais')
       // Se existir, atualiza mantendo a estrutura; se não existir, cria o registo completo
@@ -675,14 +703,16 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Direção / Unidade Orgânica</label>
+                <label className="text-xs font-bold text-slate-700">
+                  Direção / Unidade Orgânica <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={formData.direcao}
-                  onChange={(e) => setFormData({ ...formData, direcao: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, direcao: e.target.value, departamento: "", sector: "", reparticao: "" })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Selecione a Direção...</option>
-                  {Object.keys(DEPARTAMENTOS).map((dir) => (
+                  {(getDirecoes().length > 0 ? getDirecoes() : Object.keys(DEPARTAMENTOS)).map((dir) => (
                     <option key={dir} value={dir}>
                       {dir}
                     </option>
@@ -691,14 +721,41 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Departamento / Setor de Afetação</label>
-                <input
-                  type="text"
+                <label className="text-xs font-bold text-slate-700">
+                  Departamento de Afetação <span className="text-red-500">*</span>
+                </label>
+                <select
                   value={formData.departamento}
-                  onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
-                  placeholder="Ex: Departamento de Recursos Humanos"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                  disabled={!formData.direcao}
+                  onChange={(e) => setFormData({ ...formData, departamento: e.target.value, sector: "", reparticao: "" })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  <option value="">Selecione o Departamento...</option>
+                  {getDepartamentos(formData.direcao).map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-700">
+                  Setor / Repartição de Afetação
+                </label>
+                <select
+                  value={formData.sector || formData.reparticao}
+                  disabled={!formData.departamento}
+                  onChange={(e) => setFormData({ ...formData, sector: e.target.value, reparticao: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  <option value="">Selecione o Setor / Repartição (opcional se afeto ao departamento direto)...</option>
+                  {getReparticoes(formData.departamento).map((rep) => (
+                    <option key={rep} value={rep}>
+                      {rep}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1">

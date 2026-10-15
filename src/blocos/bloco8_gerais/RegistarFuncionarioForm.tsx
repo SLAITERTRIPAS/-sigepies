@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { firestoreService } from "../../lib/firestoreService";
-import { useInstituicaoEstrutura } from "../../lib/instituicaoEstruturaService";
+import { useInstituicaoEstrutura, registrarAuditoriaEstrutura } from "../../lib/instituicaoEstruturaService";
 import { DraftModal, SyncIndicator } from "../../components/ui/DraftMemoryUI";
 import {
   PROVINCIAS_DISTRITOS,
@@ -208,6 +208,7 @@ export default function RegistarFuncionarioForm({
   // Multi-tenant: Lista de instituições registadas
   const [instituicoes, setInstituicoes] = useState<any[]>([]);
   const [instituicaoId, setInstituicaoId] = useState<string>(initialData?.instituicaoId || "");
+  const [atribuicaoMenu, setAtribuicaoMenu] = useState<string[]>(initialData?.atribuicaoMenu || []);
   const [instituicaoNome, setInstituicaoNome] = useState<string>(initialData?.instituicaoNome || "");
   const [instituicaoLogo, setInstituicaoLogo] = useState<string>(initialData?.instituicaoLogo || "");
 
@@ -532,7 +533,15 @@ export default function RegistarFuncionarioForm({
       return;
     }
     if (!unidade) {
-      alert("Por favor, selecione o Órgão de Alocação Institucional.");
+      alert("Por favor, selecione o Órgão de Alocação Institucional (RN-003).");
+      return;
+    }
+    if (!direcao) {
+      alert("Por favor, selecione a Direção / Unidade Orgânica de alocação (RN-003, RN-010).");
+      return;
+    }
+    if (!departamento && !sector && !reparticao) {
+      alert("O preenchimento do Departamento / Sector de afetação é obrigatório no cadastro do colaborador (RN-010).");
       return;
     }
 
@@ -616,6 +625,19 @@ export default function RegistarFuncionarioForm({
       };
 
       await onSubmit(finalData);
+
+      // RN-012: Auditoria se houve mudança de sector em relação aos dados anteriores
+      if (initialData?.sector && initialData.sector !== sector) {
+        await registrarAuditoriaEstrutura({
+          acao: "MUDANCA_SECTOR",
+          tipo: "setor",
+          nome: sector || departamento || direcao,
+          nomeAnterior: initialData.sector || initialData.departamento || initialData.direcao,
+          instituicaoId: instituicaoId || initialData.instituicaoId || "",
+          autor: currentUser,
+          detalhes: `Colaborador "${nome}" mudou de sector: de [${initialData.direcao || ""} > ${initialData.departamento || ""} > ${initialData.sector || ""}] para [${direcao} > ${departamento} > ${sector || reparticao}].`,
+        });
+      }
 
       if (currentUser?.id) {
         await firestoreService.drafts.deleteByUserAndForm(currentUser.id, FORM_ID);

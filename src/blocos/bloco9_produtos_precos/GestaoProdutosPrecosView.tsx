@@ -26,6 +26,8 @@ import {
   deduplicateDatabaseProducts,
   getCategoryForRubricaOrNecessidade,
   UnifiedProduct,
+  FUNCOES_UTILIZACAO,
+  inferirFuncaoUtilizacao,
 } from "../../lib/unifiedManager";
 import {
   RUBRICAS,
@@ -53,8 +55,15 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
   // Filters - Inicialmente vazios para iniciar limpo
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategoria, setFilterCategoria] = useState("TODAS");
+  const [filterFuncao, setFilterFuncao] = useState("TODAS");
   const [filterRubrica, setFilterRubrica] = useState("");
   const [filterNecessidade, setFilterNecessidade] = useState("");
+  const [showAllProducts, setShowAllProducts] = useState(false);
+
+  // Destaque de produto recém adicionado ou com preço atualizado
+  const [highlightedProductName, setHighlightedProductName] = useState<string | null>(null);
+  const [quickPriceValues, setQuickPriceValues] = useState<Record<string, number>>({});
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState<string | null>(null);
 
   // Modals & Forms
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
@@ -66,6 +75,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
     especificacao: "",
     rubrica: "",
     necessidade: "",
+    funcaoUtilizacao: "",
     quantidade: 1,
   });
 
@@ -188,23 +198,32 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
     return groups;
   }, [products, filterRubrica, availableFilterNecessidades, searchQuery]);
 
-  // Verificar se a consulta tem Rúbrica e Necessidade selecionadas
+  // Verificar estados de seleção
+  const isSearchActive = Boolean(searchQuery.trim());
+  const isFuncaoActive = Boolean(filterFuncao && filterFuncao !== "TODAS");
   const isSelectionComplete = Boolean(filterRubrica && filterNecessidade);
+  const isViewActive = isSelectionComplete || isSearchActive || isFuncaoActive || showAllProducts;
 
-  // Main Filtering Logic - só retorna produtos se Rúbrica e Necessidade estiverem indicadas
+  // Main Filtering Logic - enquadra por Função/Utilização, Rúbrica, Necessidade e Busca
   const filteredProducts = useMemo(() => {
-    if (!isSelectionComplete) {
+    if (!isViewActive) {
       return [];
     }
 
     return products.filter((p) => {
-      // 1. Categoria
+      // 1. Função / Utilização (Enquadramento oficial segundo função/utilização)
+      const pFuncao = p.funcaoUtilizacao || inferirFuncaoUtilizacao(p.nome, p.rubrica, p.necessidade);
+      if (filterFuncao !== "TODAS" && pFuncao !== filterFuncao) {
+        return false;
+      }
+
+      // 2. Categoria
       const pCat = p.categoria || getCategoryForRubricaOrNecessidade(p.rubrica, p.necessidade);
       if (filterCategoria !== "TODAS" && pCat !== filterCategoria) {
         return false;
       }
 
-      // 2. Rubrica
+      // 3. Rubrica (se indicada)
       if (
         filterRubrica &&
         (p.rubrica || "").trim().toLowerCase() !== filterRubrica.trim().toLowerCase()
@@ -212,7 +231,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
         return false;
       }
 
-      // 3. Necessidade
+      // 4. Necessidade (se indicada)
       if (filterNecessidade) {
         const pCodeNec = formatNecessidadeWithCode(p.necessidade || "", p.rubrica);
         const cleanFilterNec = filterNecessidade.replace(/^\d+\s*[-_.]?\s*/, "").trim().toLowerCase();
@@ -224,7 +243,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
         if (!matchNec) return false;
       }
 
-      // 4. Search Query
+      // 5. Search Query (Busca em todos os campos sem travas)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const pCodeNec = formatNecessidadeWithCode(p.necessidade || "", p.rubrica);
@@ -233,6 +252,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
           (p.especificacao || "").toLowerCase().includes(q) ||
           (p.unidade || "").toLowerCase().includes(q) ||
           (p.rubrica || "").toLowerCase().includes(q) ||
+          (p.funcaoUtilizacao || "").toLowerCase().includes(q) ||
           pCat.toLowerCase().includes(q) ||
           pCodeNec.toLowerCase().includes(q);
         if (!match) return false;
@@ -240,7 +260,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
 
       return true;
     });
-  }, [products, isSelectionComplete, filterCategoria, filterRubrica, filterNecessidade, searchQuery]);
+  }, [products, isViewActive, filterFuncao, filterCategoria, filterRubrica, filterNecessidade, searchQuery]);
 
   const handleDeleteProduct = async (nome: string) => {
     if (window.confirm(`Tem certeza que deseja excluir permanentemente o produto "${nome}" da base de dados?`)) {
@@ -281,6 +301,8 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
         await deleteUnifiedProduct(editingProduct._originalNome);
       }
       const cat = getCategoryForRubricaOrNecessidade(editingProduct.rubrica, editingProduct.necessidade);
+      const funcao = editingProduct.funcaoUtilizacao || inferirFuncaoUtilizacao(editingProduct.nome, editingProduct.rubrica, editingProduct.necessidade);
+      
       await saveUnifiedProduct({
         nome: editingProduct.nome,
         preco: Number(editingProduct.preco) || 0,
@@ -289,21 +311,66 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
         rubrica: editingProduct.rubrica,
         necessidade: editingProduct.necessidade,
         categoria: cat,
+        funcaoUtilizacao: funcao,
+        originalNome: editingProduct._originalNome,
       });
+
       await refreshProducts();
-      setSuccessMsg(`Produto "${editingProduct.nome}" atualizado e substituído com sucesso na base de dados!`);
+      setHighlightedProductName(editingProduct.nome);
+      setSuccessMsg(
+        `Preço de "${editingProduct.nome}" atualizado para ${Number(editingProduct.preco).toLocaleString("pt-MZ", { minimumFractionDigits: 2 })} MZN! Aplicado e atualizado com sucesso em todo o sistema e nos planos já planificados.`
+      );
       setEditingProduct(null);
-      setTimeout(() => setSuccessMsg(null), 4000);
+      setTimeout(() => setSuccessMsg(null), 6000);
     } catch (err: any) {
       console.error("Erro ao salvar produto:", err);
       setModalError("Ocorreu um erro ao guardar na base de dados: " + (err?.message || String(err)));
     }
   };
 
+  // Atualização rápida de preço diretamente na linha da planilha
+  const handleQuickPriceSave = async (product: UnifiedProduct) => {
+    const rawVal = quickPriceValues[product.nome];
+    if (rawVal === undefined || isNaN(rawVal) || rawVal < 0) return;
+
+    setIsUpdatingPrice(product.nome);
+    try {
+      const cat = product.categoria || getCategoryForRubricaOrNecessidade(product.rubrica, product.necessidade);
+      const funcao = product.funcaoUtilizacao || inferirFuncaoUtilizacao(product.nome, product.rubrica, product.necessidade);
+      await saveUnifiedProduct({
+        ...product,
+        preco: Number(rawVal),
+        categoria: cat,
+        funcaoUtilizacao: funcao,
+      });
+      await refreshProducts();
+      setHighlightedProductName(product.nome);
+      setSuccessMsg(
+        `Preço de "${product.nome}" atualizado para ${Number(rawVal).toLocaleString("pt-MZ", { minimumFractionDigits: 2 })} MZN! Sincronizado e aplicado em todos os planos já planificados.`
+      );
+      setTimeout(() => setSuccessMsg(null), 6000);
+    } catch (err) {
+      console.error("Erro na atualização rápida de preço:", err);
+    } finally {
+      setIsUpdatingPrice(null);
+    }
+  };
+
   const handleAddNew = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
-    if (!newProduct.nome || !newProduct.nome.trim()) return;
+    if (!newProduct.nome || !newProduct.nome.trim()) {
+      setModalError("O preenchimento do Nome do Produto é obrigatório.");
+      return;
+    }
+    if (!newProduct.rubrica || !newProduct.rubrica.trim()) {
+      setModalError("Selecione a Rúbrica Orçamental correspondente.");
+      return;
+    }
+    if (!newProduct.necessidade || !newProduct.necessidade.trim()) {
+      setModalError("Selecione ou indique a Necessidade Pretendida.");
+      return;
+    }
     if (!newProduct.especificacao || !newProduct.especificacao.trim()) {
       setModalError("O preenchimento das especificações técnicas é obrigatório para cada produto inserido.");
       return;
@@ -322,6 +389,8 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
 
     try {
       const cat = getCategoryForRubricaOrNecessidade(newProduct.rubrica, newProduct.necessidade);
+      const funcao = newProduct.funcaoUtilizacao || inferirFuncaoUtilizacao(newProduct.nome, newProduct.rubrica, newProduct.necessidade);
+      
       await saveUnifiedProduct({
         nome: newProduct.nome.trim(),
         preco: Number(newProduct.preco) || 0,
@@ -330,9 +399,22 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
         rubrica: newProduct.rubrica,
         necessidade: newProduct.necessidade,
         categoria: cat,
+        funcaoUtilizacao: funcao,
       });
+
       await refreshProducts();
-      setSuccessMsg(`Novo produto "${newProduct.nome}" registado de forma única na base de dados!`);
+
+      // Posiciona automaticamente no seu devido lugar para visibilidade imediata
+      const formattedNec = formatNecessidadeWithCode(newProduct.necessidade, newProduct.rubrica);
+      setFilterRubrica(newProduct.rubrica);
+      setFilterNecessidade(formattedNec);
+      setFilterFuncao("TODAS");
+      setSearchQuery("");
+      setHighlightedProductName(newProduct.nome.trim());
+
+      setSuccessMsg(
+        `Produto "${newProduct.nome.trim()}" registado com sucesso! Enquadrado em "${funcao}" e visível automaticamente no seu devido lugar (${newProduct.rubrica} > ${formattedNec}).`
+      );
       setIsAddingNew(false);
       setNewProduct({
         nome: "",
@@ -341,9 +423,10 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
         especificacao: "",
         rubrica: "",
         necessidade: "",
+        funcaoUtilizacao: "",
         quantidade: 1,
       });
-      setTimeout(() => setSuccessMsg(null), 4000);
+      setTimeout(() => setSuccessMsg(null), 6000);
     } catch (err: any) {
       console.error("Erro ao registar novo produto:", err);
       setModalError("Ocorreu um erro ao registar na base de dados: " + (err?.message || String(err)));
@@ -398,46 +481,46 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
       )}
 
       {/* Metrics Summary Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-50/50 p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-          <span className="text-[10px] font-black text-gray-400  tracking-widest">Rúbrica Selecionada</span>
-          <span className="text-sm font-black text-blue-900 mt-1 truncate" title={filterRubrica || "Não selecionada"}>
-            {filterRubrica ? filterRubrica : "⚪ Não selecionada"}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+        <div className="bg-slate-50/50 p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+          <span className="text-[10px] font-black text-gray-400  tracking-widest">Rúbrica</span>
+          <span className="text-xs font-black text-blue-900 mt-1 truncate" title={filterRubrica || "Todas / Não filtrada"}>
+            {filterRubrica ? filterRubrica : "⚪ Todas as Rúbricas"}
           </span>
         </div>
-        <div className="bg-slate-50/50 p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-          <span className="text-[10px] font-black text-gray-400  tracking-widest">Necessidade Pretendida</span>
-          <span className="text-sm font-black text-indigo-900 mt-1 truncate" title={filterNecessidade || "Não selecionada"}>
-            {filterNecessidade ? filterNecessidade : "⚪ Não selecionada"}
+        <div className="bg-slate-50/50 p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+          <span className="text-[10px] font-black text-gray-400  tracking-widest">Necessidade</span>
+          <span className="text-xs font-black text-indigo-900 mt-1 truncate" title={filterNecessidade || "Todas / Não filtrada"}>
+            {filterNecessidade ? filterNecessidade : "⚪ Todas as Necessidades"}
           </span>
         </div>
-        <div className="bg-slate-50/50 p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-          <span className="text-[10px] font-black text-gray-400  tracking-widest">Produtos na Necessidade</span>
-          <span className="text-2xl font-black text-blue-900 mt-1 font-mono">
-            {isSelectionComplete ? filteredProducts.length : "—"}
+        <div className="bg-slate-50/50 p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+          <span className="text-[10px] font-black text-gray-400  tracking-widest">Função / Utilização</span>
+          <span className="text-xs font-black text-emerald-800 mt-1 truncate" title={filterFuncao !== "TODAS" ? filterFuncao : "Todas as Funções"}>
+            {filterFuncao !== "TODAS" ? filterFuncao : "⚪ Todas as Funções"}
           </span>
         </div>
-        <div className="bg-slate-50/50 p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+        <div className="bg-slate-50/50 p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+          <span className="text-[10px] font-black text-gray-400  tracking-widest">Produtos Filtrados</span>
+          <span className="text-xl font-black text-blue-900 mt-1 font-mono">
+            {isViewActive ? filteredProducts.length : products.length}
+          </span>
+        </div>
+        <div className="bg-slate-50/50 p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
           <span className="text-[10px] font-black text-gray-400  tracking-widest">Estado da Consulta</span>
           <span
-            className={`text-xs font-black px-3 py-1 rounded-full w-fit mt-2 border inline-flex items-center gap-1.5 ${
-              isSelectionComplete
+            className={`text-[11px] font-black px-2.5 py-1 rounded-full w-fit mt-1 border inline-flex items-center gap-1.5 ${
+              isViewActive
                 ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                : filterRubrica
-                ? "text-amber-700 bg-amber-50 border-amber-200"
                 : "text-slate-600 bg-slate-50 border-slate-200"
             }`}
           >
-            {isSelectionComplete ? (
+            {isViewActive ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-600" /> Consulta Ativa
               </>
-            ) : filterRubrica ? (
-              <>
-                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600" /> Aguardando Necessidade
-              </>
             ) : (
-              "⚪ Aguardando Filtros"
+              "⚪ Modo Seleção"
             )}
           </span>
         </div>
@@ -472,52 +555,64 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {isSelectionComplete ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAllProducts(true);
+                setFilterRubrica("");
+                setFilterNecessidade("");
+                setFilterFuncao("TODAS");
+                setSearchQuery("");
+                setFilterCategoria("TODAS");
+              }}
+              className="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 font-black rounded-xl text-xs transition-all border border-blue-200 flex items-center gap-1.5"
+            >
+              <span>🌐 Explorar Todo o Catálogo</span>
+            </button>
+
+            {isViewActive && (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-500">
-                  {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
+                  {filteredProducts.length} {filteredProducts.length === 1 ? "produto" : "produtos"}
                 </span>
                 <button
                   type="button"
                   onClick={() => {
+                    setFilterRubrica("");
                     setFilterNecessidade("");
+                    setFilterFuncao("TODAS");
                     setSearchQuery("");
                     setFilterCategoria("TODAS");
+                    setShowAllProducts(false);
+                    setHighlightedProductName(null);
                   }}
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all flex items-center gap-1"
                 >
-                  <X className="w-3.5 h-3.5" /> Trocar Necessidade
+                  <X className="w-3.5 h-3.5" /> Limpar Filtros
                 </button>
               </div>
-            ) : (
-              <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-xl">
-                ⚠️ Indique a Rúbrica e a Necessidade para consultar
-              </span>
             )}
           </div>
         </div>
 
-        {/* Filters Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
-          {/* 1. Rubrica (Obrigatória) */}
+        {/* Filters Bar com Enquadramento por Função/Utilização */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
+          {/* 1. Rubrica */}
           <div>
             <label className="block text-[10px] font-black text-blue-900  tracking-widest mb-1 flex items-center gap-1">
-              <span className="text-rose-600 font-black">*</span> 1. Rúbrica Orçamental
+              1. Rúbrica Orçamental
             </label>
             <select
               value={filterRubrica}
               onChange={(e) => {
                 setFilterRubrica(e.target.value);
                 setFilterNecessidade("");
+                setShowAllProducts(false);
               }}
-              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-xs font-bold text-gray-800 outline-none transition-all ${
-                !filterRubrica
-                  ? "border-blue-300 ring-2 ring-blue-100 focus:border-blue-600"
-                  : "border-gray-200 focus:border-blue-600"
-              }`}
+              className="w-full px-3 py-2.5 bg-white border border-gray-200 focus:border-blue-600 rounded-xl text-xs font-bold text-gray-800 outline-none transition-all"
             >
-              <option value="">-- Selecione a Rúbrica Orçamental --</option>
+              <option value="">-- Todas as Rúbricas --</option>
               {[...RUBRICAS].sort((a, b) => a.localeCompare(b, "pt-MZ")).map((r, i) => (
                 <option key={i} value={r}>
                   {r}
@@ -526,61 +621,73 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
             </select>
           </div>
 
-          {/* 2. Necessidade (Obrigatória) */}
+          {/* 2. Necessidade */}
           <div>
             <label className="block text-[10px] font-black text-blue-900  tracking-widest mb-1 flex items-center gap-1">
-              <span className="text-rose-600 font-black">*</span> 2. Necessidade Pretendida
+              2. Necessidade Pretendida
             </label>
             <select
               value={filterNecessidade}
-              onChange={(e) => setFilterNecessidade(e.target.value)}
-              disabled={!filterRubrica}
-              className={`w-full px-4 py-2.5 bg-white border rounded-xl text-xs font-bold text-gray-800 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed ${
-                filterRubrica && !filterNecessidade
-                  ? "border-indigo-400 ring-2 ring-indigo-100 focus:border-indigo-600"
-                  : "border-gray-200 focus:border-blue-600"
-              }`}
+              onChange={(e) => {
+                setFilterNecessidade(e.target.value);
+                setShowAllProducts(false);
+              }}
+              className="w-full px-3 py-2.5 bg-white border border-gray-200 focus:border-blue-600 rounded-xl text-xs font-bold text-gray-800 outline-none transition-all"
             >
-              {!filterRubrica ? (
-                <option value="">-- Selecione primeiro a Rúbrica --</option>
-              ) : (
-                <>
-                  <option value="">-- Selecione a Necessidade Pretendida --</option>
-                  {availableFilterNecessidades.map((nec, i) => (
-                    <option key={i} value={nec}>
-                      {nec}
-                    </option>
-                  ))}
-                </>
-              )}
+              <option value="">-- Todas as Necessidades --</option>
+              {availableFilterNecessidades.map((nec, i) => (
+                <option key={i} value={nec}>
+                  {nec}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* 3. Search */}
+          {/* 3. Função / Utilização (Enquadramento Oficial) */}
           <div>
             <label className="block text-[10px] font-black text-blue-900  tracking-widest mb-1 flex items-center gap-1">
-              <Search className="w-3 h-3" /> 3. Pesquisar Produto
+              🏷️ 3. Função / Utilização
+            </label>
+            <select
+              value={filterFuncao}
+              onChange={(e) => {
+                setFilterFuncao(e.target.value);
+                setShowAllProducts(false);
+              }}
+              className="w-full px-3 py-2.5 bg-white border border-emerald-300 focus:border-emerald-600 rounded-xl text-xs font-bold text-gray-800 outline-none transition-all"
+            >
+              <option value="TODAS">-- Todas as Funções/Utilizações --</option>
+              {FUNCOES_UTILIZACAO.map((f, i) => (
+                <option key={i} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Search - SEMPRE HABILITADO para consulta universal */}
+          <div>
+            <label className="block text-[10px] font-black text-blue-900  tracking-widest mb-1 flex items-center gap-1">
+              <Search className="w-3 h-3 text-blue-600" /> 4. Pesquisar Produto
             </label>
             <input
               type="text"
-              placeholder={isSelectionComplete ? "Filtrar por nome, especificação..." : "Disponível após selecionar necessidade"}
+              placeholder="Nome, especificação, código..."
               value={searchQuery}
-              disabled={!isSelectionComplete}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 outline-none focus:border-blue-600 transition-all disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 outline-none focus:border-blue-600 transition-all"
             />
           </div>
 
-          {/* 4. Categoria */}
+          {/* 5. Categoria */}
           <div>
             <label className="block text-[10px] font-black text-blue-900  tracking-widest mb-1 flex items-center gap-1">
-              <Filter className="w-3 h-3" /> 4. Categoria
+              <Filter className="w-3 h-3" /> 5. Categoria
             </label>
             <select
               value={filterCategoria}
-              disabled={!isSelectionComplete}
               onChange={(e) => setFilterCategoria(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 outline-none focus:border-blue-600 transition-all disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 outline-none focus:border-blue-600 transition-all"
             >
               {CATEGORIAS_LIST.map((cat, i) => (
                 <option key={i} value={cat}>
@@ -597,7 +704,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
             <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
             <p className="text-xs font-bold text-gray-500">A carregar produtos do sistema...</p>
           </div>
-        ) : !filterRubrica ? (
+        ) : !isViewActive ? (
           /* ESTADO INICIAL 1: NENHUMA RÚBRICA SELECIONADA */
           <div className="py-12 px-6 text-center bg-gradient-to-b from-slate-50 to-white rounded-3xl border-2 border-dashed border-slate-200 space-y-6">
             <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner">

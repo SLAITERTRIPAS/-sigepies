@@ -298,7 +298,6 @@ const ViewRendererInner: React.FC<ViewRendererProps> = ({
               </p>
             </div>
           </main>
-          <Footer className="flex-none" />
         </div>
       </>
     );

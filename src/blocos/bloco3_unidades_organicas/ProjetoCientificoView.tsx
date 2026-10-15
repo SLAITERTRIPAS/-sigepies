@@ -499,11 +499,6 @@ export default function ProjetoCientificoView({ onBack }: ProjetoCientificoViewP
           </div>
         </main>
       </div>
-
-      {/* Footer Fixo */}
-      <footer className="p-3 bg-white border-t border-slate-200 text-center text-[11px] font-bold text-slate-500 print:hidden">
-        Documentação Oficial do Sistema Integrado de Gestão de Processos (SIGEP-ISPS) © 2026 — Songo, Moçambique
-      </footer>
     </div>
   );
 }

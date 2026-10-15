@@ -110,6 +110,7 @@ const PlanoWorkflowView = lazy(() => import("../bloco5_sistema/PlanoWorkflowView
 const UniversalRegistrationPicker = lazy(() => import("../bloco5_sistema/UniversalRegistrationPicker"));
 const AcaoOrcamentalView = lazy(() => import("../../components/AcaoOrcamentalView"));
 import { firestoreService } from "../../lib/firestoreService";
+import { canViewDetailedDashboard } from "../../lib/auth";
 import VisaoGeralCards from "../../components/VisaoGeralCards";
 import PersonalizedOverview from "../../components/dashboard/PersonalizedOverview";
 import DICOSSEROverview from "./DICOSSEROverview";
@@ -743,38 +744,20 @@ export default function DirectorDashboard({
       upperUserRole.includes("DIRETOR DE CURSOS") ||
       upperUserRole.includes("DIRECTOR DE CURSOS");
 
-    const isCourseOrAcademicTitle =
-      upperTitle.includes("CURSO") ||
-      upperTitle.includes("ENGENHARIA") ||
-      upperTitle.includes("DEPARTAMENTO DE ENGENHARIA") ||
-      upperTitle.includes("DEPARTAMENTO DE PESQUISA") ||
-      upperTitle.includes("DIVISÃO DE ENGENHARIA") ||
-      upperTitle.includes("DIVISAO DE ENGENHARIA") ||
-      upperTitle.includes("DEE") ||
-      upperTitle.includes("DECC") ||
-      upperTitle.includes("DECM") ||
-      upperTitle.includes("DPE") ||
-      upperTitle.includes("ELETROTÉCNICA") ||
-      upperTitle.includes("ELETROTECNICA") ||
-      upperTitle.includes("ELETRÓNICA") ||
-      upperTitle.includes("ELETRONICA") ||
-      upperTitle.includes("TELECOMUNICAÇÕES") ||
-      upperTitle.includes("TELECOMUNICACOES") ||
-      upperTitle.includes("CONSTRUÇÃO CIVIL") ||
-      upperTitle.includes("CONSTRUCO CIVIL") ||
-      upperTitle.includes("CONSTRUÇÃO MECÂNICA") ||
-      upperTitle.includes("CONSTRUCAO MECANICA") ||
-      upperTitle.includes("HIDRÁULICA") ||
-      upperTitle.includes("HIDRAULICA") ||
-      upperTitle.includes("TERMOTÉCNICA") ||
-      upperTitle.includes("TERMOTECNICA") ||
-      upperTitle.includes("ENERGIAS RENOVÁVEIS") ||
-      upperTitle.includes("ENERGIAS RENOVAVEIS") ||
-      upperTitle.includes("DIRETOR DO CURSO") ||
-      upperTitle.includes("DIRETOR DE CURSO") ||
-      upperTitle.includes("DIRECTOR DO CURSO") ||
-      upperTitle.includes("DIRECTOR DE CURSO") ||
-      upperTitle.includes("LICENCIATURA");
+    const isDiretorAdjuntoPedagogico = 
+      upperUserRole.includes("DIRETOR ADJUNTO PEDAGÓGICO") ||
+      upperUserRole.includes("DIRECTOR ADJUNTO PEDAGÓGICO") ||
+      upperTitle.includes("DIRETOR ADJUNTO PEDAGÓGICO");
+
+    const isDiretorDivisaoEngenharia = 
+      upperUserRole.includes("DIRETOR DA DIVISÃO DE ENGENHARIA") ||
+      upperUserRole.includes("DIRECTOR DA DIVISÃO DE ENGENHARIA") ||
+      upperTitle.includes("DIRETOR DA DIVISÃO DE ENGENHARIA") ||
+      upperUserRole.includes("DIRETOR DE DIVISÃO DE ENGENHARIA");
+
+    const isChefeDivisaoEngenharia =
+      upperUserRole.includes("CHEFE DA DIVISÃO DE ENGENHARIA") ||
+      upperUserRole.includes("CHEFE DE DIVISÃO DE ENGENHARIA");
 
     const isHeadGeneralDisciplines =
       upperTitle.includes("DISCIPLINAS GERAIS") ||
@@ -783,7 +766,7 @@ export default function DirectorDashboard({
       upperUserRole.includes("DDG");
 
     const isAuthorizedAcademic = 
-      !isRHUser && (isUserCourseDirector || isCourseOrAcademicTitle || isHeadGeneralDisciplines);
+      !isRHUser && (isUserCourseDirector || isDiretorAdjuntoPedagogico || isDiretorDivisaoEngenharia || isChefeDivisaoEngenharia || isHeadGeneralDisciplines);
 
     if (isAuthorizedAcademic) {
       if (!items.some((i) => i.title === "Gestão Académica")) {
@@ -1797,164 +1780,168 @@ export default function DirectorDashboard({
           <VisaoGeralCards onNavigate={navigateTo} user={user} title={title} />
           
           {/* Seção Resumo Diretor Geral (Colaboradores, Corpo Discente, Plano de Atividades) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-            {/* 1. Resumo dos Colaboradores */}
-            <div className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#0f172a] space-y-4">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
-                  <Users size={20} />
+          {canViewDetailedDashboard(user) && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+              {/* 1. Resumo dos Colaboradores */}
+              <button onClick={() => alert("Detalhes: Resumo dos Colaboradores\n\nTotal detalhado de colaboradores por categoria, nível académico, área de formação e cargos de chefia.")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#0f172a] space-y-4 text-left hover:scale-[1.01] transition-transform">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
+                    <Users size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-sm tracking-tight">Resumo dos Colaboradores</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {colaboradores.length} colaboradores</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-sm tracking-tight">Resumo dos Colaboradores</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {colaboradores.length} colaboradores</p>
+                
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Nível Académico:</span>
+                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
+                      {colabNivelAcademico.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
+                          <span className="text-slate-700 truncate">{item.nivel}</span>
+                          <span className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Área de Formação:</span>
+                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
+                      {colabAreaFormacao.slice(0, 5).map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
+                          <span className="text-slate-700 truncate">{item.area}</span>
+                          <span className="bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex justify-between items-center font-black">
+                    <span className="text-slate-600 text-[11px]">Com Cargos de Chefia:</span>
+                    <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl">{colabChefia.comChefia} chefias</span>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Nível Académico:</span>
-                  <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-                    {colabNivelAcademico.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                        <span className="text-slate-700 truncate">{item.nivel}</span>
-                        <span className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                      </div>
-                    ))}
+              </button>
+
+              {/* 2. Corpo Discente */}
+              <button onClick={() => alert("Detalhes: Corpo Discente\n\nDistribuição detalhada de estudantes por curso, naturalidade e ano/nível académico.")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#1e3a8a] space-y-4 text-left hover:scale-[1.01] transition-transform">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="p-2 bg-indigo-100 text-indigo-900 rounded-xl">
+                    <GraduationCap size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-sm tracking-tight">Corpo Discente</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {estudantesDb.length} estudantes</p>
                   </div>
                 </div>
 
-                <div>
-                  <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Área de Formação:</span>
-                  <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-                    {colabAreaFormacao.slice(0, 5).map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                        <span className="text-slate-700 truncate">{item.area}</span>
-                        <span className="bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                      </div>
-                    ))}
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Curso:</span>
+                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
+                      {discenteCurso.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
+                          <span className="text-slate-700 truncate">{item.curso}</span>
+                          <span className="bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Naturalidade (Origem):</span>
+                    <div className="max-h-24 overflow-y-auto space-y-1 pr-1">
+                      {discenteNaturalidade.slice(0, 4).map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
+                          <span className="text-slate-700 truncate">{item.naturalidade}</span>
+                          <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Nível / Ano:</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {discenteNivel.map((item, idx) => (
+                        <span key={idx} className="bg-blue-50 text-blue-900 border border-blue-200 px-2.5 py-1 rounded-xl font-black text-[10px]">
+                          {item.nivel}: {item.total}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* 3. Plano de Atividade */}
+              <button onClick={() => alert("Detalhes: Plano de Atividades\n\nExecução detalhada do plano, incluindo atividades concluídas, por executar, e análise orçamental detalhada.")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#f59e0b] space-y-4 text-left hover:scale-[1.01] transition-transform">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="p-2 bg-amber-100 text-amber-900 rounded-xl">
+                    <Calendar size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-sm tracking-tight">Plano de Atividades</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {planoAtividadesStats.total} atividades</p>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex justify-between items-center font-black">
-                  <span className="text-slate-600 text-[11px]">Com Cargos de Chefia:</span>
-                  <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl">{colabChefia.comChefia} chefias</span>
-                </div>
-              </div>
-            </div>
+                <div className="space-y-3 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
+                      <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-wider">Já Executadas</span>
+                      <span className="text-xl font-black text-emerald-900">{planoAtividadesStats.executadas}</span>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
+                      <span className="block text-[9px] font-black text-amber-600 uppercase tracking-wider">Por Executar</span>
+                      <span className="text-xl font-black text-amber-900">{planoAtividadesStats.porExecutar}</span>
+                    </div>
+                  </div>
 
-            {/* 2. Corpo Discente */}
-            <div className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#1e3a8a] space-y-4">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                <div className="p-2 bg-indigo-100 text-indigo-900 rounded-xl">
-                  <GraduationCap size={20} />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-sm tracking-tight">Corpo Discente</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {estudantesDb.length} estudantes</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Curso:</span>
-                  <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-                    {discenteCurso.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                        <span className="text-slate-700 truncate">{item.curso}</span>
-                        <span className="bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                      </div>
-                    ))}
+                  <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-2">
+                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Análise por Orçamento</span>
+                    <div className="flex justify-between font-bold text-slate-800">
+                      <span>Orçamento Total:</span>
+                      <span>{planoAtividadesStats.orcamentoTotal.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-emerald-700 text-[11px]">
+                      <span>Executado:</span>
+                      <span>{planoAtividadesStats.orcamentoExecutadas.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-amber-700 text-[11px]">
+                      <span>Por Executar:</span>
+                      <span>{planoAtividadesStats.orcamentoPorExecutar.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
+                    </div>
                   </div>
                 </div>
-
-                <div>
-                  <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Naturalidade (Origem):</span>
-                  <div className="max-h-24 overflow-y-auto space-y-1 pr-1">
-                    {discenteNaturalidade.slice(0, 4).map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                        <span className="text-slate-700 truncate">{item.naturalidade}</span>
-                        <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Nível / Ano:</span>
-                  <div className="flex gap-2 flex-wrap">
-                    {discenteNivel.map((item, idx) => (
-                      <span key={idx} className="bg-blue-50 text-blue-900 border border-blue-200 px-2.5 py-1 rounded-xl font-black text-[10px]">
-                        {item.nivel}: {item.total}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Plano de Atividade */}
-            <div className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#f59e0b] space-y-4">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                <div className="p-2 bg-amber-100 text-amber-900 rounded-xl">
-                  <Calendar size={20} />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-sm tracking-tight">Plano de Atividades</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {planoAtividadesStats.total} atividades</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
-                    <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-wider">Já Executadas</span>
-                    <span className="text-xl font-black text-emerald-900">{planoAtividadesStats.executadas}</span>
-                  </div>
-                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
-                    <span className="block text-[9px] font-black text-amber-600 uppercase tracking-wider">Por Executar</span>
-                    <span className="text-xl font-black text-amber-900">{planoAtividadesStats.porExecutar}</span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-2">
-                  <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Análise por Orçamento</span>
-                  <div className="flex justify-between font-bold text-slate-800">
-                    <span>Orçamento Total:</span>
-                    <span>{planoAtividadesStats.orcamentoTotal.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-emerald-700 text-[11px]">
-                    <span>Executado:</span>
-                    <span>{planoAtividadesStats.orcamentoExecutadas.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-amber-700 text-[11px]">
-                    <span>Por Executar:</span>
-                    <span>{planoAtividadesStats.orcamentoPorExecutar.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <BarChart2 className="text-blue-900" size={18} />
-                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Análise Estatística em Tempo Real</h2>
-              </div>
-              <button
-                onClick={handleGeneratePDFReport}
-                className="flex items-center gap-2 bg-blue-900 text-white px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-800 transition-all shadow-[4px_4px_0px_0px_#1e3a8a] active:translate-x-1 active:translate-y-1 active:shadow-none shrink-0"
-              >
-                <FileText size={16} />
-                Gerar Relatório PDF Mensal
               </button>
             </div>
-            <InstitutionalCharts 
-              processos={processos} 
-              colaboradores={colaboradores} 
-              serviceRequests={serviceRequests} 
-            />
-          </div>
+          )}
+
+          {canViewDetailedDashboard(user) && (
+            <div className="w-full">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <BarChart2 className="text-blue-900" size={18} />
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Análise Estatística em Tempo Real</h2>
+                </div>
+                <button
+                  onClick={handleGeneratePDFReport}
+                  className="flex items-center gap-2 bg-blue-900 text-white px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-800 transition-all shadow-[4px_4px_0px_0px_#1e3a8a] active:translate-x-1 active:translate-y-1 active:shadow-none shrink-0"
+                >
+                  <FileText size={16} />
+                  Gerar Relatório PDF Mensal
+                </button>
+              </div>
+              <InstitutionalCharts 
+                processos={processos} 
+                colaboradores={colaboradores} 
+                serviceRequests={serviceRequests} 
+              />
+            </div>
+          )}
         </div>
       );
     }
