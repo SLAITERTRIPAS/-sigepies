@@ -142,6 +142,9 @@ export default function GestaoExpedienteHistoricoView({
   const [guiaMeios, setGuiaMeios] = useState("");
   const [activeMenuItem, setActiveMenuItem] = useState(initialTab || "Histórico de Documentos");
   const [actionSuccessMessage, setActionSuccessMessage] = useState("");
+  const [showRastreioModal, setShowRastreioModal] = useState(false);
+  const [selectedExpediente, setSelectedExpediente] = useState<Expediente | null>(null);
+
 
   useEffect(() => {
     if (initialTab) {
@@ -1575,6 +1578,7 @@ Data de Emissão: ${new Date().toLocaleString("pt-MZ")}
                       <th className="py-4 px-6 w-[22%]">Encaminhamento</th>
                       <th className="py-4 px-6 w-[18%] text-center">Status no Repositório</th>
                       <th className="py-4 px-6 w-[10%] text-center">Ação</th>
+                      <th className="py-4 px-6 w-[10%] text-center">Rastreio</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/40">

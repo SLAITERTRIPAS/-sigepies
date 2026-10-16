@@ -861,6 +861,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
                       rubrica: filterRubrica,
                       necessidade: filterNecessidade,
                       quantidade: 1,
+                      funcaoUtilizacao: "",
                     });
                     setIsAddingNew(true);
                   }}
@@ -899,6 +900,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
                         rubrica: filterRubrica,
                         necessidade: filterNecessidade,
                         quantidade: 1,
+                        funcaoUtilizacao: "",
                       });
                       setIsAddingNew(true);
                     }}
@@ -1099,6 +1101,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
                               rubrica: filterRubrica,
                               necessidade: nec,
                               quantidade: 1,
+                              funcaoUtilizacao: "",
                             });
                             setIsAddingNew(true);
                           }}
@@ -1127,6 +1130,7 @@ export default function GestaoProdutosPrecosView({ isAddingModeOnStart = false }
                               rubrica: filterRubrica,
                               necessidade: nec,
                               quantidade: 1,
+                              funcaoUtilizacao: "",
                             });
                             setIsAddingNew(true);
                           }}

@@ -25,7 +25,7 @@ import { firestoreService } from "../../lib/firestoreService";
 import { optimizeImageForFirestore } from "../../lib/imageUtils";
 import { hasChefiaPosition, generateCollaboratorId, safeJSONParse } from "../../lib/utils";
 import { DEPARTAMENTOS, NIVEIS_ACADEMICOS } from "../../constants/formOptions";
-import { useInstituicaoEstrutura, registrarAuditoriaEstrutura } from "../../lib/instituicaoEstruturaService";
+import { useInstituicaoEstrutura, registrarAuditoriaEstrutura, validarColaboradorVinculadoEstrutura, getActiveInstituicaoId } from "../../lib/instituicaoEstruturaService";
 
 interface AtualizarDadosColaboradorModalProps {
   isOpen: boolean;
@@ -208,6 +208,29 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
       return;
     }
 
+    const effectiveInstId = userInstId || getActiveInstituicaoId();
+    // Regra Consolidada do Sistema RN-024.5: Todo colaborador deve estar vinculado a uma instituição válida
+    if (!effectiveInstId || !effectiveInstId.trim()) {
+      setErrorMessage("Regra Consolidada RN-024.5: O colaborador deve estar vinculado a uma instituição válida. Nenhum utilizador poderá existir sem associação institucional.");
+      return;
+    }
+
+    // Regra Funcional Consolidada: Todo colaborador deve estar vinculado a uma estrutura válida
+    const estruturaCheck = validarColaboradorVinculadoEstrutura(
+      {
+        direcao: formData.direcao,
+        departamento: formData.departamento,
+        reparticao: formData.reparticao,
+        sector: formData.sector,
+      },
+      effectiveInstId
+    );
+
+    if (!estruturaCheck.isValid) {
+      setErrorMessage(`Validação de Estrutura: ${estruturaCheck.error || "Estrutura inválida ou inexistente."}`);
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -229,10 +252,12 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
 
       const nowIso = new Date().toISOString();
 
-      // Objeto consolidado do Colaborador
+      // Objeto consolidado do Colaborador (RN-024.5)
       const updatedColaboradorData: any = {
         ...(matchedColaborador || {}),
         id: colabId,
+        instituicaoId: effectiveInstId,
+        tenantId: effectiveInstId,
         nome: formData.nome.trim(),
         nuit: formData.nuit.trim(),
         numeroBI: formData.numeroBI.trim(),
@@ -365,6 +390,8 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
             telefone: formData.telefone.trim(),
             nuit: formData.nuit.trim(),
             numeroBI: formData.numeroBI.trim(),
+            instituicaoId: effectiveInstId,
+            tenantId: effectiveInstId,
             updatedAt: nowIso,
           });
         } catch (_) {}

@@ -408,7 +408,7 @@ export function syncFormOptionsWithGestaoInstituicoes(instituicaoId?: string) {
         // Atualizar REPARTICOES
         d.departamentos.forEach((dept) => {
           if (dept.reparticoes && dept.reparticoes.length > 0) {
-            REPARTICOES[dept.nome] = dept.reparticoes;
+            REPARTICOES[dept.nome] = dept.reparticoes.map((r: any) => (typeof r === "string" ? r : r.nome || String(r)));
           }
         });
       });

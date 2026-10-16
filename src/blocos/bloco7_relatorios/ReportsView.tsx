@@ -249,6 +249,57 @@ export default function ReportsView({
     }
   };
 
+  const handleGenerateAutoReport = async (level: string) => {
+    setIsLoading(true);
+    try {
+      const activities = await firestoreService.fetchCollection<any>("matrix_activities");
+      
+      // Definição das 20 páginas padrão institucional
+      const sections: ReportSectionData[] = [
+        { title: "1. Capa Institucional", content: "Identificação oficial e hierárquica." },
+        { title: "2. Índice Automático", content: "Estrutura do documento." },
+        { title: "3. Resumo Executivo", content: "Visão geral consolidada da unidade." },
+        { title: "4. Introdução e Objetivos", content: "Âmbito e propósitos do período." },
+        { title: "5. Enquadramento Institucional", content: "Estrutura e contextualização." },
+        { title: "6. Competências e Funções", content: "Atribuições da unidade orgânica." },
+        { title: "7. Execução Física de Atividades", content: "Detalhamento das metas alcançadas." },
+        { title: "8. Gráficos de Execução Física", content: "Análise visual de desempenho." },
+        { title: "9. Execução Financeira", content: "Demonstrativo orçamental consolidado." },
+        { title: "10. Análise por Rúbrica Orçamental", content: "Detalhamento técnico SISTAFE." },
+        { title: "11. Gráficos de Execução Financeira", content: "Evolução do gasto orçamental." },
+        { title: "12. Indicadores de Desempenho (Semáforos)", content: "Avaliação de eficácia." },
+        { title: "13. Análise Comparativa Mensal", content: "Tendências e variações." },
+        { title: "14. Gestão de Expediente e Documentação", content: "Tramitações efetuadas." },
+        { title: "15. Recursos Humanos e Efetivo", content: "Gestão do quadro de pessoal." },
+        { title: "16. Auditoria e Rastreabilidade Financeira", content: "Conformidade e origens." },
+        { title: "17. Constrangimentos e Desafios", content: "Obstáculos identificados." },
+        { title: "18. Recomendações e Plano de Mitigação", content: "Ações corretivas." },
+        { title: "19. Conclusões Gerais", content: "Síntese final do balanço." },
+        { title: "20. Anexos e Evidências", content: "Documentação de suporte." }
+      ];
+
+      const newReport: ReportData = {
+        id: Date.now().toString(),
+        title: `Relatório Institucional Profissional (20 Páginas) - ${new Date().getFullYear()}`,
+        direction: user?.direcao || "Institucional",
+        level: level as any,
+        year: selectedYear,
+        status: "draft",
+        sections: sections,
+      };
+
+      setActiveReport(newReport);
+      setMode("edit-report");
+      onShowAlert("Relatório padrão de 20 páginas gerado com sucesso.");
+    } catch (error) {
+      console.error("Erro ao gerar relatório:", error);
+      onShowAlert("Erro ao gerar relatório.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   const handleSubmitReport = async (report: ReportData) => {
     try {
       let targetLabel = "Nível Superior";

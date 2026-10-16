@@ -198,6 +198,8 @@ export interface Expediente {
   nomeBeneficiario?: string;
   solicitante?: string;
   interessado?: string;
+  historico?: { data: string; setor: string; usuario: string; acao: string; observacoes?: string }[];
+  statusAtual?: string;
   funcionario?: string;
   vistoDigital?: {
     assinadoPor: string;
@@ -529,12 +531,15 @@ export interface PublishedMatrix {
 export interface PeriodoPlanificacao {
   id?: string;
   ano: number;
+  tipoCiclo?: "Planificação" | "Relatórios" | "Geral";
+  modalidade?: "Trimestral" | "Semestral" | "Anual" | "Mensal";
+  tituloCiclo?: string;
   dataInicioPlanificacao: string;
   dataFimPlanificacao: string;
   dataInicioRelatorioSemestral?: string;
   dataFimRelatorioSemestral?: string;
-  status: "aberto" | "fechado";
-  statusRelatorio?: "aberto" | "fechado";
+  status: "aberto" | "fechado" | "prorrogado";
+  statusRelatorio?: "aberto" | "fechado" | "prorrogado";
   definidoPor?: string;
   cargoDefinidor?: string;
   setorDefinidor?: string;
@@ -550,6 +555,38 @@ export interface PeriodoPlanificacao {
   prazoConsolidacaoDPEP?: string;
   prazoParecerTecnico?: string;
   prazoAprovacaoGeral?: string;
+  // Gestão Avançada de Ciclos e Submissão Automática para o DPEP
+  justificativaProrrogacao?: string;
+  justificativaEncerramento?: string;
+  motivoReabertura?: string;
+  dataReabertura?: string;
+  totalRegistosConsolidados?: number;
+  detalhesSubmissaoAutomatica?: {
+    totalAtividades: number;
+    totalPlanos: number;
+    totalRequisicoes: number;
+    timestamp: string;
+    executadoPor: string;
+  };
+  historicoProrrogacoes?: Array<{
+    id: string;
+    data: string;
+    diasAdicionados?: number;
+    novaDataFim: string;
+    motivo: string;
+    autorNome: string;
+    autorCargo?: string;
+  }>;
+  historicoCiclos?: Array<{
+    id: string;
+    ano: number;
+    tipoCiclo: string;
+    dataInicio: string;
+    dataFim: string;
+    status: string;
+    criadoEm: string;
+    encerradoEm?: string;
+  }>;
 }
 
 export interface SystemAlert {

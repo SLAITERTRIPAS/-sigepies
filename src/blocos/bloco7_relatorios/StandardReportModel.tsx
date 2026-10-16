@@ -21,6 +21,13 @@ import { openPrintDocumentWindow } from "../../lib/printUtils";
 import { ReportStudioModal } from "../../components/ReportStudioModal";
 import { InstitutionalHeader } from "../../components/InstitutionalHeader";
 
+const TrafficLight = ({ value }: { value: number }) => (
+  <div className="flex items-center justify-center gap-1.5">
+    <div className={`w-3 h-3 rounded-full ${value < 50 ? 'bg-red-500' : value < 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+    <span className="font-black text-slate-800">{value}%</span>
+  </div>
+);
+
 export interface TechnicalActivityItem {
   id: string;
   nome: string;
@@ -118,6 +125,14 @@ export default function StandardReportModel({
 }: StandardReportModelProps) {
   const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [currentCoverImage, setCurrentCoverImage] = useState<string>(initialCoverImage || "");
+
+  // Índice Automático
+  const indice = useMemo(() => {
+    return sections.map((sec, index) => ({
+      numero: index + 1,
+      titulo: sec.title
+    }));
+  }, [sections]);
 
   const getCoverTitle = () => {
     if (level === "institucional") {
@@ -245,6 +260,19 @@ export default function StandardReportModel({
             <p className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-widest font-serif text-center mt-1">
               {semester ? `${semester}.º SEMESTRE DE ${year}` : `ANUAL DE ${year}`}
             </p>
+            
+            {/* Índice Automático */}
+            <div className="mt-8 pt-6 border-t border-slate-300 w-full text-left max-w-sm mx-auto">
+              <h4 className="font-black text-xs uppercase tracking-wider mb-3">Índice</h4>
+              <ul className="space-y-1">
+                {indice.map(item => (
+                  <li key={item.numero} className="flex justify-between text-[10px] font-medium text-slate-700">
+                    <span>{item.numero}. {item.titulo}</span>
+                    <span className="text-slate-400">................</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           {/* Moldura da Imagem de Capa (Border 2px Black + Placeholder / Image) */}
@@ -444,7 +472,7 @@ export default function StandardReportModel({
                         <th className="p-2.5">Atividade / Ação</th>
                         <th className="p-2.5 text-center">Planificada</th>
                         <th className="p-2.5 text-center">Realizada</th>
-                        <th className="p-2.5 text-center">% Execução</th>
+                                                <th className="p-2.5 text-center">% Execução</th>
                         <th className="p-2.5 text-center">% Não Execução</th>
                         <th className="p-2.5 text-center">Campo</th>
                       </tr>
@@ -468,7 +496,7 @@ export default function StandardReportModel({
                             )}
                           </td>
                           <td className="p-2.5 text-center font-bold text-emerald-700">
-                            {act.taxaExecucao}%
+                            <TrafficLight value={act.taxaExecucao} />
                           </td>
                           <td className="p-2.5 text-center font-bold text-red-600">
                             {act.taxaNaoExecucao}%

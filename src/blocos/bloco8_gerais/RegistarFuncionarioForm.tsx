@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { firestoreService } from "../../lib/firestoreService";
-import { useInstituicaoEstrutura, registrarAuditoriaEstrutura } from "../../lib/instituicaoEstruturaService";
+import { useInstituicaoEstrutura, registrarAuditoriaEstrutura, validarColaboradorVinculadoEstrutura } from "../../lib/instituicaoEstruturaService";
 import { DraftModal, SyncIndicator } from "../../components/ui/DraftMemoryUI";
 import {
   PROVINCIAS_DISTRITOS,
@@ -532,6 +532,11 @@ export default function RegistarFuncionarioForm({
       alert("Por favor, selecione o Género.");
       return;
     }
+    // Regra Consolidada do Sistema RN-024.5: Vinculação institucional obrigatória
+    if (!instituicaoId || !instituicaoId.trim()) {
+      alert("Regra Consolidada RN-024.5: O colaborador deve estar obrigatoriamente vinculado a uma instituição válida. Nenhum utilizador poderá existir sem associação institucional.");
+      return;
+    }
     if (!unidade) {
       alert("Por favor, selecione o Órgão de Alocação Institucional (RN-003).");
       return;
@@ -542,6 +547,23 @@ export default function RegistarFuncionarioForm({
     }
     if (!departamento && !sector && !reparticao) {
       alert("O preenchimento do Departamento / Sector de afetação é obrigatório no cadastro do colaborador (RN-010).");
+      return;
+    }
+
+    // Regra Funcional Consolidada: Todo colaborador deve estar vinculado a uma estrutura válida criada pelo Administrador
+    const estruturaCheck = validarColaboradorVinculadoEstrutura(
+      {
+        unidade,
+        direcao,
+        departamento,
+        reparticao,
+        sector,
+      },
+      instituicaoId
+    );
+
+    if (!estruturaCheck.isValid) {
+      alert(`Validação de Estrutura Organizacional: ${estruturaCheck.error || "A estrutura informada não é válida ou não existe na instituição."}`);
       return;
     }
 

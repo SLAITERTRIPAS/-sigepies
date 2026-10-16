@@ -44,6 +44,7 @@ import {
   setActiveInstituicaoId,
   applyRename,
 } from "../../lib/instituicaoEstruturaService";
+import { executarEliminacaoEmCascataInstituicao } from "../../lib/instituicaoCascadeService";
 import { TIPOS_INSTITUICAO_CONFIG, getTipoInstituicaoConfig } from "../../lib/instituicaoTiposConfig";
 import EditSectorModal from "../../components/EditSectorModal";
 import SectorMenuConfigModal from "../../components/SectorMenuConfigModal";
@@ -1305,7 +1306,7 @@ export const EstruturaExplorer = ({
     setInstToDelete(inst);
   };
 
-  // Execução da Exclusão Completa da Instituição na Base de Dados e no Sistema
+  // Execução da Exclusão Completa da Instituição na Base de Dados e no Sistema (RN-024.5)
   const handleExecuteCompleteDelete = async () => {
     if (!instToDelete) return;
     const id = instToDelete.id;
@@ -1313,86 +1314,41 @@ export const EstruturaExplorer = ({
 
     setIsDeletingInst(true);
     try {
-      console.log("Iniciando exclusão completa da instituição:", id, nome);
+      console.log("Iniciando eliminação em cascata da instituição (RN-024.5):", id, nome);
 
-      // 1. Registar na lista de excluídos para evitar ressurgimento pelo fallback
-      let deletedIds: string[] = [];
-      try {
-        deletedIds = JSON.parse(localStorage.getItem("sigep_deleted_instituicoes") || "[]");
-      } catch (_) {}
-      if (!deletedIds.includes(id)) {
-        deletedIds.push(id);
-        localStorage.setItem("sigep_deleted_instituicoes", JSON.stringify(deletedIds));
-      }
+      const cascadeResult = await executarEliminacaoEmCascataInstituicao(
+        id,
+        nome,
+        loggedUser ? {
+          id: loggedUser.id || loggedUser.uid,
+          nome: loggedUser.name || loggedUser.nome,
+          email: loggedUser.email,
+        } : undefined
+      );
 
-      // 2. Apagar Utilizadores vinculados
-      try {
-        const allUsers = await fetchCollection<any>("users", 1000, null);
-        const usersToDelete = allUsers.filter((u: any) => u.instituicaoId === id || u.tenantId === id);
-        for (const user of usersToDelete) {
-          await firestoreService.users.delete(user.id);
-        }
-      } catch (errUsers) {
-        console.warn("Aviso ao eliminar utilizadores associados:", errUsers);
-      }
-
-      // 3. Apagar Direções Orgânicas vinculadas
-      try {
-        const allDirs = await fetchCollection<any>("direcoes_organicas", 1000, null);
-        const dirsToDelete = allDirs.filter((d: any) => d.instituicaoId === id || d.tenantId === id);
-        for (const dir of dirsToDelete) {
-          await firestoreService.direcoes_organicas.delete(dir.id);
-        }
-      } catch (errDirs) {
-        console.warn("Aviso ao eliminar direções vinculadas:", errDirs);
-      }
-
-      // 4. Apagar Órgãos Customizados vinculados
-      try {
-        const allOrgs = await fetchCollection<any>("orgaos_custom", 1000, null);
-        const orgsToDelete = allOrgs.filter((o: any) => o.instituicaoId === id || o.tenantId === id);
-        for (const org of orgsToDelete) {
-          await firestoreService.orgaos_custom.delete(org.id);
-        }
-      } catch (errOrgs) {
-        console.warn("Aviso ao eliminar órgãos vinculados:", errOrgs);
-      }
-
-      // 5. Apagar Adicionais de Estrutura vinculados
-      try {
-        const allAdds = await fetchCollection<any>("estrutura_adicionais", 1000, null);
-        const addsToDelete = allAdds.filter((a: any) => a.instituicaoId === id || a.tenantId === id);
-        for (const add of addsToDelete) {
-          await firestoreService.estrutura_adicionais.delete(add.id);
-        }
-      } catch (errAdds) {
-        console.warn("Aviso ao eliminar adicionais vinculados:", errAdds);
-      }
-
-      // 6. Eliminar o registo da instituição no Firestore
-      await firestoreService.instituicoes.delete(id);
-
-      // 7. Atualizar estado local imediatamente
+      // Atualizar estado local imediatamente
       setInstituicoes((prev) => {
         const filtered = prev.filter((item) => item.id !== id);
         if (selectedInstId === id) {
-          setSelectedInstId(filtered[0]?.id || "");
+          const fallback = filtered[0]?.id || "";
+          setSelectedInstId(fallback);
+          setActiveInstituicaoId(fallback);
         }
         return filtered;
       });
 
       setNotificationMsg({
         type: "success",
-        text: `A instituição "${nome}" e todos os seus dados foram excluídos com sucesso da base de dados e do sistema!`
+        text: `Regra RN-024.5 executada: A instituição "${nome}" foi eliminada em cascata com sucesso! ${cascadeResult.totalEliminados} registos associados (colaboradores, estruturas, planos, relatórios, períodos, calendários, etc.) foram permanentemente removidos.`
       });
 
       // Fechar modal
       setInstToDelete(null);
     } catch (err: any) {
-      console.error("Erro na exclusão completa da instituição:", err);
+      console.error("Erro na eliminação em cascata da instituição:", err);
       setNotificationMsg({
         type: "error",
-        text: `Erro ao excluir a instituição: ${err?.message || "Ocorreu uma falha durante o processo."}`
+        text: `Erro ao excluir a instituição em cascata: ${err?.message || "Ocorreu uma falha durante o processo."}`
       });
     } finally {
       setIsDeletingInst(false);
@@ -3296,15 +3252,19 @@ export const EstruturaExplorer = ({
             </button>
 
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-4 ring-8 ring-red-50">
+              <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-3 ring-8 ring-red-50">
                 <Trash2 size={28} />
               </div>
 
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-800 rounded-lg text-[10px] font-black uppercase tracking-wider mb-2">
+                <AlertTriangle size={12} /> Regra Consolidada RN-024.5
+              </div>
+
               <h3 className="text-lg font-black text-slate-900">
-                Excluir Instituição Definitivamente?
+                Eliminação em Cascata da Instituição
               </h3>
 
-              <div className="my-4 p-3.5 bg-red-50/70 border border-red-100 rounded-2xl w-full text-left flex items-center gap-3">
+              <div className="my-3 p-3.5 bg-red-50/70 border border-red-100 rounded-2xl w-full text-left flex items-center gap-3">
                 {instToDelete.logo ? (
                   <img
                     src={instToDelete.logo}
@@ -3324,8 +3284,26 @@ export const EstruturaExplorer = ({
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Esta ação é <span className="font-bold text-red-600">permanente e irreversível</span>. A instituição, todos os utilizadores associados e toda a sua estrutura orgânica serão excluídos completamente da base de dados e do sistema.
+              <div className="w-full text-left bg-slate-50 border border-slate-200/80 rounded-xl p-3 mb-3 text-[11px] space-y-1.5 text-slate-600 font-medium">
+                <p className="font-bold text-slate-800 flex items-center gap-1 text-[11px]">
+                  <span>Serão removidos permanentemente em cascata:</span>
+                </p>
+                <ul className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-semibold text-slate-600 pl-1">
+                  <li>• Colaboradores e Processos</li>
+                  <li>• Utilizadores e Contas</li>
+                  <li>• Estruturas Organizacionais</li>
+                  <li>• Planos e Atividades</li>
+                  <li>• Relatórios Institucionais</li>
+                  <li>• Calendários e Períodos</li>
+                  <li>• Indicadores e Metas</li>
+                  <li>• Projetos e Produções</li>
+                  <li>• Notificações e Alertas</li>
+                  <li>• Auditorias Institucionais</li>
+                </ul>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                Esta ação é <span className="font-bold text-red-600">permanente e irreversível</span>. O sistema assegura o isolamento institucional e a integridade de dados das demais instituições.
               </p>
 
               <div className="flex items-center gap-3 w-full mt-6">

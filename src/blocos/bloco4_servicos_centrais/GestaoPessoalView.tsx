@@ -106,6 +106,7 @@ import CaixaMensagensView from "../bloco5_sistema/CaixaMensagensView";
 const RHStatView = lazy(() => import("../bloco7_relatorios/RHStatisticsWorkflowView"));
 const AcaoOrcamentalView = lazy(() => import("../../components/AcaoOrcamentalView"));
 import { firestoreService } from "../../lib/firestoreService";
+import { getActiveInstituicaoId } from "../../lib/instituicaoEstruturaService";
 import {
   generateCollaboratorId,
   checkIsQuadro,
@@ -1727,6 +1728,7 @@ export default function GestaoPessoalView({
             setoresAtribuidos: fullUpdate.setoresAtribuidos || [],
             cargo: fullUpdate.cargo || "",
             cargoChefia: fullUpdate.cargoChefia || "",
+            instituicaoId: (fullUpdate as any)?.instituicaoId || (c as any)?.instituicaoId || getActiveInstituicaoId(),
             status: area ? "Afetado" : (fullUpdate.status || "Ativo"),
             areaDeAfetacao: area,
           };
@@ -1738,6 +1740,7 @@ export default function GestaoPessoalView({
             userData.id = c.id;
             await firestoreService.users.set(c.id, {
               ...userData,
+              instituicaoId: (fullUpdate as any)?.instituicaoId || (c as any)?.instituicaoId || getActiveInstituicaoId(),
               password: "1234",
               mustChangePassword: true,
               nuit: fullUpdate.nuit,
@@ -2821,16 +2824,21 @@ export default function GestaoPessoalView({
 
               for (const c of colaboradoresParaAdicionar) {
                 try {
+                  const instIdParaAdicionar = c.instituicaoId || getActiveInstituicaoId();
                   await firestoreService.users.set(c.id, {
                     id: c.id,
                     name: c.nome,
                     email: c.email,
                     nuit: c.nuit,
+                    instituicaoId: instIdParaAdicionar,
                     password: "1234",
                     role: c.tipo,
                     mustChangePassword: true,
                   });
-                  await firestoreService.colaboradores.update(c.id, c);
+                  await firestoreService.colaboradores.update(c.id, {
+                    ...c,
+                    instituicaoId: instIdParaAdicionar,
+                  });
 
                   if (hasChefiaPosition(c)) {
                     try {
@@ -2978,16 +2986,21 @@ export default function GestaoPessoalView({
 
     for (const c of colaboradoresParaAdicionar) {
       try {
+        const instIdParaAdicionar = (c as any)?.instituicaoId || getActiveInstituicaoId();
         await firestoreService.users.set(c.id, {
           id: c.id,
           name: c.nome,
           email: c.email,
           nuit: c.nuit,
+          instituicaoId: instIdParaAdicionar,
           password: "1234",
           role: c.tipo,
           mustChangePassword: true,
         });
-        await firestoreService.colaboradores.update(c.id, c);
+        await firestoreService.colaboradores.update(c.id, {
+          ...c,
+          instituicaoId: instIdParaAdicionar,
+        });
       } catch (err) {
         console.error("Erro ao adicionar", c.nome, err);
       }

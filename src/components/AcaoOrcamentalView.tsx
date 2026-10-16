@@ -674,7 +674,7 @@ export default function AcaoOrcamentalView({
   onBack,
 }: AcaoOrcamentalViewProps) {
   const [activeTab, setActiveTab] = useState<
-    "rubricas" | "overview" | "reforco"
+    "rubricas" | "overview" | "reforco" | "auditoria"
   >("rubricas");
 
   const [selectedLevel, setSelectedLevel] = useState<
@@ -1226,6 +1226,68 @@ export default function AcaoOrcamentalView({
       .filter((rub) => rub.necessidadesList.length > 0)
       .sort((a, b) => b.totalValorRubrica - a.totalValorRubrica);
   }, [sectorActivities, selectedLevel, selectedUnit]);
+
+  const auditReport = useMemo(() => {
+    const items: any[] = [];
+    sectorActivities.forEach((act) => {
+      const actId = act.id || act.codigoActividade || "N/D";
+      const actTitle = act.titulo || act.designacao || act.descricao || "Atividade Sem Título";
+      const actSector = act.setor || act.reparticao || act.solicitante || "Geral";
+      const actDept = act.departamento || act.unidadeOrganica || "Central";
+      
+      if (Array.isArray(act.rubricas) && act.rubricas.length > 0) {
+        act.rubricas.forEach((r: any, idx: number) => {
+          const rawRub = r.rubrica || r.code || act.rubrica || "";
+          const necStr = r.necessidade || r.descricao || r.name || actTitle;
+          const officialRub = getOfficialRubricaLabel(rawRub, necStr);
+          const rubricVal = Number(r.valorTotal || r.total || r.valor || 0);
+          
+          const originExists = activities.some(a => a.id === act.id || a.codigoActividade === act.codigoActividade);
+          const hasDiscrepancy = rubricVal <= 0;
+          
+          items.push({
+            id: `${act.id || 'act'}_${idx}`,
+            activityId: actId,
+            activityTitle: actTitle,
+            sector: actSector,
+            department: actDept,
+            rubrica: officialRub,
+            necessidade: r.nomeProduto || r.especificacao || necStr,
+            valorDeclarado: rubricVal,
+            status: !originExists ? "ORPHAN" : (hasDiscrepancy ? "DISCREPANCY" : "VALID"),
+            mensagem: !originExists ? "Atividade de origem não encontrada no sistema" : (hasDiscrepancy ? "Valor inválido ou zerado na rubrica" : "Vinculação Válida & Consolidada")
+          });
+        });
+      } else {
+        const generalVal = Number(act.valor || act.orcamentoTotal || act.valorTotal || 0);
+        if (generalVal > 0) {
+          const officialRub = getOfficialRubricaLabel(act.rubrica, actTitle);
+          const originExists = activities.some(a => a.id === act.id);
+          items.push({
+            id: `${act.id || 'act_gen'}_gen`,
+            activityId: actId,
+            activityTitle: actTitle,
+            sector: actSector,
+            department: actDept,
+            rubrica: officialRub,
+            necessidade: actTitle,
+            valorDeclarado: generalVal,
+            status: !originExists ? "ORPHAN" : "VALID",
+            mensagem: !originExists ? "Atividade de origem não encontrada" : "Vinculação Válida (Orçamento Geral)"
+          });
+        }
+      }
+    });
+    return items;
+  }, [sectorActivities, activities]);
+
+  const auditStats = useMemo(() => {
+    const total = auditReport.length;
+    const valid = auditReport.filter(i => i.status === "VALID").length;
+    const discrepancias = auditReport.filter(i => i.status === "DISCREPANCY" || i.status === "ORPHAN").length;
+    const valorTotalAuditado = auditReport.reduce((acc, i) => acc + i.valorDeclarado, 0);
+    return { total, valid, discrepancias, valorTotalAuditado };
+  }, [auditReport]);
 
   const parentRubricasBreakdown = useMemo(() => {
     const parentMap: {
@@ -2322,7 +2384,7 @@ export default function AcaoOrcamentalView({
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab("overview")}
             className={`px-4 py-2 rounded-xl text-xs font-black tracking-widest transition-all ${
@@ -2342,6 +2404,16 @@ export default function AcaoOrcamentalView({
             }`}
           >
             Rúbricas & Despesas
+          </button>
+          <button
+            onClick={() => setActiveTab("auditoria")}
+            className={`px-4 py-2 rounded-xl text-xs font-black tracking-widest transition-all ${
+              activeTab === "auditoria"
+                ? "bg-slate-900 text-white shadow-md shadow-slate-950/10"
+                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            Painel de Auditoria & Rastreabilidade
           </button>
           <button
             onClick={() => setActiveTab("reforco")}
@@ -3026,6 +3098,216 @@ export default function AcaoOrcamentalView({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auditoria & Rastreabilidade Total Tab */}
+      {activeTab === "auditoria" && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-6">
+              <div>
+                <span className="text-[10px] font-black font-mono bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100 uppercase tracking-widest">
+                  Módulo Oficial de Controlo & Auditoria SISTAFE
+                </span>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight mt-2">
+                  Painel de Consolidação Financeira por Rúbrica & Auditoria em Tempo Real
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                  Verificação automática e contínua do vínculo de cada item orçamental com a sua atividade de origem, garantindo rastreabilidade financeira total e conformidade com as normas públicas institucionais.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => printElementById("acao-orcamental-print-area", "Relatório de Auditoria Financeira e Consolidação por Rúbrica")}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs tracking-wider flex items-center gap-2 shadow-md shadow-blue-600/20 cursor-pointer transition-all"
+                >
+                  <Printer size={16} />
+                  <span>Exportar Relatório PDF com Rastreabilidade Total</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Cards de Resumo Estatístico de Auditoria */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-400 tracking-wider">TOTAL AUDITADO</span>
+                  <Coins size={18} className="text-blue-600" />
+                </div>
+                <h4 className="text-lg font-black font-mono text-slate-900">
+                  {formatCurrency(auditStats.valorTotalAuditado)}
+                </h4>
+                <p className="text-[11px] text-slate-500 font-medium">{auditStats.total} itens orçamentais analisados</p>
+              </div>
+
+              <div className="bg-emerald-50/60 p-5 rounded-2xl border border-emerald-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-emerald-700 tracking-wider">ITENS CONFORMES</span>
+                  <CheckCircle2 size={18} className="text-emerald-600" />
+                </div>
+                <h4 className="text-lg font-black font-mono text-emerald-900">
+                  {auditStats.valid} {auditStats.valid === 1 ? 'Item' : 'Itens'}
+                </h4>
+                <p className="text-[11px] text-emerald-700 font-medium">Vinculação e valores íntegros</p>
+              </div>
+
+              <div className={`p-5 rounded-2xl border space-y-2 ${auditStats.discrepancias > 0 ? 'bg-amber-50/80 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] font-black tracking-wider ${auditStats.discrepancias > 0 ? 'text-amber-800' : 'text-slate-400'}`}>DISCREPÂNCIAS / ÓRFÃOS</span>
+                  <AlertCircle size={18} className={auditStats.discrepancias > 0 ? 'text-amber-600' : 'text-slate-400'} />
+                </div>
+                <h4 className={`text-lg font-black font-mono ${auditStats.discrepancias > 0 ? 'text-amber-900' : 'text-slate-900'}`}>
+                  {auditStats.discrepancias} {auditStats.discrepancias === 1 ? 'Alerta' : 'Alertas'}
+                </h4>
+                <p className={`text-[11px] font-medium ${auditStats.discrepancias > 0 ? 'text-amber-800' : 'text-slate-500'}`}>
+                  {auditStats.discrepancias > 0 ? 'Requer verificação de origem' : 'Nenhuma anomalia detetada'}
+                </p>
+              </div>
+
+              <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-2 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-400 tracking-wider">ESTADO DO SISTEMA</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                </div>
+                <h4 className="text-sm font-black tracking-tight text-white">Auditoria em Tempo Real</h4>
+                <p className="text-[10px] text-slate-400">Rastreabilidade SISTAFE ativa</p>
+              </div>
+            </div>
+
+            {/* Alerta Visual de Auditoria */}
+            {auditStats.discrepancias > 0 ? (
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3">
+                <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h4 className="text-xs font-black text-amber-900 tracking-wider">ALERTA DE AUDITORIA: DISCREPÂNCIAS DETETADAS</h4>
+                  <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                    Foram encontrados {auditStats.discrepancias} registos com valores zerados ou sem correspondência exata na atividade de origem. O Administrador deve inspecionar a tabela abaixo para garantir a conformidade institucional.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-start gap-3">
+                <CheckCircle2 className="text-emerald-600 shrink-0 mt-0.5" size={20} />
+                <div>
+                  <h4 className="text-xs font-black text-emerald-900 tracking-wider">CONFORMIDADE FINANCEIRA TOTAL</h4>
+                  <p className="text-xs text-emerald-700 mt-0.5 leading-relaxed">
+                    Todos los itens das ações orçamentais estão rigorosamente vinculados às atividades de origem válidas, sem discrepâncias de valores registadas.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Tabela de Verificação de Vínculo em Tempo Real */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex justify-between items-center">
+                <h4 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Registo Detalhado de Auditoria por Atividade e Rúbrica</span>
+                  <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full">
+                    {auditReport.length}
+                  </span>
+                </h4>
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-900 text-white">
+                      <th className="p-3.5 font-black">ID / Atividade de Origem</th>
+                      <th className="p-3.5 font-black">Setor / Departamento</th>
+                      <th className="p-3.5 font-black">Rúbrica SISTAFE</th>
+                      <th className="p-3.5 font-black">Necessidade / Produto</th>
+                      <th className="p-3.5 font-black text-right">Valor Declarado</th>
+                      <th className="p-3.5 font-black text-center">Estado de Auditoria</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {auditReport.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-12 text-slate-400 font-semibold">
+                          Nenhum registo financeiro encontrado para auditoria.
+                        </td>
+                      </tr>
+                    ) : (
+                      auditReport.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-3.5 font-mono">
+                            <span className="font-bold text-slate-900 block">{item.activityId}</span>
+                            <span className="text-[10px] text-slate-500 font-normal truncate max-w-[180px] block" title={item.activityTitle}>
+                              {item.activityTitle}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-bold text-slate-800 block">{item.sector}</span>
+                            <span className="text-[10px] text-slate-400 block">{item.department}</span>
+                          </td>
+                          <td className="p-3.5 font-semibold text-slate-700">
+                            {item.rubrica}
+                          </td>
+                          <td className="p-3.5 text-slate-600 font-medium">
+                            {item.necessidade}
+                          </td>
+                          <td className="p-3.5 text-right font-mono font-bold text-slate-900">
+                            {formatCurrency(item.valorDeclarado)}
+                          </td>
+                          <td className="p-3.5 text-center">
+                            {item.status === "VALID" ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-black text-[10px]">
+                                <CheckCircle2 size={12} /> Conforme
+                              </span>
+                            ) : item.status === "DISCREPANCY" ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-black text-[10px]" title={item.mensagem}>
+                                <AlertCircle size={12} /> Discrepância
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full font-black text-[10px]" title={item.mensagem}>
+                                <AlertCircle size={12} /> Órfão
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Resumo de Consolidação por Rubrica */}
+            <div className="space-y-4 pt-6 border-t border-slate-100">
+              <h4 className="text-sm font-black text-slate-900 tracking-tight">
+                Consolidação Orçamental por Rubrica SISTAFE
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {rubricasBreakdown.map((rub, idx) => (
+                  <div key={idx} className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <span className="text-[10px] font-black font-mono bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded">
+                          Rúbrica Oficial
+                        </span>
+                        <h5 className="text-sm font-black text-slate-900 mt-1.5">{rub.rubricaName}</h5>
+                      </div>
+                      <span className="text-sm font-black font-mono text-emerald-700">
+                        {formatCurrency(rub.totalValorRubrica)}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-200/60">
+                      <span className="text-[10px] font-black text-slate-400 tracking-wider block">NECESSIDADES ASSOCIADAS</span>
+                      {rub.necessidadesList.slice(0, 3).map((nec: any, nIdx: number) => (
+                        <div key={nIdx} className="flex justify-between items-center text-xs bg-white p-2.5 rounded-xl border border-slate-200">
+                          <span className="font-bold text-slate-700 truncate max-w-[200px]">{nec.necessidadeName}</span>
+                          <span className="font-mono font-bold text-slate-900">{formatCurrency(nec.valorTotalNecessidade)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -515,69 +515,498 @@ export async function zerarTodosOsPrazos(user?: any): Promise<{ success: boolean
 }
 
 /**
- * Submissão automática após vencimento do prazo.
- * Quando o prazo expira, todas as atividades em rascunho / pendentes são submetidas automaticamente
- * seguindo a trajetória traçada no workflow.
+ * Validação de sobreposição de períodos (RN: Impede sobreposições de ciclos de Planificação ou Relatórios).
+ */
+export function validarSobreposicaoPeriodos(
+  novoPeriodo: {
+    dataInicio: string;
+    dataFim: string;
+    tipoCiclo?: "Planificação" | "Relatórios" | "Geral";
+    ano?: number;
+    idExcluir?: string;
+  },
+  periodosExistentes: PeriodoPlanificacao[] = []
+): { hasOverlap: boolean; message?: string } {
+  if (!novoPeriodo.dataInicio || !novoPeriodo.dataFim) {
+    return { hasOverlap: false };
+  }
+
+  const novaInicio = new Date(novoPeriodo.dataInicio).getTime();
+  const novaFim = new Date(novoPeriodo.dataFim).getTime();
+
+  if (novaFim < novaInicio) {
+    return {
+      hasOverlap: true,
+      message: "A data final do período não pode ser anterior à data de início.",
+    };
+  }
+
+  const tipoAlvo = novoPeriodo.tipoCiclo || "Planificação";
+  const anoAlvo = novoPeriodo.ano || new Date(novoPeriodo.dataInicio).getFullYear();
+
+  for (const p of periodosExistentes) {
+    if (!p || (novoPeriodo.idExcluir && p.id === novoPeriodo.idExcluir)) continue;
+
+    // Verificar mesmo tipo de ciclo e mesmo ano
+    const pTipo = p.tipoCiclo || "Planificação";
+    if (pTipo !== tipoAlvo) continue;
+
+    const pInicioStr = pTipo === "Relatórios" ? (p.dataInicioRelatorioSemestral || p.dataInicioPlanificacao) : p.dataInicioPlanificacao;
+    const pFimStr = pTipo === "Relatórios" ? (p.dataFimRelatorioSemestral || p.dataFimPlanificacao) : p.dataFimPlanificacao;
+
+    if (!pInicioStr || !pFimStr) continue;
+
+    const pInicio = new Date(pInicioStr).getTime();
+    const pFim = new Date(pFimStr).getTime();
+
+    // Verificação de sobreposição de intervalos: max(startA, startB) <= min(endA, endB)
+    const overlap = Math.max(novaInicio, pInicio) <= Math.min(novaFim, pFim);
+    if (overlap) {
+      return {
+        hasOverlap: true,
+        message: `Sobreposição de período detectada: Já existe um ciclo de ${tipoAlvo} registado entre ${pInicioStr} e ${pFimStr}. Altere as datas para evitar conflitos no calendário institucional.`,
+      };
+    }
+  }
+
+  return { hasOverlap: false };
+}
+
+/**
+ * Submissão automática completa para o status de 'Consolidação' na hierarquia institucional.
+ * Itera sobre todos os registros pendentes preenchidos e move-os automaticamente para 'Consolidação'.
+ */
+export async function executarSubmissaoAutomaticaParaConsolidacao(
+  periodoAtual: PeriodoPlanificacao | null,
+  motivoCustomizado?: string,
+  user?: any
+): Promise<{
+  submetidas: number;
+  detalhes: { atividades: number; planos: number; requisicoes: number };
+}> {
+  let countAtividades = 0;
+  let countPlanos = 0;
+  let countRequisicoes = 0;
+
+  const timestampIso = new Date().toISOString();
+  const motivo =
+    motivoCustomizado ||
+    "Encerramento de período oficial pelo Chefe do DPEP: submissão automática e encaminhamento institucional para Consolidação.";
+
+  try {
+    // 1. Processar 'matrix_activities' (Atividades da Matriz e Planos Setoriais)
+    const snapActivities = await getDocs(collection(db, "matrix_activities")).catch(() => null);
+    const updates: Promise<any>[] = [];
+
+    if (snapActivities && !snapActivities.empty) {
+      snapActivities.forEach((docSnap) => {
+        const data = docSnap.data();
+        const hasContent = Boolean(
+          (data.descricao && data.descricao.trim()) ||
+          (data.atividade && data.atividade.trim()) ||
+          (data.acao && data.acao.trim()) ||
+          (data.produto && data.produto.trim()) ||
+          (data.rubricas && Array.isArray(data.rubricas) && data.rubricas.length > 0)
+        );
+
+        // Deve ter conteúdo preenchido e estar em estado pendente/rascunho/setorial
+        const currentStatus = String(data.status || "setorial").toLowerCase();
+        const isPending =
+          !data.submetido ||
+          data.submetido === false ||
+          currentStatus === "rascunho" ||
+          currentStatus === "setorial" ||
+          currentStatus === "pendente" ||
+          currentStatus === "reparticao" ||
+          currentStatus === "departamento" ||
+          currentStatus === "direcao";
+
+        if (hasContent && isPending && currentStatus !== "consolidacao" && currentStatus !== "aprovado") {
+          updates.push(
+            setDoc(
+              docSnap.ref,
+              {
+                status: "Consolidação",
+                etapaHierarquica: "Consolidação DPEP",
+                submetido: true,
+                submetidoAutomaticamente: true,
+                dataSubmissaoAutomatica: timestampIso,
+                motivoSubmissaoAutomatica: motivo,
+                encaminhadoPara: "Chefe do DPEP / Repartição de Planificação",
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true }
+            )
+          );
+          countAtividades++;
+        }
+      });
+    }
+
+    // 2. Processar 'planos_atividades' (Planos Gerais e Propostas)
+    const snapPlanos = await getDocs(collection(db, "planos_atividades")).catch(() => null);
+    if (snapPlanos && !snapPlanos.empty) {
+      snapPlanos.forEach((docSnap) => {
+        const data = docSnap.data();
+        const hasContent = Boolean(
+          (data.titulo && data.titulo.trim()) ||
+          (data.descricao && data.descricao.trim()) ||
+          (Array.isArray(data.atividades) && data.atividades.length > 0) ||
+          (Array.isArray(data.linhas) && data.linhas.length > 0)
+        );
+        const st = String(data.status || "pendente").toLowerCase();
+        if (hasContent && (st === "pendente" || st === "rascunho" || st === "em elaboração")) {
+          updates.push(
+            setDoc(
+              docSnap.ref,
+              {
+                status: "Consolidação",
+                submetido: true,
+                submetidoAutomaticamente: true,
+                dataSubmissaoAutomatica: timestampIso,
+                motivoSubmissaoAutomatica: motivo,
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true }
+            )
+          );
+          countPlanos++;
+        }
+      });
+    }
+
+    // 3. Processar 'requisicoes_internas' pendentes preenchidas
+    const snapReqs = await getDocs(collection(db, "requisicoes_internas")).catch(() => null);
+    if (snapReqs && !snapReqs.empty) {
+      snapReqs.forEach((docSnap) => {
+        const data = docSnap.data();
+        const hasContent = Boolean(
+          (data.objeto && data.objeto.trim()) ||
+          (Array.isArray(data.itens) && data.itens.length > 0)
+        );
+        const st = String(data.status || "pendente").toLowerCase();
+        if (hasContent && (st === "pendente" || st === "rascunho")) {
+          updates.push(
+            setDoc(
+              docSnap.ref,
+              {
+                status: "Consolidação",
+                submetido: true,
+                submetidoAutomaticamente: true,
+                dataSubmissaoAutomatica: timestampIso,
+                motivoSubmissaoAutomatica: motivo,
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true }
+            )
+          );
+          countRequisicoes++;
+        }
+      });
+    }
+
+    // Executar todas as gravações em paralelo
+    if (updates.length > 0) {
+      await Promise.all(updates);
+    }
+
+    // Atualizar no localStorage local também para feedback instantâneo na UI
+    try {
+      const localMatrix = localStorage.getItem("sigep_local_matrix_activities");
+      if (localMatrix) {
+        const parsed = JSON.parse(localMatrix);
+        if (Array.isArray(parsed)) {
+          const updatedLocal = parsed.map((item: any) => {
+            const hasContent = Boolean(
+              (item.descricao && item.descricao.trim()) ||
+              (item.atividade && item.atividade.trim()) ||
+              (item.produto && item.produto.trim())
+            );
+            if (hasContent && (!item.submetido || item.status !== "Consolidação")) {
+              return {
+                ...item,
+                status: "Consolidação",
+                etapaHierarquica: "Consolidação DPEP",
+                submetido: true,
+                submetidoAutomaticamente: true,
+                dataSubmissaoAutomatica: timestampIso,
+              };
+            }
+            return item;
+          });
+          localStorage.setItem("sigep_local_matrix_activities", JSON.stringify(updatedLocal));
+          window.dispatchEvent(new CustomEvent("matrix_activities_updated", { detail: updatedLocal }));
+        }
+      }
+    } catch (_) {}
+
+    const totalSubmetidas = countAtividades + countPlanos + countRequisicoes;
+
+    // Registar no período as estatísticas da submissão automática
+    const definidor = user?.nome || user?.name || user?.email || "Chefe do DPEP";
+    await savePeriodoPlanificacao(
+      {
+        autoSubmetido: true,
+        dataAutoSubmissao: timestampIso,
+        totalRegistosConsolidados: (periodoAtual?.totalRegistosConsolidados || 0) + totalSubmetidas,
+        detalhesSubmissaoAutomatica: {
+          totalAtividades: countAtividades,
+          totalPlanos: countPlanos,
+          totalRequisicoes: countRequisicoes,
+          timestamp: timestampIso,
+          executadoPor: definidor,
+        },
+      },
+      user
+    );
+
+    return {
+      submetidas: totalSubmetidas,
+      detalhes: {
+        atividades: countAtividades,
+        planos: countPlanos,
+        requisicoes: countRequisicoes,
+      },
+    };
+  } catch (err) {
+    console.warn("Erro ao executar submissão automática para consolidação:", err);
+    return {
+      submetidas: 0,
+      detalhes: { atividades: 0, planos: 0, requisicoes: 0 },
+    };
+  }
+}
+
+/**
+ * Função mantida para retrocompatibilidade
  */
 export async function executarSubmissaoAutomaticaSePrazoExpirado(
   periodoAtual: PeriodoPlanificacao | null
 ): Promise<{ submetidas: number }> {
   if (!periodoAtual) return { submetidas: 0 };
-
   const check = isPlanificacaoAberta(periodoAtual);
-  // Se ainda estiver aberta, não efetua submissão automática
-  if (check.aberta) {
-    return { submetidas: 0 };
+  if (check.aberta) return { submetidas: 0 };
+
+  const res = await executarSubmissaoAutomaticaParaConsolidacao(periodoAtual);
+  return { submetidas: res.submetidas };
+}
+
+/**
+ * Ações Personalizadas do Chefe do DPEP no Calendário Institucional:
+ */
+
+// 1. Criar Novo Ciclo / Período com Validação de Sobreposição
+export async function criarNovoCicloPeriodoDPEP(params: {
+  tipoCiclo: "Planificação" | "Relatórios";
+  modalidade: "Trimestral" | "Semestral" | "Anual" | "Mensal";
+  titulo?: string;
+  dataInicio: string;
+  dataFim: string;
+  observacoes?: string;
+  user: any;
+}): Promise<{ success: boolean; message: string; periodo?: PeriodoPlanificacao }> {
+  const { tipoCiclo, modalidade, titulo, dataInicio, dataFim, observacoes, user } = params;
+
+  if (!dataInicio || !dataFim) {
+    return { success: false, message: "As datas de início e fim são de preenchimento obrigatório." };
   }
 
-  try {
-    const snap = await getDocs(collection(db, "matrix_activities"));
-    const updates: Promise<any>[] = [];
-    let count = 0;
+  // Validação de sobreposição
+  const overlapCheck = validarSobreposicaoPeriodos({
+    dataInicio,
+    dataFim,
+    tipoCiclo,
+    ano: new Date(dataInicio).getFullYear(),
+  });
 
-    snap.forEach((docSnap) => {
-      const data = docSnap.data();
-      const isUnsubmitted = !data.submetido || data.submetido === false;
-      const currentStatus = (data.status || "setorial").toLowerCase();
+  if (overlapCheck.hasOverlap) {
+    return { success: false, message: overlapCheck.message || "Sobreposição de período detectada." };
+  }
 
-      // Atividades não submetidas ou em rascunho/fase inicial
-      if (isUnsubmitted || currentStatus === "setorial" || currentStatus === "rascunho") {
-        let nextStatus = "reparticao";
-        if (currentStatus === "reparticao") nextStatus = "departamento";
-        if (currentStatus === "departamento") nextStatus = "direcao";
+  const payload: Partial<PeriodoPlanificacao> = {
+    ano: new Date(dataInicio).getFullYear(),
+    tipoCiclo,
+    modalidade,
+    tituloCiclo: titulo || `Ciclo ${modalidade} de ${tipoCiclo} - ${new Date(dataInicio).getFullYear()}`,
+    status: "aberto",
+    statusRelatorio: "aberto",
+    observacoes: observacoes || `Novo ciclo configurado pelo Chefe do DPEP.`,
+    autoSubmetido: false,
+    extensaoFase1Usada: false,
+    extensaoFase2Usada: false,
+    diasExtensaoTotal: 0,
+  };
 
-        updates.push(
-          setDoc(
-            docSnap.ref,
-            {
-              status: nextStatus,
-              submetido: true,
-              submetidoAutomaticamente: true,
-              dataSubmissaoAutomatica: new Date().toISOString(),
-              motivoSubmissaoAutomatica: "Submissão automática do sistema por expiração do prazo oficial de planificação.",
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true }
-          )
-        );
-        count++;
-      }
+  if (tipoCiclo === "Relatórios") {
+    payload.dataInicioRelatorioSemestral = dataInicio;
+    payload.dataFimRelatorioSemestral = dataFim;
+  } else {
+    payload.dataInicioPlanificacao = dataInicio;
+    payload.dataFimPlanificacao = dataFim;
+  }
+
+  await savePeriodoPlanificacao(payload, user);
+
+  return {
+    success: true,
+    message: `Novo ciclo de ${tipoCiclo} (${dataInicio} a ${dataFim}) criado e ativado com sucesso no calendário institucional!`,
+  };
+}
+
+// 2. Reabrir Período Encerrado
+export async function reabrirPeriodoDPEP(params: {
+  periodoAtual: PeriodoPlanificacao;
+  novaDataFim: string;
+  motivo: string;
+  user: any;
+}): Promise<{ success: boolean; message: string }> {
+  const { periodoAtual, novaDataFim, motivo, user } = params;
+
+  if (!novaDataFim) {
+    return { success: false, message: "Informe a nova data final para a reabertura do período." };
+  }
+  if (!motivo || !motivo.trim()) {
+    return { success: false, message: "O motivo / justificativa para a reabertura do período é obrigatório." };
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  if (novaDataFim <= today) {
+    return { success: false, message: "A nova data final deve ser posterior à data de hoje." };
+  }
+
+  const payload: Partial<PeriodoPlanificacao> = {
+    status: "aberto",
+    statusRelatorio: "aberto",
+    dataFimPlanificacao: novaDataFim,
+    dataFimRelatorioSemestral: novaDataFim,
+    autoSubmetido: false,
+    motivoReabertura: motivo.trim(),
+    dataReabertura: new Date().toISOString(),
+    observacoes: `Período reaberto pelo Chefe do DPEP até ${novaDataFim}. Motivo: ${motivo.trim()}`,
+  };
+
+  await savePeriodoPlanificacao(payload, user);
+
+  return {
+    success: true,
+    message: `Período reaberto com sucesso até ${novaDataFim}! Os setores já podem submeter os seus registos regulamentares.`,
+  };
+}
+
+// 3. Prorrogar Período
+export async function prorrogarPeriodoDPEP(params: {
+  periodoAtual: PeriodoPlanificacao;
+  novaDataFim: string;
+  diasAdicionados?: number;
+  motivo: string;
+  user: any;
+}): Promise<{ success: boolean; message: string }> {
+  const { periodoAtual, novaDataFim, diasAdicionados, motivo, user } = params;
+
+  if (!novaDataFim) {
+    return { success: false, message: "Defina a nova data de prorrogação." };
+  }
+  if (!motivo || !motivo.trim()) {
+    return { success: false, message: "A justificativa da prorrogação é obrigatória (RN-DPEP)." };
+  }
+
+  const autorNome = user?.nome || user?.name || user?.email || "Chefe do DPEP";
+  const prorrogacaoRegistro = {
+    id: `prorr_${Date.now()}`,
+    data: new Date().toISOString(),
+    diasAdicionados: diasAdicionados || 0,
+    novaDataFim,
+    motivo: motivo.trim(),
+    autorNome,
+    autorCargo: user?.cargo || user?.cargoChefia || "Chefe do DPEP",
+  };
+
+  const historico = Array.isArray(periodoAtual.historicoProrrogacoes)
+    ? [...periodoAtual.historicoProrrogacoes, prorrogacaoRegistro]
+    : [prorrogacaoRegistro];
+
+  const payload: Partial<PeriodoPlanificacao> = {
+    status: "prorrogado",
+    dataFimPlanificacao: novaDataFim,
+    dataFimRelatorioSemestral: novaDataFim,
+    justificativaProrrogacao: motivo.trim(),
+    historicoProrrogacoes: historico,
+    diasExtensaoTotal: (periodoAtual.diasExtensaoTotal || 0) + (diasAdicionados || 0),
+    observacoes: `Prazo prorrogado até ${novaDataFim} pelo Chefe do DPEP. Justificativa: ${motivo.trim()}`,
+  };
+
+  await savePeriodoPlanificacao(payload, user);
+
+  return {
+    success: true,
+    message: `Prazo prorrogado com sucesso até ${novaDataFim}! O calendário institucional foi atualizado.`,
+  };
+}
+
+// 4. Encerrar Período e Executar Submissão Automática para Consolidação
+export async function encerrarPeriodoDPEP(params: {
+  periodoAtual: PeriodoPlanificacao;
+  motivo?: string;
+  user: any;
+}): Promise<{ success: boolean; message: string; submetidas: number }> {
+  const { periodoAtual, motivo, user } = params;
+
+  const encerramentoMotivo =
+    motivo?.trim() || "Período encerrado pelo Chefe do DPEP no calendário institucional.";
+
+  // 1. Atualizar status para fechado
+  await savePeriodoPlanificacao(
+    {
+      status: "fechado",
+      statusRelatorio: "fechado",
+      justificativaEncerramento: encerramentoMotivo,
+      observacoes: `Período encerrado em ${new Date().toISOString().split("T")[0]}. ${encerramentoMotivo}`,
+    },
+    user
+  );
+
+  // 2. Executar a submissão automática de todos os registos pendentes preenchidos para 'Consolidação'
+  const resultado = await executarSubmissaoAutomaticaParaConsolidacao(
+    periodoAtual,
+    `Período encerrado: ${encerramentoMotivo}`,
+    user
+  );
+
+  return {
+    success: true,
+    submetidas: resultado.submetidas,
+    message: `Período encerrado com sucesso! Foram movidos automaticamente ${resultado.submetidas} registo(s) pendente(s) preenchido(s) para o status de 'Consolidação'.`,
+  };
+}
+
+// 5. Verificação contínua: se atingiu a data final, encerra e submete para Consolidação
+export async function verificarEExecutarEncerramentoPorData(
+  periodoAtual: PeriodoPlanificacao | null
+): Promise<{ encerrou: boolean; submetidas: number }> {
+  if (!periodoAtual) return { encerrou: false, submetidas: 0 };
+
+  const today = new Date().toISOString().split("T")[0];
+  const dataFim = periodoAtual.dataFimPlanificacao;
+
+  // Se a data final foi ultrapassada e o período ainda consta como aberto/prorrogado
+  if (dataFim && today > dataFim && (periodoAtual.status === "aberto" || periodoAtual.status === "prorrogado")) {
+    console.log(`⏰ Data final (${dataFim}) atingida! Disparando encerramento automático e submissão para Consolidação...`);
+    
+    await savePeriodoPlanificacao({
+      status: "fechado",
+      statusRelatorio: "fechado",
+      observacoes: `Encerramento automático pelo sistema: data final regulamentar (${dataFim}) expirada em ${today}.`,
     });
 
-    if (count > 0) {
-      await Promise.all(updates);
-      // Registar no período que a submissão automática foi executada para este término
-      await savePeriodoPlanificacao({
-        autoSubmetido: true,
-        dataAutoSubmissao: new Date().toISOString(),
-      });
-      console.log(`✅ Submissão automática de ${count} atividades executada após o encerramento do prazo.`);
-    }
+    const res = await executarSubmissaoAutomaticaParaConsolidacao(
+      periodoAtual,
+      `Encerramento automático: Data final do ciclo regulamentar (${dataFim}) expirada.`
+    );
 
-    return { submetidas: count };
-  } catch (err) {
-    console.warn("Aviso na submissão automática por expiração de prazo:", err);
-    return { submetidas: 0 };
+    return { encerrou: true, submetidas: res.submetidas };
   }
+
+  return { encerrou: false, submetidas: 0 };
 }
+
 

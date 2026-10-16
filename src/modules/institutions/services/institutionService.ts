@@ -1,5 +1,6 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import { executarEliminacaoEmCascataInstituicao } from "../../../lib/instituicaoCascadeService";
 
 export interface Institution {
   id: string;
@@ -36,7 +37,8 @@ export const institutionService = {
     const id = institution.id || `inst_${Date.now()}`;
     await setDoc(doc(db, "instituicoes", id), { ...institution, id, updatedAt: new Date().toISOString() }, { merge: true });
   },
-  async deleteInstitution(id: string): Promise<void> {
-    await deleteDoc(doc(db, "instituicoes", id));
+  async deleteInstitution(id: string, name?: string): Promise<void> {
+    // Regra Consolidada do Sistema RN-024.5: Eliminação em Cascata
+    await executarEliminacaoEmCascataInstituicao(id, name || id);
   }
 };

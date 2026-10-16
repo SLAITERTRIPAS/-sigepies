@@ -1903,4 +1903,114 @@ export async function eliminarEstruturaManual(params: {
   }
 }
 
+/**
+ * RN-003, RN-005, RN-010: Validação de Vinculação Obrigatória de Colaboradores à Estrutura Existente.
+ * O sistema NÃO cria estruturas automaticamente e valida que cada colaborador esteja vinculado
+ * a uma estrutura previamente criada e mantida pelo Administrador da Instituição.
+ */
+export function validarColaboradorVinculadoEstrutura(
+  colaborador: {
+    unidade?: string;
+    direcao?: string;
+    departamento?: string;
+    reparticao?: string;
+    sector?: string;
+    areaDeAfetacao?: string;
+  },
+  instituicaoId?: string
+): { isValid: boolean; error?: string } {
+  const instId = instituicaoId || getActiveInstituicaoId();
+
+  const cUnidade = (colaborador.unidade || "").trim();
+  const cDirecao = (colaborador.direcao || "").trim();
+  const cDept = (colaborador.departamento || "").trim();
+  const cSetor = (colaborador.sector || colaborador.reparticao || "").trim();
+
+  // 1. Verificação de preenchimento mínimo essencial
+  if (!cUnidade && !cDirecao) {
+    return {
+      isValid: false,
+      error: "O colaborador deve estar obrigatoriamente vinculado a um Órgão ou Direção configurada na instituição (RN-003).",
+    };
+  }
+
+  // 2. Se a instituição for a padrão ou outra, verificar existência da direção
+  if (cDirecao) {
+    const direcoesDisponiveis = getDirecoesPorOrgao(cUnidade || undefined, instId);
+    const direcaoNormalizada = cDirecao.toLowerCase();
+    
+    // Verificar se existe nas direções padrão ou customizadas
+    const existeDirecao = direcoesDisponiveis.some(
+      (d) => d.toLowerCase() === direcaoNormalizada || d.toLowerCase().includes(direcaoNormalizada) || direcaoNormalizada.includes(d.toLowerCase())
+    );
+
+    // Também verificar se existe em cachedCustomDirecoes
+    const existeCustom = cachedCustomDirecoes.some((cd) => {
+      const cdInst = cd.instituicaoId || "isps";
+      if (cdInst !== instId && instId !== "isps") return false;
+      const cdName = String(cd.title || cd.rawTitle || cd.nome || "").toLowerCase();
+      return cdName === direcaoNormalizada;
+    });
+
+    if (!existeDirecao && !existeCustom && direcoesDisponiveis.length > 0) {
+      return {
+        isValid: false,
+        error: `A Direção "${cDirecao}" não se encontra registada na estrutura da instituição. Toda a estrutura deve ser criada previamente pelo Administrador da Instituição (o sistema não cria estruturas automaticamente).`,
+      };
+    }
+  }
+
+  // 3. Se informou departamento, validar se existe sob a direção selecionada
+  if (cDept && cDirecao) {
+    const deptsDisponiveis = getDepartamentosPorDirecao(cDirecao, instId);
+    const deptNorm = cDept.toLowerCase();
+
+    const existeDept = deptsDisponiveis.some(
+      (dep) => dep.toLowerCase() === deptNorm || dep.toLowerCase().includes(deptNorm) || deptNorm.includes(dep.toLowerCase())
+    );
+
+    const existeCustomDept = cachedAdicionais.some((ad) => {
+      const adInst = ad.instituicaoId || "isps";
+      if (adInst !== instId && instId !== "isps") return false;
+      if (ad.type !== "departamento") return false;
+      const adName = String(ad.name || ad.title || "").toLowerCase();
+      return adName === deptNorm;
+    });
+
+    if (!existeDept && !existeCustomDept && deptsDisponiveis.length > 0) {
+      return {
+        isValid: false,
+        error: `O Departamento "${cDept}" não existe sob a direção selecionada. Selecione um departamento existente configurado pelo Administrador da Instituição.`,
+      };
+    }
+  }
+
+  // 4. Se informou setor ou repartição, validar se existe
+  if (cSetor && cDept) {
+    const repsDisponiveis = getReparticoesPorDepartamento(cDept, cDirecao, instId);
+    const setorNorm = cSetor.toLowerCase();
+
+    const existeRep = repsDisponiveis.some(
+      (r) => r.toLowerCase() === setorNorm || r.toLowerCase().includes(setorNorm) || setorNorm.includes(r.toLowerCase())
+    );
+
+    const existeCustomSetor = cachedAdicionais.some((ad) => {
+      const adInst = ad.instituicaoId || "isps";
+      if (adInst !== instId && instId !== "isps") return false;
+      if (ad.type !== "reparticao") return false;
+      const adName = String(ad.name || ad.title || "").toLowerCase();
+      return adName === setorNorm;
+    });
+
+    if (!existeRep && !existeCustomSetor && repsDisponiveis.length > 0) {
+      return {
+        isValid: false,
+        error: `O Setor / Repartição "${cSetor}" não se encontra registado sob o departamento "${cDept}". Selecione um setor existente.`,
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
 

@@ -172,24 +172,25 @@ export default function FormularioExpediente({
             }
           : undefined,
         despacho: undefined, // Sem despacho inicial no envio
+        statusAtual: initialStatus,
         historico: [
           {
             data: now,
             setor: user?.departamento || user?.setor || "Remetente",
+            usuario: user?.name || user?.nome || "Utilizador",
             acao: isViagemDoc
               ? "Envio de Pedido de Viagem (Fluxo Obrigatório de Ida)"
               : `Submissão e Assinatura (${tipo})`,
-            parecer: isViagemDoc
+            observacoes: isViagemDoc
               ? "Pedido de Viagem registado pelo Remetente. Encaminhado à Secretaria Geral para o fluxo institucional obrigatório (Ida e Volta)."
               : "Documento registado e assinado pelo Remetente (Sem parecer nem despacho inicial). Remetido para a Secretaria Geral.",
-            responsavel: assinaturaData?.assinanteNome || user?.name || user?.nome || "Remetente",
-            cargo: assinaturaData?.assinanteCargo || user?.cargo || "Remetente",
-            assinaturaImg: assinaturaData?.assinaturaImg,
           },
         ],
       };
 
       const newDocId = await firestoreService.expedientes.add(newExpData);
+      const sectorId = user?.setor || user?.departamento || "Geral";
+      await firestoreService.updateSectorStats(sectorId, 'enviado');
       setIsSubmitted(true);
       if (onSuccess) {
         onSuccess(String(newDocId), newExpData);

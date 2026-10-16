@@ -127,7 +127,21 @@ import {
   orderBy,
   limit,
   writeBatch,
+  increment,
 } from "firebase/firestore";
+
+export async function updateSectorStats(sectorId: string, tipo: 'enviado' | 'recebido') {
+  try {
+    const statRef = doc(db, 'expediente_stats', sectorId);
+    await setDoc(statRef, {
+      [tipo]: increment(1),
+      sectorId: sectorId
+    }, { merge: true });
+  } catch (error) {
+    console.error("Erro ao atualizar estatísticas do setor:", error);
+  }
+}
+
 import {
   updatePassword,
   reauthenticateWithCredential,
@@ -199,9 +213,19 @@ export async function fetchCollection<T>(
   orderField: string | null = "createdAt",
 ): Promise<(T & { id: string })[]> {
   const colRef = collection(db, collectionName);
-  let q = orderField
-    ? query(colRef, orderBy(orderField, "desc"), limit(limitCount))
-    : query(colRef, limit(limitCount));
+  const instituicaoId = getInstituicaoId();
+  
+  // Aplica isolamento institucional se instituicaoId estiver disponível
+  let q;
+  if (instituicaoId) {
+    q = orderField
+      ? query(colRef, where("instituicaoId", "==", instituicaoId), orderBy(orderField, "desc"), limit(limitCount))
+      : query(colRef, where("instituicaoId", "==", instituicaoId), limit(limitCount));
+  } else {
+    q = orderField
+      ? query(colRef, orderBy(orderField, "desc"), limit(limitCount))
+      : query(colRef, limit(limitCount));
+  }
 
   const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => ({
@@ -404,13 +428,18 @@ function saveLocalData(collectionName: string, data: any[]) {
 
 function getInstituicaoId(): string {
   try {
+    const activeStored = localStorage.getItem("sigep_active_instituicao_id");
+    if (activeStored && activeStored !== "null" && activeStored !== "undefined") {
+      return activeStored;
+    }
     const stored = localStorage.getItem("sigep_logged_in_user") || localStorage.getItem("sigep_user");
     if (stored) {
       const parsed = JSON.parse(stored);
-      return parsed?.instituicaoId || "Songo";
+      if (parsed?.instituicaoId) return parsed.instituicaoId;
+      if (parsed?.tenantId) return parsed.tenantId;
     }
   } catch (e) {}
-  return "Songo";
+  return "isps";
 }
 
 export async function addUserData(collectionName: string, data: object) {
@@ -435,23 +464,34 @@ export async function addUserData(collectionName: string, data: object) {
     return "local_user_fallback";
   })();
 
-  // Adiciona o userId do usuário aos dados conforme solicitado na imagem
-  const cleanData = cleanObject(data);
+  // Regra RN-024.5: Toda a informação gerada no sistema deverá herdar o identificador da instituição proprietária
+  const cleanData = cleanObject(data as any);
+  const targetInstituicaoId = (cleanData as any).instituicaoId || (cleanData as any).tenantId || getInstituicaoId();
+
   const userData = {
     ...cleanData,
     userId,
-    tenantId: getInstituicaoId(),
+    instituicaoId: targetInstituicaoId,
+    tenantId: targetInstituicaoId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
 
   try {
     const docRef = await addDoc(collection(db, collectionName), userData);
-    console.log(`✅ Dados do usuário salvos em ${collectionName}/${docRef.id}`);
+    console.log(`✅ Dados do usuário salvos em ${collectionName}/${docRef.id} com instituicaoId=${targetInstituicaoId}`);
     
     // Atualizar cache local
     const localList = getLocalData(collectionName);
-    localList.push({ ...cleanData, id: docRef.id, userId, tenantId: getInstituicaoId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    localList.push({ 
+      ...cleanData, 
+      id: docRef.id, 
+      userId, 
+      instituicaoId: targetInstituicaoId, 
+      tenantId: targetInstituicaoId, 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString() 
+    });
     saveLocalData(collectionName, localList);
     
     return docRef.id;
@@ -482,11 +522,23 @@ export async function addToCollection<T>(collectionName: string, data: T) {
     return null;
   })();
 
+  // Regra RN-024.5: Toda informação gerada no sistema herda o identificador da instituição proprietária
+  const targetInstituicaoId = (cleanData as any).instituicaoId || (cleanData as any).tenantId || getInstituicaoId();
+
   // Se o modo offline/quota já estiver ativo, salva localmente direto sem chamadas de rede bloqueantes
   if (isLocalStorageFallbackActive()) {
     const localId = "local_" + Math.random().toString(36).substring(2, 11);
     const localList = getLocalData(collectionName);
-    localList.push({ ...cleanData, id: localId, userId, tenantId: getInstituicaoId(), createdAt: now, updatedAt: now, pending_sync: true });
+    localList.push({ 
+      ...cleanData, 
+      id: localId, 
+      userId, 
+      instituicaoId: targetInstituicaoId,
+      tenantId: targetInstituicaoId, 
+      createdAt: now, 
+      updatedAt: now, 
+      pending_sync: true 
+    });
     saveLocalData(collectionName, localList);
     return localId;
   }
@@ -496,7 +548,8 @@ export async function addToCollection<T>(collectionName: string, data: T) {
     const docRef = await addDoc(collection(db, collectionName), {
       ...cleanData,
       userId,
-      tenantId: getInstituicaoId(),
+      instituicaoId: targetInstituicaoId,
+      tenantId: targetInstituicaoId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       synced: true
@@ -506,10 +559,18 @@ export async function addToCollection<T>(collectionName: string, data: T) {
     
     // 2. Cache local apenas após confirmação
     const localList = getLocalData(collectionName);
-    localList.push({ ...cleanData, id: docRef.id, userId, tenantId: getInstituicaoId(), createdAt: now, updatedAt: now });
+    localList.push({ 
+      ...cleanData, 
+      id: docRef.id, 
+      userId, 
+      instituicaoId: targetInstituicaoId,
+      tenantId: targetInstituicaoId, 
+      createdAt: now, 
+      updatedAt: now 
+    });
     saveLocalData(collectionName, localList);
     
-    console.log(`✅ Registro adicionado ao servidor: ${collectionName}/${docRef.id}`);
+    console.log(`✅ Registro adicionado ao servidor: ${collectionName}/${docRef.id} [Instituição: ${targetInstituicaoId}]`);
     return docRef.id;
   } catch (error: any) {
     const errStr = (error?.message || String(error)).toLowerCase();
@@ -530,7 +591,16 @@ export async function addToCollection<T>(collectionName: string, data: T) {
     // Fallback local garantido
     const localId = "local_pending_" + Math.random().toString(36).substring(2, 11);
     const localList = getLocalData(collectionName);
-    localList.push({ ...cleanData, id: localId, userId, tenantId: getInstituicaoId(), createdAt: now, updatedAt: now, pending_sync: true });
+    localList.push({ 
+      ...cleanData, 
+      id: localId, 
+      userId, 
+      instituicaoId: targetInstituicaoId,
+      tenantId: targetInstituicaoId, 
+      createdAt: now, 
+      updatedAt: now, 
+      pending_sync: true 
+    });
     saveLocalData(collectionName, localList);
     
     return localId;
@@ -544,12 +614,18 @@ export async function updateInCollection<T>(
 ) {
   const cleanData = cleanObject(data);
   const now = new Date().toISOString();
+  const targetInstituicaoId = (cleanData as any).instituicaoId || (cleanData as any).tenantId || getInstituicaoId();
 
   // Sempre atualizar localmente primeiro
   const localList = getLocalData(collectionName);
   const idx = localList.findIndex((item: any) => item.id === id);
   if (idx !== -1) {
-    localList[idx] = { ...localList[idx], ...cleanData, updatedAt: now };
+    localList[idx] = { 
+      ...localList[idx], 
+      ...cleanData, 
+      instituicaoId: localList[idx]?.instituicaoId || targetInstituicaoId,
+      updatedAt: now 
+    };
     saveLocalData(collectionName, localList);
   }
 
@@ -564,7 +640,8 @@ export async function updateInCollection<T>(
       {
         ...cleanData,
         userId: auth.currentUser?.uid || undefined,
-        tenantId: getInstituicaoId(),
+        instituicaoId: targetInstituicaoId,
+        tenantId: targetInstituicaoId,
         updatedAt: serverTimestamp(),
         synced: true
       },
@@ -891,11 +968,13 @@ function createCollectionService<T>(
 
           // 3. Se é um novo registo, tentar usar um ID determinístico em vez de aleatório
           const deterministicId = data.id || (data.nome && data.nuit ? generateCollaboratorId(data.nome, data.nuit) : null);
+          const targetInstituicaoId = data.instituicaoId || data.tenantId || getInstituicaoId();
           if (deterministicId) {
             await setDoc(doc(db, collectionName, deterministicId), {
               ...cleanObject(data),
               id: deterministicId,
-              tenantId: getInstituicaoId(),
+              instituicaoId: targetInstituicaoId,
+              tenantId: targetInstituicaoId,
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
               synced: true
@@ -912,15 +991,16 @@ function createCollectionService<T>(
       updateInCollection(collectionName, id, data),
     replace: async (id: string, data: any) => {
       try {
+        const targetInstituicaoId = data.instituicaoId || data.tenantId || getInstituicaoId();
         try {
           const directKey = `sigep_doc_${collectionName}_${id}`;
-          localStorage.setItem(directKey, safeJSONStringify({ ...data, id }));
+          localStorage.setItem(directKey, safeJSONStringify({ ...data, id, instituicaoId: targetInstituicaoId }));
           const local = getLocalData(collectionName);
           const idx = local.findIndex((it: any) => it.id === id);
           if (idx >= 0) {
-            local[idx] = { ...data, id };
+            local[idx] = { ...data, id, instituicaoId: targetInstituicaoId };
           } else {
-            local.push({ ...data, id });
+            local.push({ ...data, id, instituicaoId: targetInstituicaoId });
           }
           saveLocalData(collectionName, local);
         } catch (_) {}
@@ -931,7 +1011,8 @@ function createCollectionService<T>(
           {
             ...data,
             uid: auth.currentUser?.uid || undefined,
-            tenantId: "Songo",
+            instituicaoId: targetInstituicaoId,
+            tenantId: targetInstituicaoId,
             updatedAt: serverTimestamp(),
           },
           { merge: false },
@@ -947,6 +1028,7 @@ function createCollectionService<T>(
     set: async (id: string, data: any) => {
       try {
         let targetId = id;
+        const targetInstituicaoId = data.instituicaoId || data.tenantId || getInstituicaoId();
         // Unicidade Soberana: Buscar por email ou NUIT usando queries eficientes
         if ((collectionName === "users" || collectionName === "colaboradores") && (data.email || data.nuit)) {
           try {
@@ -974,13 +1056,13 @@ function createCollectionService<T>(
 
         try {
           const directKey = `sigep_doc_${collectionName}_${targetId}`;
-          localStorage.setItem(directKey, safeJSONStringify({ ...data, id: targetId }));
+          localStorage.setItem(directKey, safeJSONStringify({ ...data, id: targetId, instituicaoId: targetInstituicaoId }));
           const local = getLocalData(collectionName);
           const idx = local.findIndex((it: any) => it.id === targetId);
           if (idx >= 0) {
-            local[idx] = { ...local[idx], ...data, id: targetId };
+            local[idx] = { ...local[idx], ...data, id: targetId, instituicaoId: targetInstituicaoId };
           } else {
-            local.push({ ...data, id: targetId });
+            local.push({ ...data, id: targetId, instituicaoId: targetInstituicaoId });
           }
           saveLocalData(collectionName, local);
         } catch (_) {}
@@ -991,6 +1073,8 @@ function createCollectionService<T>(
           {
             ...data,
             id: targetId,
+            instituicaoId: targetInstituicaoId,
+            tenantId: targetInstituicaoId,
             uid: auth.currentUser?.uid || data.uid || undefined,
             updatedAt: serverTimestamp(),
           },

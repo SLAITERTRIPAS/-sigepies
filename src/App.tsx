@@ -48,8 +48,7 @@ import {
   determineUserRole,
   isTechnicianUser,
 } from "./lib/auth";
-import { wipeAllTestData } from "./lib/firestoreService";
-import { clearActivitiesForInstitution, purgeAjudasDeCustoFromDatabase } from "./lib/cleanupService";
+import { clearActivitiesForInstitution } from "./lib/cleanupService";
 import { ProcessingCircle } from "./components/ui/ProcessingCircle";
 import { MENU_NAVIGATION_MAP, getMenuNavigationConfig } from "./lib/menuNavigationConfig";
 import {
@@ -196,11 +195,6 @@ export default function App() {
       }
     });
     return unsubscribe;
-  }, []);
-
-  // Purga automática de ajudas de custo em toda a base de dados no arranque
-  useEffect(() => {
-    purgeAjudasDeCustoFromDatabase().catch(err => console.warn("Erro ao purgar ajudas de custo:", err));
   }, []);
 
   const [rawColaboradores, setRawColaboradores] = useState<any[]>([]);
