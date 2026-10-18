@@ -42,6 +42,7 @@ import { getSystemLogo } from "../../lib/logoService";
 import InstitutionalProfileModal from "../../components/modals/InstitutionalProfileModal";
 import AtualizarDadosColaboradorModal from "../../components/modals/AtualizarDadosColaboradorModal";
 import { useCurrentLanguage, setLanguagePreference, getTranslation } from "../../lib/i18n";
+import WeatherWidget from "../../components/WeatherWidget";
 
 interface MainHeaderProps {
   user?: any;
@@ -630,6 +631,9 @@ export default function MainHeader({
                 >
                   {dateStr.toUpperCase()}
                 </span>
+                <div className="mt-1.5 flex justify-center">
+                  <WeatherWidget />
+                </div>
               </div>
             </div>
           </div>
@@ -845,18 +849,20 @@ export default function MainHeader({
               unreadMessagesCount={unreadMessagesCount}
               onOpenMessages={onOpenMessages}
             />
-            <div className="flex items-center gap-3 bg-indigo-600/20 border border-indigo-500/30 px-4 py-1.5 rounded-xl">
-              <div className="flex flex-col items-end leading-none">
-                <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">IA QUÂNTICA</span>
-                <span className="text-[7px] font-bold text-emerald-400 uppercase mt-0.5">SISTEMA ON-LINE</span>
-              </div>
-              <div className="relative w-8 h-8 flex items-center justify-center">
-                <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping"></div>
-                <div className="relative w-full h-full bg-indigo-700 rounded-lg flex items-center justify-center shadow-lg border border-indigo-500/30">
-                  <Cpu size={16} className="text-white" />
+            {isAnyAdmin && (
+              <div className="flex items-center gap-3 bg-indigo-600/20 border border-indigo-500/30 px-4 py-1.5 rounded-xl">
+                <div className="flex flex-col items-end leading-none">
+                  <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">IA QUÂNTICA</span>
+                  <span className="text-[7px] font-bold text-emerald-400 uppercase mt-0.5">SISTEMA ON-LINE</span>
+                </div>
+                <div className="relative w-8 h-8 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping"></div>
+                  <div className="relative w-full h-full bg-indigo-700 rounded-lg flex items-center justify-center shadow-lg border border-indigo-500/30">
+                    <Cpu size={16} className="text-white" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </header>

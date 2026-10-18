@@ -205,7 +205,7 @@ export default function VisaoGeralCards({
           return (
             <button
               key={card.title}
-              onClick={() => onNavigate(card.target)}
+              onClick={() => onNavigate(card.target, card.title)}
               className={`w-full min-h-[160px] flex flex-col justify-between border-2 rounded-2xl p-4 text-left transition-all active:shadow-none active:translate-x-[2px] active:translate-y-[2px] cursor-pointer group ${card.color}`}
             >
               <div className="flex items-center justify-between">

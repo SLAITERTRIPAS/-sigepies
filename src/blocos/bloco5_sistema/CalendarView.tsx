@@ -633,8 +633,9 @@ export default function CalendarView({
                 })}
               </div>
 
-              {/* Calendar Grid Boxes */}
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 md:gap-3">
+              {/* Calendar Grid Boxes - Scrollable wrapper */}
+              <div className="flex-1 overflow-y-auto max-h-[600px] pr-2">
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 md:gap-3">
                 {(() => {
                   const year = currentDate.getFullYear();
                   const month = currentDate.getMonth();
@@ -652,7 +653,7 @@ export default function CalendarView({
                     );
                   }
 
-                  // Days of current month (all 1 to 28/29/30/31 days completely visible)
+                  // Days of current month
                   for (let day = 1; day <= days; day++) {
                     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                     const isJune30 = month === 5 && day === 30 && year === 2026;
@@ -663,7 +664,6 @@ export default function CalendarView({
                       <div
                         key={day}
                         onClick={() => {
-
                           const d = new Date(year, month, day);
                           setSelectedDate(d);
                           setNewEvent((prev) => ({
@@ -716,6 +716,7 @@ export default function CalendarView({
 
                   return calendarCells;
                 })()}
+                </div>
               </div>
             </div>
           </div>

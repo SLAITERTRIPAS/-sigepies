@@ -982,7 +982,7 @@ const ViewRendererInner: React.FC<ViewRendererProps> = ({
       );
 
     case "manual_instrucoes":
-      return <ManualInstrucoesView onBack={goBack} />;
+      return <ManualInstrucoesView onBack={goBack} user={user} />;
 
     case "projeto_cientifico":
       return <ScientificProjectPresentation onBack={goBack} />;

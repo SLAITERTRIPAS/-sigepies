@@ -22,7 +22,7 @@ import {
 import { intelligentDiagnostics, DiagnosticResult, SystemAnomaly } from "../../lib/intelligentDiagnostics";
 import { quantumAI } from "../../lib/quantumAiService";
 
-export function IntelligentDiagnosticsView() {
+export function IntelligentDiagnosticsView({ user }: { user?: any }) {
   const [result, setResult] = useState<DiagnosticResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [fixingKey, setFixingKey] = useState<string | null>(null);

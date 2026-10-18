@@ -98,6 +98,27 @@ export async function createServer() {
     });
   });
 
+  // Rota de Geocodificação reversa
+  app.get("/api/geocode", async (req, res) => {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) {
+      return res.status(400).json({ error: "Lat e Lng são obrigatórios." });
+    }
+    try {
+      const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) throw new Error("API Key não configurada.");
+      
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=pt-PT&solution_id=gmp_mcp_codeassist_v1_aistudio`
+      );
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Erro no proxy de geocodificação:", error);
+      res.status(500).json({ error: "Falha ao buscar dados de localização." });
+    }
+  });
+
   // Rota de análise Grammarly AI
   app.post("/api/grammarly/check", async (req, res) => {
     const { text, mode } = req.body;

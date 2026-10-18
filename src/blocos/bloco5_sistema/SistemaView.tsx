@@ -179,6 +179,7 @@ export default function SistemaView({
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [registrationFormType, setRegistrationFormType] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<any[] | null>(null);
   const [pendingInstituicaoId, setPendingInstituicaoId] = useState<string | null>(null);
   const [activeItemClickCount, setActiveItemClickCount] = useState<number>(0);
 
@@ -816,9 +817,11 @@ export default function SistemaView({
     if (!window.confirm(confirmMsg)) return;
 
     setIsCleaning(true);
-    setCleaningStep("A executar limpeza profunda de duplicados e obsoletos...");
+    setCleaningStep("0% - Iniciando limpeza profunda...");
     try {
-      const res = await databaseMaintenance.deepCleanupDuplicatesAndObsolete();
+      const res = await databaseMaintenance.deepCleanupDuplicatesAndObsolete((percent, step) => {
+        setCleaningStep(`${percent}% - ${step}`);
+      });
       alert(
         `Limpeza Geral Concluída com Sucesso!\n\n` +
           `- Colaboradores duplicados removidos: ${res.colaboradoresRemoved}\n` +
@@ -828,7 +831,7 @@ export default function SistemaView({
       window.location.reload();
     } catch (err: any) {
       console.error("Erro na limpeza geral:", err);
-      alert("Erro ao executar limpeza geral: " + (err?.message || err));
+      alert("Erro de exclusão: " + (err?.message || err));
     } finally {
       setIsCleaning(false);
       setCleaningStep(null);
@@ -871,13 +874,15 @@ export default function SistemaView({
     }
   }, [activeItem]);
 
-  const handleClearData = async (categoriesToClear?: any[]) => {
-    const confirmMessage =
-      "⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL. Todos os dados das categorias selecionadas serão permanentemente excluídos da base de dados sem possibilidade de recuperação. Deseja continuar?";
-    if (!window.confirm(confirmMessage)) return;
+  const handleClearData = async (categoriesToClear?: any[], isDryRun: boolean = false) => {
+    if (!isDryRun) {
+      const confirmMessage =
+        "⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL. Todos os dados das categorias selecionadas serão permanentemente excluídos da base de dados sem possibilidade de recuperação. Deseja continuar?";
+      if (!window.confirm(confirmMessage)) return;
+    }
 
     setIsCleaning(true);
-    setCleaningStep("Iniciando limpeza da base de dados...");
+    setCleaningStep(isDryRun ? "A calcular itens para exclusão..." : "Iniciando limpeza da base de dados...");
 
     // Categorias protegidas (não podem ser limpas)
     const protectedLabels = [
@@ -885,6 +890,8 @@ export default function SistemaView({
       "Estudantes e Turmas",
       "Gestão de Utilizadores",
     ];
+
+    let dryRunResults: any[] = [];
 
     try {
       const { doc, writeBatch, collection, getDocs } =
@@ -905,52 +912,66 @@ export default function SistemaView({
           continue;
         }
 
-        setCleaningStep(`Limpando ${cat.label}...`);
+        setCleaningStep(`A analisar ${cat.label}...`);
 
         if (cat.special && cat.action) {
-          await cat.action();
+          // Nota: Ações especiais como limpar cache local são ignoradas no dry-run
+          if (!isDryRun) await cat.action();
           continue;
         }
 
         const collections = cat.collections || [cat.collection];
+        let catCount = 0;
+        let samples: string[] = [];
+
         for (const collName of collections) {
-          setCleaningStep(`A processar coleção: ${collName}...`);
+          setCleaningStep(`A verificar coleção: ${collName}...`);
           const colSnapshot = await getDocs(collection(db, collName));
 
-          let batch = writeBatch(db);
-          let count = 0;
-
-          for (const document of colSnapshot.docs) {
-            // Proteção extra para o admin master
-            if (
-              collName === "users" &&
-              document.data().role === "Administrador" &&
-              (document.data().name === "Franzíssi Tripalonga" ||
-                document.data().name === "SLAITER TRIPAS")
-            ) {
-              continue;
+          if (isDryRun) {
+            colSnapshot.docs.slice(0, 5).forEach((doc) => {
+              const data = doc.data();
+              samples.push(data.nome || data.title || data.nomeActividade || data.designacao || doc.id);
+            });
+            catCount += colSnapshot.size;
+          } else {
+            let batch = writeBatch(db);
+            let count = 0;
+            for (const document of colSnapshot.docs) {
+              if (
+                (collName === "users" &&
+                  document.data().role === "Administrador" &&
+                  (document.data().name === "Franzíssi Tripalonga" ||
+                    document.data().name === "SLAITER TRIPAS")) ||
+                (collName === "colaboradores" &&
+                  (document.data().nome === "Franzíssi Tripalonga" ||
+                    document.data().nome === "SLAITER TRIPAS"))
+              ) {
+                continue;
+              }
+              batch.delete(doc(db, collName, document.id));
+              count++;
+              if (count === 500) {
+                await batch.commit();
+                batch = writeBatch(db);
+                count = 0;
+              }
             }
-            if (
-              collName === "colaboradores" &&
-              (document.data().nome === "Franzíssi Tripalonga" ||
-                document.data().nome === "SLAITER TRIPAS")
-            ) {
-              continue;
-            }
-
-            batch.delete(doc(db, collName, document.id));
-            count++;
-
-            if (count === 500) {
+            if (count > 0) {
               await batch.commit();
-              batch = writeBatch(db);
-              count = 0;
             }
-          }
-          if (count > 0) {
-            await batch.commit();
           }
         }
+
+        if (isDryRun) {
+          dryRunResults.push({ category: cat.label, count: catCount, samples });
+        }
+      }
+
+      if (isDryRun) {
+        setIsCleaning(false);
+        setCleaningStep(null);
+        return dryRunResults;
       }
 
       setCleaningStep("Finalizando limpeza...");
@@ -964,7 +985,7 @@ export default function SistemaView({
       setIsCleaning(false);
       setCleaningStep(null);
       setShowClearConfirm(false);
-      setActiveItem("Sobre o Sistema");
+      if (!isDryRun) setActiveItem("Sobre o Sistema");
     }
   };
 
@@ -1056,7 +1077,7 @@ export default function SistemaView({
   const renderContent = () => {
     switch (activeItem) {
       case "Diagnóstico & Autocura":
-        return <IntelligentDiagnosticsView />;
+        return (isGlobalAdmin || isInstitutionalAdmin) ? <IntelligentDiagnosticsView user={extendedUser || user} /> : null;
       case "Centro de Mensagens":
         return (
           <CaixaMensagensView
@@ -1992,29 +2013,59 @@ export default function SistemaView({
                   </div>
                 </div>
 
-                <button
-                  disabled={isCleaning || selectedCleanupLabels.length === 0}
-                  onClick={async () => {
-                    const confirm1 = window.confirm(
-                      `CONFIRMAÇÃO: Deseja eliminar permanentemente os dados das ${selectedCleanupLabels.length} categorias selecionadas?`,
-                    );
-                    if (confirm1) {
+                <div className="flex gap-4">
+                  <button
+                    disabled={isCleaning || selectedCleanupLabels.length === 0}
+                    onClick={async () => {
                       const selectedObjects = cleanupCategories.filter((c) =>
                         selectedCleanupLabels.includes(c.label),
                       );
-                      await handleClearData(selectedObjects);
-                    }
-                  }}
-                  className="w-full py-5 bg-red-600 text-white rounded-2xl font-black text-lg hover:bg-red-700 transition-all shadow-xl shadow-red-200 flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
-                >
-                  {isCleaning ? (
-                    <>
-                      <Loader2 className="animate-spin" /> {cleaningStep}
-                    </>
-                  ) : (
-                    "Executar Limpeza Geral Do Sistema"
-                  )}
-                </button>
+                      const result = await handleClearData(selectedObjects, true);
+                      setPreviewData(result as any[]);
+                    }}
+                    className="flex-1 py-5 bg-slate-800 text-white rounded-2xl font-black text-lg hover:bg-slate-900 transition-all shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50"
+                  >
+                    Visualizar Prévia
+                  </button>
+                  <button
+                    disabled={isCleaning || selectedCleanupLabels.length === 0}
+                    onClick={async () => {
+                      const confirm1 = window.confirm(
+                        `CONFIRMAÇÃO: Deseja eliminar permanentemente os dados das ${selectedCleanupLabels.length} categorias selecionadas?`,
+                      );
+                      if (confirm1) {
+                        setPreviewData(null);
+                        const selectedObjects = cleanupCategories.filter((c) =>
+                          selectedCleanupLabels.includes(c.label),
+                        );
+                        await handleClearData(selectedObjects, false);
+                      }
+                    }}
+                    className="flex-1 py-5 bg-red-600 text-white rounded-2xl font-black text-lg hover:bg-red-700 transition-all shadow-xl shadow-red-200 flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                  >
+                    {isCleaning ? (
+                      <>
+                        <Loader2 className="animate-spin" /> {cleaningStep}
+                      </>
+                    ) : (
+                      "Executar Limpeza Geral Do Sistema"
+                    )}
+                  </button>
+                </div>
+
+                {previewData && (
+                  <div className="mt-6 bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-inner">
+                    <h4 className="font-black text-slate-800 mb-4 uppercase text-sm">Resumo da Prévia de Exclusão</h4>
+                    <div className="space-y-4">
+                      {previewData.map((res: any, idx: number) => (
+                        <div key={idx} className="border-b pb-2">
+                          <p className="font-bold text-slate-900">{res.category}: <span className="text-red-600">{res.count} itens</span></p>
+                          <p className="text-xs text-slate-500">Exemplos: {res.samples.join(", ")}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

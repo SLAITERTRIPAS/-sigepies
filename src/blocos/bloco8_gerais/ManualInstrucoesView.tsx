@@ -9,9 +9,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getChapterContentTecnica, getChapterContentHumana } from "./manualContents";
+import { isSuperBossUser, isInstitutionalAdminUser } from "../../lib/auth";
 import { printElementById } from "../../lib/printUtils";
 
-const ManualInstrucoesView = ({ onBack }: { onBack: () => void }) => {
+const ManualInstrucoesView = ({ onBack, user }: { onBack: () => void, user?: any }) => {
   const [activeChapter, setActiveChapter] = useState(1);
   const [readingMode, setReadingMode] = useState<"tecnica" | "humana">("tecnica");
 
@@ -35,7 +36,7 @@ const ManualInstrucoesView = ({ onBack }: { onBack: () => void }) => {
     { id: 17, title: "17. Check list", icon: <CheckCircle2 className="w-4 h-4" /> },
   ];
 
-  const chapterContentTecnica = getChapterContentTecnica(chapters, setActiveChapter);
+  const chapterContentTecnica = getChapterContentTecnica(chapters, setActiveChapter, user);
   const chapterContentHumana = getChapterContentHumana(chapters, setActiveChapter);
   const chapterContent = readingMode === "humana" ? chapterContentHumana : chapterContentTecnica;
 
@@ -226,10 +227,12 @@ const ManualInstrucoesView = ({ onBack }: { onBack: () => void }) => {
                           <span>Memória Descritiva & Fundamentação Sociotécnica</span>
                         </div>
                       ) : (
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-cyan-400 font-mono font-bold text-[12px]">
-                          <Terminal className="w-4 h-4 text-cyan-400" />
-                          <span>MEMÓRIA DESCRITIVA :: ESPECIFICAÇÃO DE IA QUÂNTICA</span>
-                        </div>
+                        (isSuperBossUser(user) || isInstitutionalAdminUser(user)) && (
+                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-cyan-400 font-mono font-bold text-[12px]">
+                            <Terminal className="w-4 h-4 text-cyan-400" />
+                            <span>MEMÓRIA DESCRITIVA :: ESPECIFICAÇÃO DE IA QUÂNTICA</span>
+                          </div>
+                        )
                       )}
                       <div className="space-y-4">
                         <h1 className="font-black text-slate-900 leading-[1.1] max-w-2xl mx-auto text-[16px] tracking-tight">

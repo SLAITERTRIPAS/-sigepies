@@ -464,12 +464,16 @@ export default function DirectorDashboard({
     };
   }, [matrixActivities, activities]);
 
-  const navigateTo = (newItem: string, resetSelectedPlan = true) => {
+  const navigateTo = (newItem: string, filter?: string, resetSelectedPlan = true) => {
     setViewHistory((prev) => [
       ...prev,
       { activeItem, selectedPlanType, showActivityForm },
     ]);
     setActiveItem(newItem);
+    if (filter) {
+      // Aqui você poderia armazenar o filtro num estado, ex: setFilter(filter)
+      console.log("Filtrando por:", filter);
+    }
     if (resetSelectedPlan) {
       setSelectedPlanType(null);
       setShowActivityForm(false);
@@ -1783,7 +1787,7 @@ export default function DirectorDashboard({
           {canViewDetailedDashboard(user) && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
               {/* 1. Resumo dos Colaboradores */}
-              <button onClick={() => alert("Detalhes: Resumo dos Colaboradores\n\nTotal detalhado de colaboradores por categoria, nível académico, área de formação e cargos de chefia.")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#0f172a] space-y-4 text-left hover:scale-[1.01] transition-transform">
+              <button onClick={() => navigateTo("Gestão de Pessoal")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#0f172a] space-y-4 text-left hover:scale-[1.01] transition-transform">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                   <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
                     <Users size={20} />
@@ -1827,7 +1831,7 @@ export default function DirectorDashboard({
               </button>
 
               {/* 2. Corpo Discente */}
-              <button onClick={() => alert("Detalhes: Corpo Discente\n\nDistribuição detalhada de estudantes por curso, naturalidade e ano/nível académico.")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#1e3a8a] space-y-4 text-left hover:scale-[1.01] transition-transform">
+              <button onClick={() => navigateTo("Corpo Discente")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#1e3a8a] space-y-4 text-left hover:scale-[1.01] transition-transform">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                   <div className="p-2 bg-indigo-100 text-indigo-900 rounded-xl">
                     <GraduationCap size={20} />
@@ -1877,7 +1881,7 @@ export default function DirectorDashboard({
               </button>
 
               {/* 3. Plano de Atividade */}
-              <button onClick={() => alert("Detalhes: Plano de Atividades\n\nExecução detalhada do plano, incluindo atividades concluídas, por executar, e análise orçamental detalhada.")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#f59e0b] space-y-4 text-left hover:scale-[1.01] transition-transform">
+              <button onClick={() => navigateTo("Plano")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#f59e0b] space-y-4 text-left hover:scale-[1.01] transition-transform">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                   <div className="p-2 bg-amber-100 text-amber-900 rounded-xl">
                     <Calendar size={20} />

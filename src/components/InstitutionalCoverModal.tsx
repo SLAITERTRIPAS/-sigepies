@@ -67,7 +67,7 @@ export default function InstitutionalCoverModal({
               </div>
               <div className="flex items-center justify-center bg-transparent">
                 <img
-                  src={instituicao?.logoUrl && !instituicao.logoUrl.includes("11zvvpOpZARM1yk_irEDpjJ-qBKlTlhad") ? instituicao.logoUrl : (getSystemLogo() || "/image.png")}
+                  src={instituicao?.logoUrl && !instituicao.logoUrl.includes("11zvvpOpZARM1yk_irEDpjJ-qBKlTlhad") ? instituicao.logoUrl : (getSystemLogo() || "/sigep-official-logo.svg")}
                   alt="Logo Instituição"
                   className="h-10 sm:h-12 w-auto object-contain filter drop-shadow-sm"
                   referrerPolicy="no-referrer"

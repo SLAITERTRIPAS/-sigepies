@@ -3,6 +3,7 @@ import {
   ShieldCheck, Target, AlertTriangle, 
   ChevronRight, Cpu, Sparkles, Binary, Zap, Terminal, Database, GitBranch, Layers, CheckCircle2, Printer
 } from "lucide-react";
+import { isSuperBossUser, isInstitutionalAdminUser } from "../../lib/auth";
 
 export interface ChapterDef {
   id: number;
@@ -12,8 +13,10 @@ export interface ChapterDef {
 
 export const getChapterContentTecnica = (
   chapters: ChapterDef[], 
-  setActiveChapter: (id: number) => void
+  setActiveChapter: (id: number) => void,
+  user?: any
 ): Record<number, React.ReactNode> => {
+  const isAnyAdmin = isSuperBossUser(user) || isInstitutionalAdminUser(user);
   return {
     1: (
       <div className="space-y-6 flex-1">
@@ -102,9 +105,11 @@ export const getChapterContentTecnica = (
     3: (
       <div className="space-y-6 flex-1">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-slate-900 text-cyan-400 rounded font-mono font-bold text-[10px] tracking-wider">
-            <Cpu className="w-3 h-3 text-cyan-400" /> KERNEL DE IA QUÂNTICA & ALGORITMOS REATIVOS EM EXECUÇÃO
-          </div>
+          {isAnyAdmin && (
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-slate-900 text-cyan-400 rounded font-mono font-bold text-[10px] tracking-wider">
+              <Cpu className="w-3 h-3 text-cyan-400" /> KERNEL DE IA QUÂNTICA & ALGORITMOS REATIVOS EM EXECUÇÃO
+            </div>
+          )}
           <h2 className="font-black text-slate-900 text-[13px]">3. Resumo Executivo: Arquitetura Computacional e Orquestração Operacional do SIGEP</h2>
         </div>
         

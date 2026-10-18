@@ -1716,8 +1716,21 @@ function ReportEditor({
           >
             <Plus size={18} /> Adicionar Nova Página/Secção de Atividade ao Relatório
           </button>
+
+          <AssinaturaDigitalUploader user={user} />
+
+          <button
+            type="button"
+            onClick={handleLocalSave}
+            className="w-full py-5 bg-blue-900 text-white font-black rounded-2xl hover:bg-blue-800 transition-all shadow-xl mt-8 cursor-pointer"
+          >
+            {isSyncing ? "A Guardar..." : "Guardar Relatório (Rascunho)"}
+          </button>
         </div>
       </div>
     </motion.div>
   );
 }
+
+import AssinaturaDigitalUploader from "../../components/AssinaturaDigitalUploader";
+

@@ -42,6 +42,7 @@ const BalancoAtividadesView = lazy(() => import("./BalancoAtividadesView"));
 const AssinaturaDigitalView = lazy(() => import("../bloco5_sistema/AssinaturaDigitalView"));
 import MainHeader from "../bloco1_apresentacao/MainHeader";
 import FluxogramaTramitacaoExpediente from "../../components/FluxogramaTramitacaoExpediente";
+import HistoricoExpedienteView from "../../components/HistoricoExpedienteView";
 import { firestoreService } from "../../lib/firestoreService";
 
 interface GestaoExpedienteHistoricoViewProps {
@@ -1655,16 +1656,12 @@ Data de Emissão: ${new Date().toLocaleString("pt-MZ")}
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedDocId(doc.id);
-                                setShowReaderModal(true);
+                                setSelectedExpediente(doc.rawExpediente || null);
+                                setShowRastreioModal(true);
                               }}
-                              className={`px-3 py-1.5 rounded-lg text-[9px] font-black  tracking-widest transition-all ${
-                                isSelected
-                                  ? "bg-amber-500 text-slate-950 shadow-xl shadow-amber-900/20"
-                                  : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
-                              }`}
+                              className="px-3 py-1.5 rounded-lg text-[9px] font-black bg-blue-600 text-white hover:bg-blue-500 tracking-widest transition-all"
                             >
-                              Abrir
+                              Rastrear
                             </button>
                           </td>
                         </tr>
@@ -1673,6 +1670,24 @@ Data de Emissão: ${new Date().toLocaleString("pt-MZ")}
                   </tbody>
                 </table>
               </div>
+
+              {/* Modal de Rastreio */}
+              {showRastreioModal && selectedExpediente && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+                  <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-slate-200">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-black text-slate-900 tracking-tighter">Rastreio do Expediente {selectedExpediente.numero}</h2>
+                      <button onClick={() => setShowRastreioModal(false)} className="text-slate-500 hover:text-slate-900">
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <FluxogramaTramitacaoExpediente expediente={selectedExpediente} showSimulador={false} />
+                    <div className="mt-6">
+                      <HistoricoExpedienteView historico={selectedExpediente.historico || []} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* PAINEL LATERAL DIREITO REFINADO */}

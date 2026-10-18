@@ -705,7 +705,7 @@ export const databaseMaintenance = {
    * Limpeza profunda de duplicados e sobreposições de nomes e códigos obsoletos.
    * Atende ao pedido: "EXCLUSAO COMPETA DE SOBREPOSICAO DE NOME E CODIGO, CODIGOE NOMES OBSOLETOS"
    */
-   async deepCleanupDuplicatesAndObsolete() {
+    async deepCleanupDuplicatesAndObsolete(onProgress?: (percent: number, step: string) => void) {
     console.log("Iniciando limpeza profunda de duplicados, sobreposições de nomes e códigos em todo o sistema...");
     const results = {
       colaboradoresRemoved: 0,
@@ -718,10 +718,14 @@ export const databaseMaintenance = {
     };
 
     try {
+      const updateProgress = (p: number, s: string) => onProgress && onProgress(p, s);
+      updateProgress(5, "Iniciando limpeza de colaboradores...");
       // 1. Limpeza em Colaboradores (Baseado em NUIT ou Nome idêntico)
       const colRef = collection(db, "colaboradores");
       const snapCol = await getDocs(colRef);
       if (!snapCol.empty) {
+        // ... (rest of step 1) ...
+        // [Existing logic for step 1]
         const docs = snapCol.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
         
         // Priority helper: Complete/valid IDs come FIRST (so they are kept), incomplete/short IDs come LAST (so they are deleted)
@@ -777,7 +781,8 @@ export const databaseMaintenance = {
           results.colaboradoresRemoved = toDelete.length;
         }
       }
-
+      
+      updateProgress(20, "Limpeza de fornecedores...");
       // 2. Limpeza em Fornecedores / Suppliers
       for (const colName of ["suppliers", "fornecedores"]) {
         try {
@@ -814,6 +819,7 @@ export const databaseMaintenance = {
         }
       }
 
+      updateProgress(35, "Limpeza de materiais...");
       // 3. Limpeza em Materiais / Bens
       try {
         const matRef = collection(db, "materiais_bens");
@@ -846,6 +852,7 @@ export const databaseMaintenance = {
         }
       } catch (e) {}
 
+      updateProgress(50, "Limpeza de processos...");
       // 4. Limpeza em Processos / Expedientes
       for (const colName of ["processos", "expedientes"]) {
         try {
@@ -876,6 +883,7 @@ export const databaseMaintenance = {
         } catch (e) {}
       }
 
+      updateProgress(65, "Limpeza de utilizadores...");
       // 5. Limpeza em Users
       try {
         const userRef = collection(db, "users");
@@ -903,6 +911,7 @@ export const databaseMaintenance = {
         }
       } catch (e) {}
 
+      updateProgress(80, "Limpeza de atividades RH...");
       // 6. Limpar actividades atribuídas a Recursos Humanos e DICOSAFA (que ainda não planificaram nada)
       for (const colName of ["matrix_activities", "actividades"]) {
         try {
@@ -949,15 +958,18 @@ export const databaseMaintenance = {
         }
       }
 
+      updateProgress(90, "Limpando duplicados finais...");
       // 7. Chamar a remoção de duplicados de actividades e correção de numeração
       const actRes = await this.removeDuplicateActivitiesAndFixNumbering();
       results.activitiesRemoved = actRes.deletedCount;
 
+      updateProgress(95, "Deduplicando utilizadores e colaboradores...");
       // 8. Chamar remoção estrita de duplicados de colaboradores e utilizadores
       const dupRes = await this.removeDuplicateCollaboratorsAndUsers();
       (results as any).usersRemoved = dupRes.userRemovedCount;
       (results as any).colaboradoresRemoved = dupRes.colRemovedCount;
 
+      updateProgress(100, "Concluído!");
       console.log("Limpeza profunda concluída com sucesso:", results);
       return results;
     } catch (err) {
