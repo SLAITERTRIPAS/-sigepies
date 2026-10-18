@@ -1,7 +1,7 @@
 import React from "react";
 import { ArrowLeft, FileText, Target, Building2 } from "lucide-react";
 import { MatrixActivity } from "../../types";
-import { getAuthorizedActivities } from "../../lib/auth";
+import { getAuthorizedActivities, isUgeaActivity, isUgeaUser } from "../../lib/auth";
 
 interface UGEAPlanViewProps {
   type: string;
@@ -19,6 +19,29 @@ export default function UGEAPlanView({
   // Filter activities based on the requested plan type AND user permissions
   const authorizedActivities = getAuthorizedActivities(activities, user);
   const planActivities = authorizedActivities.filter((a) => {
+    if (!a) return false;
+    const aDept = String(a.departamento || "").toUpperCase();
+    const aSec = String(a.setor || a.reparticao || "").toUpperCase();
+    const aOrig = String(a.origem || a.setorOrigin || a.setorCriador || "").toUpperCase();
+
+    // EXCLUSÃO TOTAL: Engenharia de Construção Civil NUNCA pode entrar na UGEA!
+    if (
+      aDept.includes("CONSTRUÇÃO CIVIL") ||
+      aDept.includes("CONSTRUCAO CIVIL") ||
+      aSec.includes("CONSTRUÇÃO CIVIL") ||
+      aSec.includes("CONSTRUCAO CIVIL") ||
+      aOrig.includes("CONSTRUÇÃO CIVIL") ||
+      aOrig.includes("CONSTRUCAO CIVIL") ||
+      (aDept.includes("ENGENHARIA") && !aDept.includes("UGEA") && !aDept.includes("AQUISIC"))
+    ) {
+      return false;
+    }
+
+    // Apenas atividades genuinamente da UGEA pertencem ao plano da UGEA
+    if (!isUgeaActivity(a)) {
+      return false;
+    }
+
     if (type === "Aquisicão" || type === "Aquisição") return a.necessitaAquisicao === "Sim";
     if (type === "Contratação") return a.necessitaContratacao === "Sim";
     return false;

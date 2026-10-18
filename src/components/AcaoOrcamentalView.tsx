@@ -499,17 +499,21 @@ const isUgeaActivity = (act: any): boolean => {
   const code = normalizeStr(act.codigoActividade || act.referencia || act.codigo || "");
   const creatorEmail = normalizeStr(act.emailCriador || act.createdBy || act.autorEmail || "");
 
-  // 1. Exclusão estrita: se pertence expressamente a outros departamentos/direções e não ao setor UGEA, não é UGEA
+  // 1. Exclusão estrita: se pertence a Construção Civil ou outros departamentos/direções fora da UGEA, NUNCA é UGEA
   if (
-    (directDept.includes("dicosafa") || 
-     directDept.includes("financas") || 
-     directDept.includes("patrimonio") || 
-     directDept.includes("recursos humanos") ||
-     directDept.includes("dpep") ||
-     directDept.includes("engenharia") ||
-     directDept.includes("pedagogico")) &&
-    !directSetor.includes("ugea") &&
-    !directDept.includes("ugea")
+    directDept.includes("construcao") || 
+    directDept.includes("construção") || 
+    directSetor.includes("construcao") || 
+    directSetor.includes("construção") || 
+    (directDept.includes("engenharia") && !directDept.includes("ugea") && !directDept.includes("aquisic")) ||
+    ((directDept.includes("dicosafa") || 
+      directDept.includes("financas") || 
+      directDept.includes("patrimonio") || 
+      directDept.includes("recursos humanos") ||
+      directDept.includes("dpep") ||
+      directDept.includes("pedagogico")) &&
+     !directSetor.includes("ugea") &&
+     !directDept.includes("ugea"))
   ) {
     return false;
   }

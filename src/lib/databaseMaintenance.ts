@@ -946,11 +946,35 @@ export const databaseMaintenance = {
               if (isRH || isDicosaFaLegacy) {
                 batch.delete(doc(db, colName, d.id));
                 cleanedCount++;
+              } else {
+                // Isolamento UGEA vs Engenharia de Construção Civil
+                const isCivil =
+                  dept.includes("CONSTRUÇÃO CIVIL") ||
+                  dept.includes("CONSTRUCAO CIVIL") ||
+                  sector.includes("CONSTRUÇÃO CIVIL") ||
+                  sector.includes("CONSTRUCAO CIVIL");
+                const hasUgea =
+                  dept.includes("UGEA") ||
+                  sector.includes("UGEA") ||
+                  rep.includes("UGEA") ||
+                  dept.includes("AQUISIÇÕES") ||
+                  dept.includes("AQUISICOES");
+
+                if (isCivil && hasUgea) {
+                  batch.update(doc(db, colName, d.id), {
+                    setor: "Engenharia de Construção Civil",
+                    departamento: "Departamento de Engenharia de Construção Civil",
+                    reparticao: "Diretor do Curso de Engenharia de Construção Civil",
+                    unidadeOrganica: "Divisão de Engenharia",
+                    direcao: "Divisão de Engenharia"
+                  });
+                  cleanedCount++;
+                }
               }
             });
             if (cleanedCount > 0) {
               await batch.commit();
-              console.log(`Limpas ${cleanedCount} actividades de RH/DICOSAFA em ${colName}`);
+              console.log(`Limpas/isoladas ${cleanedCount} actividades em ${colName}`);
             }
           }
         } catch (e) {
@@ -958,10 +982,14 @@ export const databaseMaintenance = {
         }
       }
 
+      updateProgress(85, "Limpeza de inconsistências entre Engenharia de Construção Civil e UGEA...");
+      const mismatchRes = await this.cleanCivilEngineeringUgeaMismatch();
+      results.activitiesRemoved = (results.activitiesRemoved || 0) + mismatchRes.activitiesRemoved;
+
       updateProgress(90, "Limpando duplicados finais...");
       // 7. Chamar a remoção de duplicados de actividades e correção de numeração
       const actRes = await this.removeDuplicateActivitiesAndFixNumbering();
-      results.activitiesRemoved = actRes.deletedCount;
+      results.activitiesRemoved = (results.activitiesRemoved || 0) + actRes.deletedCount;
 
       updateProgress(95, "Deduplicando utilizadores e colaboradores...");
       // 8. Chamar remoção estrita de duplicados de colaboradores e utilizadores
@@ -1054,6 +1082,152 @@ export const databaseMaintenance = {
     } catch (err) {
       console.error("Erro ao remover duplicados de colaboradores e utilizadores:", err);
       return { userRemovedCount: 0, colRemovedCount: 0 };
+    }
+  },
+
+  /**
+   * Identifica e remove entradas na base de dados (em 'processos' ou 'atividades')
+   * onde o departamento seja 'Engenharia de Construção Civil' mas que estejam
+   * incorretamente associadas à 'UGEA' (ou vice-versa), garantindo isolamento total.
+   */
+  async cleanCivilEngineeringUgeaMismatch() {
+    console.log("Iniciando verificação e remoção de desfasamentos entre Engenharia de Construção Civil e UGEA...");
+    const results = {
+      activitiesRemoved: 0,
+      processesRemoved: 0,
+      details: [] as string[],
+    };
+
+    try {
+      // 1. Coleções de Atividades (matrix_activities, actividades, activities)
+      const activityCollections = ["matrix_activities", "actividades", "activities"];
+      for (const colName of activityCollections) {
+        try {
+          const colRef = collection(db, colName);
+          const snap = await getDocs(colRef);
+          if (!snap.empty) {
+            for (const docSnap of snap.docs) {
+              const data = docSnap.data() || {};
+              const dept = String(data.departamento || data.unidadeOrganica || "").toUpperCase();
+              const sector = String(data.setor || data.reparticao || "").toUpperCase();
+              const orig = String(data.origem || data.setorOrigin || data.setorCriador || "").toUpperCase();
+              const code = String(data.codigo || data.codigoActividade || data.referencia || "").toUpperCase();
+              const solicitante = String(data.solicitante || data.orgao || "").toUpperCase();
+              const desc = String(data.designacao || data.title || data.nomeActividade || "").toUpperCase();
+
+              const isCivil =
+                dept.includes("CONSTRUÇÃO CIVIL") ||
+                dept.includes("CONSTRUCAO CIVIL") ||
+                dept.includes("ENGENHARIA DE CONSTRUÇÃO") ||
+                dept.includes("ENGENHARIA DE CONSTRUCAO") ||
+                sector.includes("CONSTRUÇÃO CIVIL") ||
+                sector.includes("CONSTRUCAO CIVIL");
+
+              const isAssociatedWithUgea =
+                dept.includes("UGEA") ||
+                sector.includes("UGEA") ||
+                orig.includes("UGEA") ||
+                code.includes("UGEA") ||
+                solicitante.includes("UGEA") ||
+                dept.includes("AQUISIÇÕES") ||
+                dept.includes("AQUISICOES") ||
+                sector.includes("AQUISIÇÕES") ||
+                sector.includes("AQUISICOES") ||
+                data.tipo === "UGEA" ||
+                data.isUgea === true;
+
+              // Se pertence à Construção Civil mas está incorretamente associada à UGEA
+              if (isCivil && isAssociatedWithUgea) {
+                await deleteDoc(doc(db, colName, docSnap.id));
+                results.activitiesRemoved++;
+                results.details.push(`Removida actividade ${docSnap.id} de ${colName} (Engenharia de Construção Civil associada indevidamente à UGEA)`);
+              }
+            }
+          }
+        } catch (colErr) {
+          console.warn(`Aviso ao verificar colecção de actividades ${colName}:`, colErr);
+        }
+      }
+
+      // 2. Coleções de Processos (processos, processes, ugea_processes, concursos, contratos)
+      const processCollections = ["processos", "processes", "ugea_processes", "concursos", "contratos"];
+      for (const colName of processCollections) {
+        try {
+          const colRef = collection(db, colName);
+          const snap = await getDocs(colRef);
+          if (!snap.empty) {
+            for (const docSnap of snap.docs) {
+              const data = docSnap.data() || {};
+              const dept = String(data.departamento || data.unidade || data.orgao || "").toUpperCase();
+              const sector = String(data.setor || data.reparticao || "").toUpperCase();
+              const solicitante = String(data.solicitante || data.setorRequisitante || data.area || "").toUpperCase();
+              const code = String(data.numeroProcesso || data.codigo || data.referencia || "").toUpperCase();
+
+              const isCivil =
+                dept.includes("CONSTRUÇÃO CIVIL") ||
+                dept.includes("CONSTRUCAO CIVIL") ||
+                dept.includes("ENGENHARIA DE CONSTRUÇÃO") ||
+                dept.includes("ENGENHARIA DE CONSTRUCAO") ||
+                sector.includes("CONSTRUÇÃO CIVIL") ||
+                sector.includes("CONSTRUCAO CIVIL") ||
+                solicitante.includes("CONSTRUÇÃO CIVIL") ||
+                solicitante.includes("CONSTRUCAO CIVIL");
+
+              const isAssociatedWithUgea =
+                colName === "ugea_processes" ||
+                dept.includes("UGEA") ||
+                sector.includes("UGEA") ||
+                code.includes("UGEA") ||
+                solicitante.includes("UGEA") ||
+                dept.includes("AQUISIÇÕES") ||
+                dept.includes("AQUISICOES") ||
+                sector.includes("AQUISIÇÕES") ||
+                sector.includes("AQUISICOES") ||
+                data.tipo === "UGEA" ||
+                data.isUgea === true;
+
+              if (isCivil && isAssociatedWithUgea) {
+                await deleteDoc(doc(db, colName, docSnap.id));
+                results.processesRemoved++;
+                results.details.push(`Removido processo ${docSnap.id} de ${colName} (Engenharia de Construção Civil associado indevidamente à UGEA)`);
+              }
+            }
+          }
+        } catch (colErr) {
+          console.warn(`Aviso ao verificar colecção de processos ${colName}:`, colErr);
+        }
+      }
+
+      // 3. Limpeza rigorosa no cache de armazenamento local (localStorage)
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          const cacheKeys = ["matrix_activities", "actividades", "processos", "processes", "ugea_processes"];
+          cacheKeys.forEach((key) => {
+            const raw = localStorage.getItem(key);
+            if (raw && (raw.includes("Construção Civil") || raw.includes("Construcao Civil")) && raw.includes("UGEA")) {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                  const cleaned = parsed.filter((item: any) => {
+                    const d = String(item.departamento || "").toUpperCase();
+                    const s = String(item.setor || "").toUpperCase();
+                    const isCiv = d.includes("CONSTRUÇÃO CIVIL") || d.includes("CONSTRUCAO CIVIL") || s.includes("CONSTRUÇÃO CIVIL") || s.includes("CONSTRUCAO CIVIL");
+                    const isUg = d.includes("UGEA") || s.includes("UGEA");
+                    return !(isCiv && isUg);
+                  });
+                  localStorage.setItem(key, JSON.stringify(cleaned));
+                }
+              } catch (_) {}
+            }
+          });
+        }
+      } catch (_) {}
+
+      console.log("Limpeza de desfasamentos concluída:", results);
+      return results;
+    } catch (err) {
+      console.error("Erro na limpeza de desfasamentos Civil/UGEA:", err);
+      return results;
     }
   }
 };

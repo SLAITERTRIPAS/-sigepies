@@ -95,16 +95,16 @@ const ReportsView = lazy(() => import("../bloco7_relatorios/ReportsView"));
 const DocumentosView = lazy(() => import("../bloco6_documentos/DocumentosView"));
 const GestaoDocumentosView = lazy(() => import("../bloco4_servicos_centrais/GestaoDocumentosView"));
 const CalendarView = lazy(() => import("../bloco5_sistema/CalendarView"));
-const AssinaturaDigitalView = lazy(() => import("../bloco5_sistema/AssinaturaDigitalView"));
+const AssinaturaDigitalView = lazy(() => lazyRetry(() => import("../bloco5_sistema/AssinaturaDigitalView")));
 import VisaoGeralLayout from "../bloco8_gerais/VisaoGeralLayout";
 import VisaoGeralCards from "../../components/VisaoGeralCards";
 import RemuneracoesRHView from "./RemuneracoesRHView";
 import PlanoFeriasRHView from "../../components/PlanoFeriasRHView";
-const MatrixView = lazy(() => import("../bloco5_sistema/MatrixView"));
-const PlanoWorkflowView = lazy(() => import("../bloco5_sistema/PlanoWorkflowView"));
+const MatrixView = lazy(() => lazyRetry(() => import("../bloco5_sistema/MatrixView")));
+const PlanoWorkflowView = lazy(() => lazyRetry(() => import("../bloco5_sistema/PlanoWorkflowView")));
 import CaixaMensagensView from "../bloco5_sistema/CaixaMensagensView";
-const RHStatView = lazy(() => import("../bloco7_relatorios/RHStatisticsWorkflowView"));
-const AcaoOrcamentalView = lazy(() => import("../../components/AcaoOrcamentalView"));
+const RHStatView = lazy(() => lazyRetry(() => import("../bloco7_relatorios/RHStatisticsWorkflowView")));
+const AcaoOrcamentalView = lazy(() => lazyRetry(() => import("../../components/AcaoOrcamentalView")));
 import { firestoreService } from "../../lib/firestoreService";
 import { getActiveInstituicaoId } from "../../lib/instituicaoEstruturaService";
 import {
@@ -119,6 +119,7 @@ import {
   formatProcessNumber,
   getNextProcessSequence,
   hasChefiaPosition,
+  lazyRetry,
 } from "../../lib/utils";
 import { isSuperBossUser, isHRBossUser, getRoles } from "../../lib/auth";
 import * as Types from "../../types";

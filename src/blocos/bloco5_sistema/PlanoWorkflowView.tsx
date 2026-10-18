@@ -66,6 +66,8 @@ import {
   canUserEditActivity,
   isActivityFromUserSector,
   cleanAreaText,
+  isUgeaActivity,
+  isUgeaUser,
 } from "../../lib/auth";
 import {
   isMatch,
@@ -490,6 +492,27 @@ export default function PlanoWorkflowView({
       );
     }
 
+    // Filtro especial por contexto da UGEA vs outros setores
+    const isUgeaContext = isUgeaUser(user) || isUgeaUser(realUser) || (title || "").toLowerCase().includes("ugea") || (title || "").toLowerCase().includes("aquisic");
+    if (isUgeaContext) {
+      authorized = authorized.filter((a) => {
+        if (!a) return false;
+        const aDept = cleanAreaText(a.departamento || "");
+        const aSect = cleanAreaText(a.setor || a.reparticao || "");
+        // EXCLUSÃO TOTAL: Se pertence à Construção Civil, NUNCA pode aparecer na UGEA!
+        if (
+          aDept.includes("construcao") ||
+          aDept.includes("construção") ||
+          aSect.includes("construcao") ||
+          aSect.includes("construção") ||
+          (aDept.includes("engenharia") && !aDept.includes("ugea"))
+        ) {
+          return false;
+        }
+        return isUgeaActivity(a);
+      });
+    }
+
     // Filtro especial por título do plano para visualização setorial
     const target = (title || "").trim().toLowerCase();
     if (
@@ -510,13 +533,7 @@ export default function PlanoWorkflowView({
         const aOrig = cleanAreaText(a.origem || a.setorOrigin || a.setorCriador || a.unidadeOrganica || "");
 
         if (isTargetUgea) {
-          return (
-            aDept.includes("ugea") ||
-            aSect.includes("ugea") ||
-            aOrig.includes("ugea") ||
-            aDept.includes("aquisicoes") ||
-            aSect.includes("aquisicoes")
-          );
+          return isUgeaActivity(a);
         }
 
         if (isTargetDpep) {
@@ -603,6 +620,70 @@ export default function PlanoWorkflowView({
 
     return { byDirecao, byDirecaoAndDept: result };
   }, [filteredActivities, groupByDirecao, groupByDepartamento]);
+
+  const isCurrentUgeaContext = useMemo(() => {
+    return (
+      isUgeaUser(user) ||
+      isUgeaUser(realUser) ||
+      (title || "").toLowerCase().includes("ugea") ||
+      (title || "").toLowerCase().includes("aquisic")
+    );
+  }, [user, realUser, title]);
+
+  const filterActivitiesForDisplay = useCallback(
+    (a: any) => {
+      if (!a) return false;
+      const aDept = cleanAreaText(a.departamento || "");
+      const aSect = cleanAreaText(a.setor || a.reparticao || "");
+      const isCivil =
+        aDept.includes("construcao") ||
+        aDept.includes("construção") ||
+        aSect.includes("construcao") ||
+        aSect.includes("construção") ||
+        (aDept.includes("engenharia") && !aDept.includes("ugea") && !aDept.includes("aquisic"));
+
+      // 1. ISOLAMENTO ABSOLUTO DA UGEA VS CONSTRUÇÃO CIVIL:
+      if (isCurrentUgeaContext) {
+        if (isCivil) return false;
+        return isUgeaActivity(a);
+      }
+
+      // Se a actividade é da UGEA, não misturar em planos de outros departamentos
+      if (isUgeaActivity(a)) {
+        return false;
+      }
+
+      // 2. Se o plano tem um título setorial específico
+      const target = (title || "").trim().toLowerCase();
+      if (
+        target &&
+        target !== "plano setorial" &&
+        target !== "sistema" &&
+        target !== "geral" &&
+        target !== "plano de atividades" &&
+        target !== "plano de actividades"
+      ) {
+        if (target.includes("ugea") || target.includes("aquisic")) {
+          if (isCivil) return false;
+          return isUgeaActivity(a);
+        }
+        return (
+          isDepartmentMatch(a.departamento, title) ||
+          isSectorMatch(a.setor, title) ||
+          cleanAreaText(a.departamento || "").includes(cleanAreaText(target)) ||
+          cleanAreaText(target).includes(cleanAreaText(a.departamento || ""))
+        );
+      }
+
+      // 3. Área de plano do utilizador logado: apenas o que ele próprio ou o seu setor planificou
+      if (user?.setor || user?.departamento) {
+        return isSectorMatch(a.setor, user.setor) || isDepartmentMatch(a.departamento, user.departamento);
+      }
+
+      return true;
+    },
+    [isCurrentUgeaContext, title, user],
+  );
 
   const startSyncProcess = async () => {
     setSyncYear(selectedYear);
@@ -1674,10 +1755,7 @@ export default function PlanoWorkflowView({
   >("plano_dpep");
 
   const groupedNecessidadesPlanificadas = useMemo(() => {
-    const planActivities = filteredActivities.filter(
-      (a) =>
-        (isSuperBossUser(user) || a.direcao === user?.direcao)
-    );
+    const planActivities = filteredActivities.filter(filterActivitiesForDisplay);
 
     const productMap: {
       [key: string]: {
@@ -4914,13 +4992,7 @@ export default function PlanoWorkflowView({
                       </span>
                       <span className="text-[10px] font-bold text-slate-500  tracking-wider">
                         {
-                          filteredActivities.filter(
-                            (a) =>
-                              isSuperBossUser(user) ||
-                              isDepartmentMatch(a.departamento, user?.departamento) ||
-                              isDepartmentMatch(a.departamento, title) ||
-                              isDepartmentMatch(a.unidadeOrganica, title),
-                          ).length
+                          filteredActivities.filter(filterActivitiesForDisplay).length
                         }{ " " }
                         Actividades
                       </span>
@@ -4930,14 +5002,8 @@ export default function PlanoWorkflowView({
                         <ActivityTableHeader isDPEP={isDPEP} />
                         <tbody className="divide-y divide-slate-200 text-slate-700 font-medium">
                           {filteredActivities
-                            .filter(
-                              (a) =>
-                                isSuperBossUser(user) ||
-                                isDepartmentMatch(a.departamento, user?.departamento) ||
-                                isDepartmentMatch(a.departamento, title) ||
-                                isDepartmentMatch(a.unidadeOrganica, title),
-                            )
-                            .filter(Boolean).filter(Boolean).map((activity, idx) => (
+                            .filter(filterActivitiesForDisplay)
+                            .filter(Boolean).map((activity, idx) => (
                               <ActivityTableRow
                                 key={activity.id}
                                 activity={activity}
@@ -5007,13 +5073,7 @@ export default function PlanoWorkflowView({
                                 }
                               />
                             ))}
-                          {filteredActivities.filter(
-                            (a) =>
-                              isSuperBossUser(user) ||
-                              isDepartmentMatch(a.departamento, user?.departamento) ||
-                              isDepartmentMatch(a.departamento, title) ||
-                              isDepartmentMatch(a.unidadeOrganica, title),
-                          ).length === 0 && (
+                          {filteredActivities.filter(filterActivitiesForDisplay).length === 0 && (
                             <tr>
                               <td
                                 colSpan={37}
@@ -5818,13 +5878,7 @@ export default function PlanoWorkflowView({
                             <ActivityTableHeader isDPEP={isDPEP} />
                             <tbody className="divide-y divide-slate-200 text-slate-700 font-medium">
                               {filteredActivities
-                                .filter(
-                                  (a) =>
-                                    isSuperBossUser(user) ||
-                                    
-                                    a.reparticao === user.reparticao ||
-                                    a.setor === user.setor,
-                                )
+                                .filter(filterActivitiesForDisplay)
                                 .filter(Boolean).map((activity, idx) => (
                                   <ActivityTableRow
                                     key={activity.id}
@@ -5861,12 +5915,7 @@ export default function PlanoWorkflowView({
                                     }
                                   />
                                 ))}
-                              {filteredActivities.filter(
-                                (a) =>
-                                  user?.reparticao &&
-                                  (a.reparticao === user.reparticao ||
-                                    a.setor === user.setor),
-                              ).length === 0 && (
+                              {filteredActivities.filter(filterActivitiesForDisplay).length === 0 && (
                                 <tr>
                                   <td
                                     colSpan={40}
@@ -5908,13 +5957,7 @@ export default function PlanoWorkflowView({
                             <ActivityTableHeader isDPEP={isDPEP} />
                             <tbody className="divide-y divide-slate-200 text-slate-700 font-medium">
                               {filteredActivities
-                                .filter(
-                                  (a) =>
-                                    isSuperBossUser(user) ||
-                                    isDepartmentMatch(a.departamento, user?.departamento) ||
-                                    isDepartmentMatch(a.departamento, title) ||
-                                    isDepartmentMatch(a.unidadeOrganica, title),
-                                )
+                                .filter(filterActivitiesForDisplay)
                                 .filter(Boolean).map((activity, idx) => (
                                   <ActivityTableRow
                                     key={activity.id}
@@ -5951,13 +5994,7 @@ export default function PlanoWorkflowView({
                                     }
                                   />
                                 ))}
-                              {filteredActivities.filter(
-                                (a) =>
-                                  isSuperBossUser(user) ||
-                                  isDepartmentMatch(a.departamento, user?.departamento) ||
-                                  isDepartmentMatch(a.departamento, title) ||
-                                  isDepartmentMatch(a.unidadeOrganica, title),
-                              ).length === 0 && (
+                              {filteredActivities.filter(filterActivitiesForDisplay).length === 0 && (
                                 <tr>
                                   <td
                                     colSpan={40}
@@ -6142,15 +6179,7 @@ export default function PlanoWorkflowView({
                           <span className="text-xs font-black text-slate-500  tracking-widest">
                             Total Recebido:{" "}
                             {
-                              filteredActivities.filter(
-                                (a) =>
-                                  (
-                                    isSuperBossUser(user) ||
-                                    !a.direcao ||
-                                    a.direcao === user.direcao ||
-                                    isSectorMatch(a.setor, user.setor) ||
-                                    isDepartmentMatch(a.departamento, user.departamento)),
-                              ).length
+                              filteredActivities.filter(filterActivitiesForDisplay).length
                             }{" "}
                             Actividades
                           </span>
@@ -6164,15 +6193,7 @@ export default function PlanoWorkflowView({
                             {(
                               Object.entries(
                                 filteredActivities
-                                  .filter(
-                                    (a) =>
-                                      (
-                                        isSuperBossUser(user) ||
-                                        !a.direcao ||
-                                        a.direcao === user.direcao ||
-                                        isSectorMatch(a.setor, user.setor) ||
-                                        isDepartmentMatch(a.departamento, user.departamento)),
-                                  )
+                                  .filter(filterActivitiesForDisplay)
                                   .sort((a, b) =>
                                     compareActivitiesStandardOrder(
                                       a,
@@ -6301,15 +6322,7 @@ export default function PlanoWorkflowView({
                             </span>
                             <span className="text-2xl font-black text-emerald-400 font-mono">
                               {filteredActivities
-                                .filter(
-                                  (a) =>
-                                    (
-                                      isSuperBossUser(user) ||
-                                      !a.direcao ||
-                                      a.direcao === user.direcao ||
-                                      isSectorMatch(a.setor, user.setor) ||
-                                      isDepartmentMatch(a.departamento, user.departamento)),
-                                )
+                                .filter(filterActivitiesForDisplay)
                                 .reduce(
                                   (sum, act) => sum + getActivityTotal(act),
                                   0,
@@ -6346,15 +6359,7 @@ export default function PlanoWorkflowView({
                             </thead>
                             <tbody className="divide-y divide-slate-200 text-slate-700 font-medium">
                               {filteredActivities
-                                .filter(
-                                  (a) =>
-                                    (
-                                      isSuperBossUser(user) ||
-                                      !a.direcao ||
-                                      a.direcao === user.direcao ||
-                                      isSectorMatch(a.setor, user.setor) ||
-                                      isDepartmentMatch(a.departamento, user.departamento)),
-                                )
+                                .filter(filterActivitiesForDisplay)
                                 .filter(Boolean).map((activity, idx) => {
                                   const totalVal = getActivityTotal(activity);
                                   const code =
@@ -6404,15 +6409,7 @@ export default function PlanoWorkflowView({
                                     </tr>
                                   );
                                 })}
-                              {filteredActivities.filter(
-                                (a) =>
-                                  (
-                                    isSuperBossUser(user) ||
-                                    !a.direcao ||
-                                    a.direcao === user.direcao ||
-                                    isSectorMatch(a.setor, user.setor) ||
-                                    isDepartmentMatch(a.departamento, user.departamento)),
-                              ).length === 0 && (
+                              {filteredActivities.filter(filterActivitiesForDisplay).length === 0 && (
                                 <tr>
                                   <td
                                     colSpan={5}

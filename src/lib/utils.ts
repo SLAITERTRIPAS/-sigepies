@@ -2003,8 +2003,38 @@ export const formatCargoLimpo = (cargo: string): string => {
  * Verifica a integridade do cache local, limpando dados corrompidos, obsoletos ou
  * com prefixo sigep_local_* para garantir consistência com os dados remotos durante o login.
  */
+export function checkDatabaseVersion(): void {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  const CURRENT_DB_VERSION = "SIGEP_DB_V2026.10.18";
+  try {
+    const storedVersion = localStorage.getItem("sigep_db_version");
+    if (storedVersion !== CURRENT_DB_VERSION) {
+      console.warn(`🔄 Nova versão da estrutura da base de dados detetada (${CURRENT_DB_VERSION}). A limpar cache local anterior (${storedVersion || "desconhecida"})...`);
+      
+      // Preservar apenas credenciais essenciais de login, limpando o resto do cache de dados e testes
+      const preservedUser = localStorage.getItem("sigep_logged_in_user");
+      const preservedToken = localStorage.getItem("sigep_session_token");
+      
+      localStorage.clear();
+      
+      if (preservedUser) localStorage.setItem("sigep_logged_in_user", preservedUser);
+      if (preservedToken) localStorage.setItem("sigep_session_token", preservedToken);
+      
+      localStorage.setItem("sigep_db_version", CURRENT_DB_VERSION);
+      console.log("✅ Versão da base de dados atualizada e cache limpo com sucesso.");
+    }
+  } catch (e) {
+    console.warn("Aviso ao verificar versão da base de dados:", e);
+  }
+}
+
+/**
+ * Verifica a integridade do cache local, limpando dados corrompidos, obsoletos ou
+ * com prefixo sigep_local_* para garantir consistência com os dados remotos durante o login.
+ */
 export function verifyAndCleanCache(): void {
   if (typeof window === "undefined" || !window.localStorage) return;
+  checkDatabaseVersion();
   try {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {

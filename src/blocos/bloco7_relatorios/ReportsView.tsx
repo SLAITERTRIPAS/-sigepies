@@ -284,6 +284,7 @@ export default function ReportsView({
         direction: user?.direcao || "Institucional",
         level: level as any,
         year: selectedYear,
+        type: "Anual",
         status: "draft",
         sections: sections,
       };

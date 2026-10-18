@@ -16,7 +16,7 @@ export default function VisaoGeralCards({
   user,
   title,
 }: {
-  onNavigate: (item: string) => void;
+  onNavigate: (item: string, title?: string) => void;
   user: any;
   title: string;
 }) {

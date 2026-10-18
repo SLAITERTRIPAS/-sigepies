@@ -1,10 +1,69 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isGlobalAdmin() {
+      let user = getUserData();
+      return isAuthenticated() && (
+        user.role == "Administrador" || 
+        user.isGlobalAdmin == true || 
+        user.email == "slaitertripas@gmail.com" ||
+        user.email == "fttripas@gmail.com"
+      );
+    }
+
+    function isChefiaReparticao() {
+      let user = getUserData();
+      let cargo = string(user.cargoChefia || user.cargo || "").lower();
+      return cargo.contains("chefe de reparticao") || cargo.contains("chefe de repartição");
+    }
+
+    function isChefiaDepartamento() {
+      let user = getUserData();
+      let cargo = string(user.cargoChefia || user.cargo || "").lower();
+      return cargo.contains("chefe de departamento") || cargo.contains("diretor de departamento");
+    }
+
+    function isDiretor() {
+      let user = getUserData();
+      let cargo = string(user.cargoChefia || user.cargo || "").lower();
+      return cargo.contains("diretor") || cargo.contains("directora");
+    }
+
+    // Política de Segurança Nível 1: Privado por defeito ao utilizador produtor, com visibilidade estrita por chefia/hierarquia
+    match /{collectionName}/{docId} {
+      allow read, write: if isAuthenticated() && (
+        isGlobalAdmin() || 
+        (
+          // Deve pertencer à mesma instituição
+          (resource == null || resource.data.instituicaoId == getUserData().instituicaoId) &&
+          (request.resource.data.instituicaoId == null || request.resource.data.instituicaoId == getUserData().instituicaoId) &&
+          
+          (
+            // Por defeito: O criador do documento tem acesso total (Privacidade Máxima)
+            (resource == null) ||
+            (resource.data.userId == request.auth.uid) ||
+            (resource.data.createdBy == request.auth.uid) ||
+            
+            // Chefia de Repartição: Vê dados da sua repartição
+            (isChefiaReparticao() && resource.data.reparticao != null && resource.data.reparticao == getUserData().reparticao) ||
+            
+            // Chefia de Departamento: Vê dados do seu departamento
+            (isChefiaDepartamento() && resource.data.departamento != null && resource.data.departamento == getUserData().departamento) ||
+            
+            // Diretor: Vê dados agregados da sua direção
+            (isDiretor() && resource.data.direcao != null && resource.data.direcao == getUserData().direcao)
+          )
+        )
+      );
     }
   }
 }
-
-

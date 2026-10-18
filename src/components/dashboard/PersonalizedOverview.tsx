@@ -233,24 +233,35 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
     const totalFornecedores = suppliers.length || 14;
 
     return {
-      totalUsers,
-      totalDocentes,
-      totalEstudantes,
-      totalCursos,
-      listaCursos,
-      totalAtividades,
-      concluidas,
-      emProgresso,
-      atrasadas,
-      taxaAprovacao: 84.5,
-      taxaAbandono: 3.2,
+      totalUsers: colaboradores.length,
+      totalDocentes: colaboradores.filter(
+        (c) =>
+          (c.tipo && c.tipo.toLowerCase().includes("docente")) ||
+          (c.carreira && c.carreira.toLowerCase().includes("docente")) ||
+          (c.cargo && c.cargo.toLowerCase().includes("docente"))
+      ).length,
+      totalEstudantes: estudantes.length,
+      totalCursos: cursosMap.size,
+      listaCursos: Array.from(cursosMap),
+      totalAtividades: allActs.length,
+      concluidas: allActs.filter((a) =>
+        (a.status || "").toLowerCase().includes("conclu") || (a.status || "").toLowerCase().includes("executad")
+      ).length,
+      emProgresso: allActs.filter((a) =>
+        (a.status || "").toLowerCase().includes("progresso") || (a.status || "").toLowerCase().includes("andamento")
+      ).length,
+      atrasadas: Math.max(0, allActs.length - allActs.filter((a) =>
+        (a.status || "").toLowerCase().includes("conclu") || (a.status || "").toLowerCase().includes("executad") || (a.status || "").toLowerCase().includes("progresso") || (a.status || "").toLowerCase().includes("andamento")
+      ).length),
+      taxaAprovacao: 0,
+      taxaAbandono: 0,
       receitasTotal,
       propinasPagas,
       propinasAtraso,
-      processosUgea,
-      processosConcluidosUgea,
-      processosPendentesUgea,
-      totalFornecedores,
+      processosUgea: serviceRequests.length,
+      processosConcluidosUgea: serviceRequests.filter((s) => (s.status || "").toLowerCase().includes("conclu")).length,
+      processosPendentesUgea: Math.max(0, serviceRequests.length - serviceRequests.filter((s) => (s.status || "").toLowerCase().includes("conclu")).length),
+      totalFornecedores: suppliers.length,
     };
   }, [colaboradores, estudantes, matrixActivities, activities, financialData, serviceRequests, suppliers]);
 

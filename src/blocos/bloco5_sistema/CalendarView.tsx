@@ -714,6 +714,20 @@ export default function CalendarView({
                     );
                   }
 
+                  // Preencher células vazias restantes para completar a última semana
+                  const totalCellsSoFar = firstDay + days;
+                  const remainder = totalCellsSoFar % 7;
+                  if (remainder > 0) {
+                    for (let i = 0; i < (7 - remainder); i++) {
+                      calendarCells.push(
+                        <div
+                          key={`empty-end-${i}`}
+                          className="min-h-[75px] sm:min-h-[90px] md:min-h-[105px] rounded-2xl border border-dashed border-slate-100 bg-slate-50/20"
+                        ></div>
+                      );
+                    }
+                  }
+
                   return calendarCells;
                 })()}
                 </div>

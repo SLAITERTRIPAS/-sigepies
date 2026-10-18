@@ -26,7 +26,7 @@ export default function BalancoMensalView({ movements, user, onBack }: BalancoMe
 
   return (
     <div id="balanco-print-area" className="w-full max-w-5xl mx-auto p-6 bg-white space-y-12">
-      <InstitutionalHeader user={user} title="Balanço Institucional Profissional" />
+      <InstitutionalHeader user={user} title="Balanço Institucional Profissional" year={new Date().getFullYear()} />
       
       <div className="flex justify-end print:hidden mb-6">
         <button onClick={() => printElementById("balanco-print-area", "Balanço Institucional Profissional")} className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs tracking-widest cursor-pointer">

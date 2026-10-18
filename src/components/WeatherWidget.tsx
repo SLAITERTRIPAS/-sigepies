@@ -15,59 +15,90 @@ export default function WeatherWidget() {
   };
 
   useEffect(() => {
+    const defaultStaticWeather = {
+      temp: 28,
+      max: 32,
+      min: 22,
+      location: "Tete / Cahora-Bassa"
+    };
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=Africa/Maputo`);
-          const weatherData = await weatherRes.json();
-          const geoRes = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`);
-          const geoData = await geoRes.json();
-          let province = "Desconhecido", district = "";
-          if (geoData.results && geoData.results[0]) {
-            const components = geoData.results[0].address_components;
-            province = components.find((c: any) => c.types.includes("administrative_area_level_1"))?.long_name || "Desconhecido";
-            district = components.find((c: any) => c.types.includes("administrative_area_level_2"))?.long_name || "";
+          const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=Africa/Maputo`).catch(() => null);
+          if (!weatherRes || !weatherRes.ok) {
+            setWeather(defaultStaticWeather);
+            return;
           }
-          if (weatherData.current && weatherData.daily) {
+          const weatherData = await weatherRes.json().catch(() => null);
+          let province = "Tete", district = "Cahora-Bassa";
+          try {
+            const geoRes = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`).catch(() => null);
+            if (geoRes && geoRes.ok) {
+              const geoData = await geoRes.json().catch(() => null);
+              if (geoData?.results && geoData.results[0]) {
+                const components = geoData.results[0].address_components;
+                province = components.find((c: any) => c.types.includes("administrative_area_level_1"))?.long_name || province;
+                district = components.find((c: any) => c.types.includes("administrative_area_level_2"))?.long_name || district;
+              }
+            }
+          } catch (_) {}
+
+          if (weatherData?.current && weatherData?.daily) {
             setWeather({
               temp: weatherData.current.temperature_2m,
               max: weatherData.daily.temperature_2m_max[0],
               min: weatherData.daily.temperature_2m_min[0],
               location: `${province}${district ? ` / ${district}` : ""}`
             });
+          } else {
+            setWeather(defaultStaticWeather);
           }
-        } catch (e) { console.error("Erro ao buscar dados:", e); }
-      }, async (error) => {
-        console.warn("Geolocalização negada, usando padrão (Songo):", error);
+        } catch (_) {
+          setWeather(defaultStaticWeather);
+        }
+      }, async () => {
         try {
-          const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=-15.6&longitude=32.7&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=Africa/Maputo`);
-          const data = await res.json();
-          if (data.current && data.daily) {
-            setWeather({
-              temp: data.current.temperature_2m,
-              max: data.daily.temperature_2m_max[0],
-              min: data.daily.temperature_2m_min[0],
-              location: "Tete / Cahora-Bassa"
-            });
-          }
-        } catch (e) { console.error("Erro ao buscar clima padrão:", e); }
-      });
-    } else {
-        (async () => {
-          try {
-            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=-15.6&longitude=32.7&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=Africa/Maputo`);
-            const data = await res.json();
-            if (data.current && data.daily) {
+          const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=-15.6&longitude=32.7&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=Africa/Maputo`).catch(() => null);
+          if (res && res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data?.current && data?.daily) {
               setWeather({
                 temp: data.current.temperature_2m,
                 max: data.daily.temperature_2m_max[0],
                 min: data.daily.temperature_2m_min[0],
                 location: "Tete / Cahora-Bassa"
               });
+              return;
             }
-          } catch (e) { console.error("Erro ao buscar clima padrão:", e); }
-        })();
+          }
+          setWeather(defaultStaticWeather);
+        } catch (_) {
+          setWeather(defaultStaticWeather);
+        }
+      });
+    } else {
+      (async () => {
+        try {
+          const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=-15.6&longitude=32.7&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=Africa/Maputo`).catch(() => null);
+          if (res && res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data?.current && data?.daily) {
+              setWeather({
+                temp: data.current.temperature_2m,
+                max: data.daily.temperature_2m_max[0],
+                min: data.daily.temperature_2m_min[0],
+                location: "Tete / Cahora-Bassa"
+              });
+              return;
+            }
+          }
+          setWeather(defaultStaticWeather);
+        } catch (_) {
+          setWeather(defaultStaticWeather);
+        }
+      })();
     }
   }, []);
 

@@ -46,21 +46,21 @@ import autoTable from "jspdf-autotable";
 import SectorMenuConfigModal from "../../components/SectorMenuConfigModal";
 
 import BoardOverview from "../bloco2_orgaos_gestao/BoardOverview";
-const CalendarView = lazy(() => import("../bloco5_sistema/CalendarView"));
-const AssignActivityView = lazy(() => import("../bloco5_sistema/AssignActivityView"));
-const MatrixView = lazy(() => import("../bloco5_sistema/MatrixView"));
+const CalendarView = lazy(() => lazyRetry(() => import("../bloco5_sistema/CalendarView")));
+const AssignActivityView = lazy(() => lazyRetry(() => import("../bloco5_sistema/AssignActivityView")));
+const MatrixView = lazy(() => lazyRetry(() => import("../bloco5_sistema/MatrixView")));
 import { MatrixActivity } from "../../types";
-const MyMatrixView = lazy(() => import("../bloco5_sistema/MyMatrixView"));
-const ReportsView = lazy(() => import("../bloco7_relatorios/ReportsView"));
-const ActivityForm = lazy(() => import("../bloco5_sistema/ActivityForm"));
-const IndividualPlanForm = lazy(() => import("../bloco8_gerais/IndividualPlanForm"));
-const GestaoDocumentosView = lazy(() => import("../bloco4_servicos_centrais/GestaoDocumentosView"));
-const GestaoExpedienteHistoricoView = lazy(() => import("../bloco4_servicos_centrais/GestaoExpedienteHistoricoView"));
-const EstatisticaView = lazy(() => import("../bloco7_relatorios/EstatisticaView"));
-const DocumentosView = lazy(() => import("../bloco6_documentos/DocumentosView"));
-const LibraryManagementView = lazy(() => import("../bloco3_unidades_organicas/LibraryManagementView"));
-const GestaoPessoalView = lazy(() => import("../bloco4_servicos_centrais/GestaoPessoalView"));
-const GestaoSocialView = lazy(() => import("../bloco4_servicos_centrais/GestaoSocialView"));
+const MyMatrixView = lazy(() => lazyRetry(() => import("../bloco5_sistema/MyMatrixView")));
+const ReportsView = lazy(() => lazyRetry(() => import("../bloco7_relatorios/ReportsView")));
+const ActivityForm = lazy(() => lazyRetry(() => import("../bloco5_sistema/ActivityForm")));
+const IndividualPlanForm = lazy(() => lazyRetry(() => import("../bloco8_gerais/IndividualPlanForm")));
+const GestaoDocumentosView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/GestaoDocumentosView")));
+const GestaoExpedienteHistoricoView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/GestaoExpedienteHistoricoView")));
+const EstatisticaView = lazy(() => lazyRetry(() => import("../bloco7_relatorios/EstatisticaView")));
+const DocumentosView = lazy(() => lazyRetry(() => import("../bloco6_documentos/DocumentosView")));
+const LibraryManagementView = lazy(() => lazyRetry(() => import("../bloco3_unidades_organicas/LibraryManagementView")));
+const GestaoPessoalView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/GestaoPessoalView")));
+const GestaoSocialView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/GestaoSocialView")));
 import InstitutionalCharts from "../../components/InstitutionalCharts";
 import {
   Event,
@@ -72,17 +72,17 @@ import {
   Supplier,
   ServiceRequest,
 } from "../../types";
-const RecursosFinanceirosForm = lazy(() => import("../bloco8_gerais/RecursosFinanceirosForm"));
-const DRADashboard = lazy(() => import("../bloco4_servicos_centrais/DRADashboard"));
+const RecursosFinanceirosForm = lazy(() => lazyRetry(() => import("../bloco8_gerais/RecursosFinanceirosForm")));
+const DRADashboard = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/DRADashboard")));
 import CentralOverview from "./CentralOverview";
-const GestaoFormacaoView = lazy(() => import("../bloco4_servicos_centrais/GestaoFormacaoView"));
-const ArchiveView = lazy(() => import("../bloco5_sistema/ArchiveView"));
-const GestaoAcademicaView = lazy(() => import("../bloco3_unidades_organicas/GestaoAcademicaView"));
-const GestaoAcademicaMainView = lazy(() => import("../bloco3_unidades_organicas/GestaoAcademicaMainView"));
-const HorarioView = lazy(() => import("../bloco3_unidades_organicas/HorarioView"));
-const ExamesView = lazy(() => import("../bloco3_unidades_organicas/ExamesView"));
-const GraduadosView = lazy(() => import("../bloco3_unidades_organicas/GraduadosView"));
-const DisciplinasEspacosFisicosView = lazy(() => import("../bloco3_unidades_organicas/DisciplinasEspacosFisicosView"));
+const GestaoFormacaoView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/GestaoFormacaoView")));
+const ArchiveView = lazy(() => lazyRetry(() => import("../bloco5_sistema/ArchiveView")));
+const GestaoAcademicaView = lazy(() => lazyRetry(() => import("../bloco3_unidades_organicas/GestaoAcademicaView")));
+const GestaoAcademicaMainView = lazy(() => lazyRetry(() => import("../bloco3_unidades_organicas/GestaoAcademicaMainView")));
+const HorarioView = lazy(() => lazyRetry(() => import("../bloco3_unidades_organicas/HorarioView")));
+const ExamesView = lazy(() => lazyRetry(() => import("../bloco3_unidades_organicas/ExamesView")));
+const GraduadosView = lazy(() => lazyRetry(() => import("../bloco3_unidades_organicas/GraduadosView")));
+const DisciplinasEspacosFisicosView = lazy(() => lazyRetry(() => import("../bloco3_unidades_organicas/DisciplinasEspacosFisicosView")));
 import {
   getRoles,
   isSuperBossUser,
@@ -94,21 +94,21 @@ import {
   isInstitutionalAdminUser,
 } from "../../lib/auth";
 import DepartmentSectorAllocationModal from "../../components/DepartmentSectorAllocationModal";
-import { confirmWorkspaceExit } from "../../lib/utils";
-const UGEA_PlanView = lazy(() => import("../bloco4_servicos_centrais/UGEA_PlanView"));
-const UGEA_SupplierManagementView = lazy(() => import("../bloco4_servicos_centrais/UGEA_SupplierManagementView"));
-const UGEA_SupplierRegistrationForm = lazy(() => import("../bloco4_servicos_centrais/UGEA_SupplierRegistrationForm"));
-const GestaoProdutosPrecosView = lazy(() => import("../bloco9_produtos_precos/GestaoProdutosPrecosView"));
-const AssinaturaDigitalView = lazy(() => import("../bloco5_sistema/AssinaturaDigitalView"));
-const CaixaMensagensView = lazy(() => import("../bloco5_sistema/CaixaMensagensView"));
-const BalancoMensalView = lazy(() => import("../bloco4_servicos_centrais/BalancoMensalView"));
-const BalancoCombustivelView = lazy(() => import("../bloco4_servicos_centrais/BalancoCombustivelView"));
-const BalancoInventarioView = lazy(() => import("../bloco4_servicos_centrais/BalancoInventarioView"));
-const BalancoAtividadesView = lazy(() => import("../bloco4_servicos_centrais/BalancoAtividadesView"));
-const GestaoTransporteView = lazy(() => import("../bloco4_servicos_centrais/GestaoTransporteView"));
-const PlanoWorkflowView = lazy(() => import("../bloco5_sistema/PlanoWorkflowView"));
-const UniversalRegistrationPicker = lazy(() => import("../bloco5_sistema/UniversalRegistrationPicker"));
-const AcaoOrcamentalView = lazy(() => import("../../components/AcaoOrcamentalView"));
+import { confirmWorkspaceExit, lazyRetry } from "../../lib/utils";
+const UGEA_PlanView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/UGEA_PlanView")));
+const UGEA_SupplierManagementView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/UGEA_SupplierManagementView")));
+const UGEA_SupplierRegistrationForm = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/UGEA_SupplierRegistrationForm")));
+const GestaoProdutosPrecosView = lazy(() => lazyRetry(() => import("../bloco9_produtos_precos/GestaoProdutosPrecosView")));
+const AssinaturaDigitalView = lazy(() => lazyRetry(() => import("../bloco5_sistema/AssinaturaDigitalView")));
+const CaixaMensagensView = lazy(() => lazyRetry(() => import("../bloco5_sistema/CaixaMensagensView")));
+const BalancoMensalView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/BalancoMensalView")));
+const BalancoCombustivelView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/BalancoCombustivelView")));
+const BalancoInventarioView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/BalancoInventarioView")));
+const BalancoAtividadesView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/BalancoAtividadesView")));
+const GestaoTransporteView = lazy(() => lazyRetry(() => import("../bloco4_servicos_centrais/GestaoTransporteView")));
+const PlanoWorkflowView = lazy(() => lazyRetry(() => import("../bloco5_sistema/PlanoWorkflowView")));
+const UniversalRegistrationPicker = lazy(() => lazyRetry(() => import("../bloco5_sistema/UniversalRegistrationPicker")));
+const AcaoOrcamentalView = lazy(() => lazyRetry(() => import("../../components/AcaoOrcamentalView")));
 import { firestoreService } from "../../lib/firestoreService";
 import { canViewDetailedDashboard } from "../../lib/auth";
 import VisaoGeralCards from "../../components/VisaoGeralCards";

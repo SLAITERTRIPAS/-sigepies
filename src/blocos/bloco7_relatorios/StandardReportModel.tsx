@@ -1,6 +1,6 @@
 import { printElementById } from "../../lib/printUtils";
 import { getSystemLogo } from "../../lib/logoService";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "motion/react";
 import {
   FileText,

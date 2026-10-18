@@ -1077,7 +1077,7 @@ export default function SistemaView({
   const renderContent = () => {
     switch (activeItem) {
       case "Diagnóstico & Autocura":
-        return (isGlobalAdmin || isInstitutionalAdmin) ? <IntelligentDiagnosticsView user={extendedUser || user} /> : null;
+        return (isGlobalAdmin || isInstitutionalAdmin) ? <IntelligentDiagnosticsView user={user} /> : null;
       case "Centro de Mensagens":
         return (
           <CaixaMensagensView

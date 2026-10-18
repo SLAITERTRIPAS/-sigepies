@@ -198,7 +198,17 @@ export interface Expediente {
   nomeBeneficiario?: string;
   solicitante?: string;
   interessado?: string;
-  historico?: { data: string; setor: string; usuario: string; acao: string; observacoes?: string }[];
+  historico?: {
+    data: string;
+    setor: string;
+    usuario?: string;
+    acao: string;
+    observacoes?: string;
+    parecer?: string;
+    responsavel?: string;
+    cargo?: string;
+    assinaturaImg?: string;
+  }[];
   statusAtual?: string;
   funcionario?: string;
   vistoDigital?: {
@@ -236,15 +246,6 @@ export interface Expediente {
     emitidoPor?: string;
     dataEmissao: string;
   };
-  historico?: {
-    setor: string;
-    data: string;
-    acao: string;
-    parecer?: string;
-    responsavel?: string;
-    cargo?: string;
-    assinaturaImg?: string;
-  }[];
 }
 
 export interface ServiceRequest {

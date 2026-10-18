@@ -314,8 +314,18 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Limpeza de base de dados solicitada
+  // Limpeza de base de dados e integridade solicitada
   useEffect(() => {
+    if (currentUser) {
+      const mismatchCheckKey = `sigep_mismatch_clean_${currentUser.uid || currentUser.email || "session"}`;
+      if (!sessionStorage.getItem(mismatchCheckKey)) {
+        sessionStorage.setItem(mismatchCheckKey, "true");
+        databaseMaintenance.cleanCivilEngineeringUgeaMismatch().catch((e) => {
+          console.warn("Aviso silencioso ao limpar desfasamentos Civil/UGEA:", e);
+        });
+      }
+    }
+
     if (currentUser && isSuperBossUser(currentUser) && activeInst?.id) {
       if (!localStorage.getItem(`sigep_wipe_done_${activeInst.id}`)) {
         console.log(`🔥 Executando limpeza de atividades para instituição: ${activeInst.id}...`);
@@ -2127,6 +2137,29 @@ export default function App() {
             onSelectSector={handleSelectSector}
           />
             </div>
+
+            {/* Rodapé Institucional com o mesmo fundo do cabeçalho */}
+            <footer 
+              className="w-full py-2.5 px-6 flex flex-col sm:flex-row items-center justify-between text-white/90 text-xs border-t border-white/10 shrink-0 shadow-inner z-20"
+              style={{
+                backgroundColor: activeInst?.headerColor || activeInst?.primaryColor || "#0a0f1d",
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-bold tracking-wide">SIGEP • Sistema Integrado de Gestão e Planificação</span>
+                <span className="text-white/40">•</span>
+                <span className="text-[11px] text-amber-300 font-semibold">República de Moçambique</span>
+              </div>
+              <div className="flex items-center gap-4 mt-1 sm:mt-0 text-[11px]">
+                <span className="text-white/80">Direitos Reservados © {new Date().getFullYear()}</span>
+                <button 
+                  onClick={() => setShowFooterInfoModal(true)}
+                  className="text-amber-300 hover:text-amber-200 font-bold underline transition-colors cursor-pointer"
+                >
+                  Informações Legais & Suporte
+                </button>
+              </div>
+            </footer>
           </motion.div>
         ) : (
           <div className="fixed inset-0 z-[10000] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-slate-100">

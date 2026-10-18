@@ -155,6 +155,7 @@ import {
   cleanObject,
   getCircularReplacer,
   safeJSONStringify,
+  safeJSONParse,
   generateCollaboratorId,
   hasChefiaPosition,
   classifyTipo,
@@ -211,13 +212,21 @@ export async function fetchCollection<T>(
   collectionName: string,
   limitCount: number = 50,
   orderField: string | null = "createdAt",
+  currentUser?: any,
 ): Promise<(T & { id: string })[]> {
   const colRef = collection(db, collectionName);
   const instituicaoId = getInstituicaoId();
   
-  // Aplica isolamento institucional se instituicaoId estiver disponível
+  const safeUser = currentUser || (typeof window !== "undefined" ? safeJSONParse(localStorage.getItem("sigep_logged_in_user"), null) : null);
+  const isGlobal = safeUser?.isGlobalAdmin === true || safeUser?.role === "Administrador" || safeUser?.email === "slaitertripas@gmail.com" || safeUser?.email === "fttripas@gmail.com";
+  const userSetor = safeUser?.setor || safeUser?.departamento || safeUser?.reparticao;
+
   let q;
-  if (instituicaoId) {
+  if (!isGlobal && instituicaoId && userSetor) {
+    q = orderField
+      ? query(colRef, where("instituicaoId", "==", instituicaoId), where("setor", "==", userSetor), orderBy(orderField, "desc"), limit(limitCount))
+      : query(colRef, where("instituicaoId", "==", instituicaoId), where("setor", "==", userSetor), limit(limitCount));
+  } else if (instituicaoId) {
     q = orderField
       ? query(colRef, where("instituicaoId", "==", instituicaoId), orderBy(orderField, "desc"), limit(limitCount))
       : query(colRef, where("instituicaoId", "==", instituicaoId), limit(limitCount));
@@ -229,7 +238,7 @@ export async function fetchCollection<T>(
 
   const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => ({
-    ...doc.data(),
+    ...(doc.data() as any),
     id: doc.id,
   })) as (T & { id: string })[];
 }
@@ -1450,6 +1459,8 @@ export function subscribeWithCacheFirst<T>(
 }
 
 export const firestoreService = {
+  fetchCollection,
+  updateSectorStats,
   wipeAllTestData,
   wipeDatabaseExceptExclusions,
   subscribeToDocument,

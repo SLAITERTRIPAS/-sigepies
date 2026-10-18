@@ -247,13 +247,87 @@ export const compareSectorsMatch = (secA: string, secB: string): boolean => {
 };
 
 /**
+ * Funções auxiliares de isolamento absoluto para a UGEA.
+ */
+export const isUgeaActivity = (activity: any): boolean => {
+  if (!activity) return false;
+  const aDept = cleanAreaText(activity.departamento || activity.solicitante || activity.unidade || activity.orgao || "");
+  const aSec = cleanAreaText(activity.setor || activity.sector || activity.reparticao || "");
+  const aOrig = cleanAreaText(activity.origem || activity.setorOrigin || activity.setorCriador || activity.unidadeOrganica || "");
+  const aRef = String(activity.codigo || activity.codigoActividade || activity.referencia || "").toLowerCase();
+
+  // Se explicitamente pertence a Construção Civil ou outra Engenharia, NUNCA é UGEA
+  if (
+    aDept.includes("construcao") ||
+    aDept.includes("construção") ||
+    aSec.includes("construcao") ||
+    aSec.includes("construção") ||
+    (aDept.includes("engenharia") && !aDept.includes("ugea") && !aDept.includes("aquisic"))
+  ) {
+    return false;
+  }
+
+  return (
+    aDept.includes("ugea") ||
+    aSec.includes("ugea") ||
+    aOrig.includes("ugea") ||
+    aDept.includes("aquisicoes") ||
+    aDept.includes("aquisiçoes") ||
+    aSec.includes("aquisicoes") ||
+    aSec.includes("aquisiçoes") ||
+    aRef.includes("ugea")
+  );
+};
+
+export const isUgeaUser = (user: any): boolean => {
+  if (!user) return false;
+  const uDept = cleanAreaText(user.departamento || "");
+  const uSec = cleanAreaText(user.setor || user.sector || user.reparticao || "");
+  const uArea = cleanAreaText(user.areaDeAfetacao || "");
+  const uCargo = cleanAreaText(user.cargo || user.cargoChefia || user.title || "");
+  return (
+    uDept.includes("ugea") ||
+    uSec.includes("ugea") ||
+    uArea.includes("ugea") ||
+    uCargo.includes("ugea") ||
+    uDept.includes("aquisicoes") ||
+    uDept.includes("aquisiçoes") ||
+    uSec.includes("aquisicoes") ||
+    uSec.includes("aquisiçoes")
+  );
+};
+
+/**
  * Verifica com rigor estrito se uma actividade pertence ao setor ou departamento do utilizador logado.
  * Impede estritamente a mistura de dados entre setores diferentes.
  */
 export const isActivityFromUserSector = (activity: any, user: any): boolean => {
   if (!activity || !user) return false;
 
-  // 1. Criador ou autor direto tem acesso soberano à sua própria atividade
+  const aDept = cleanAreaText(activity.departamento || activity.solicitante || activity.unidade || activity.orgao || "");
+  const aSec = cleanAreaText(activity.setor || activity.sector || activity.reparticao || "");
+  const isCivil =
+    aDept.includes("construcao") ||
+    aDept.includes("construção") ||
+    aSec.includes("construcao") ||
+    aSec.includes("construção") ||
+    (aDept.includes("engenharia") && !aDept.includes("ugea") && !aDept.includes("aquisic"));
+
+  const isActUgea = isUgeaActivity(activity);
+  const isUserUg = isUgeaUser(user);
+
+  // 1. ISOLAMENTO ABSOLUTO DA UGEA VS CONSTRUÇÃO CIVIL:
+  // Se o utilizador é da UGEA, NUNCA vê actividades de Engenharia de Construção Civil ou outros departamentos!
+  if (isUserUg) {
+    if (isCivil || !isActUgea) return false;
+  } else if (isActUgea) {
+    // Actividades da UGEA só pertencem à UGEA
+    if (!user.isGlobalAdmin && user.email !== "slaitertripas@gmail.com") {
+      return false;
+    }
+  }
+
+  // 2. Criador direto tem acesso soberano à sua própria atividade (desde que respeite o isolamento setorial)
   const creatorEmail = String(activity.createdBy || activity.emailCriador || activity.autorEmail || activity.responsavelEmail || "").toLowerCase().trim();
   const uEmail = String(user.email || "").toLowerCase().trim();
   if (creatorEmail && uEmail && creatorEmail === uEmail) return true;
@@ -270,28 +344,13 @@ export const isActivityFromUserSector = (activity: any, user: any): boolean => {
   const actNuit = String(activity.nuit || activity.nuitCriador || "").trim();
   if (uNuit && actNuit && uNuit === actNuit) return true;
 
-  // 2. Administradores Globais, Super Boss e Administrador da Instituição têm acesso institucional global
-  if (isSuperBossUser(user) || isInstitutionalAdminUser(user)) return true;
-  const role = String(user.role || "").toLowerCase();
-  const isSysAdmin = role === "admin" || role === "administrador" || role === "proprietario" || user.isOwner === true;
-  if (isSysAdmin) return true;
-
-  // 3. Isolamento de competências da UGEA
-  const aDept = cleanAreaText(activity.departamento || activity.solicitante || activity.unidade || activity.orgao || "");
-  const aSec = cleanAreaText(activity.setor || activity.sector || activity.reparticao || "");
-  const aOrig = cleanAreaText(activity.origem || activity.setorOrigin || activity.setorCriador || activity.unidadeOrganica || "");
-
-  const uDept = cleanAreaText(user.departamento || "");
-  const uSec = cleanAreaText(user.setor || user.sector || user.reparticao || "");
-  const uArea = cleanAreaText(user.areaDeAfetacao || "");
-
-  const isActUgea = aDept.includes("ugea") || aSec.includes("ugea") || aOrig.includes("ugea") || aDept.includes("aquisicoes") || aSec.includes("aquisicoes");
-  const isUserUgea = uDept.includes("ugea") || uSec.includes("ugea") || uArea.includes("ugea") || uDept.includes("aquisicoes") || uSec.includes("aquisicoes");
-  if (isActUgea || isUserUgea) {
-    return isActUgea === isUserUgea;
+  // 3. Administradores Globais com escopo global livre
+  if (user.isGlobalAdmin === true || user.email === "slaitertripas@gmail.com") {
+    // Se o master está a simular ou filtrar um setor específico, respeita o setor
+    if (!user.setor && !user.departamento) return true;
   }
 
-  // 4. Chefes de Direção / GDG / Departamento têm acesso à sua respetiva alçada organica
+  // 4. Chefes de Direção / GDG / Departamento têm acesso à sua respetiva alçada orgânica
   const userRoles = getRoles(user.title || user.cargo || user.cargoChefia || "");
   if (userRoles.isDC || userRoles.isGDG) {
     const uDir = cleanAreaText(user.direcao || "");
@@ -561,82 +620,82 @@ export const getAuthorizedActivities = (activities: any[], user: any) => {
     return true;
   });
 
-  if (!user) return validActivities;
+  if (!user) return [];
 
-  // Se o usuário não tem email ou é uma sessão anônima/pública sem restrição definida,
-  // exibe as actividades institucionais/gerais para não deixar a tela em branco em novos computadores
   const uEmail = String(user.email || "").toLowerCase().trim();
   const uDept = String(user.departamento || "").toLowerCase().trim();
   const uSector = String(user.setor || user.reparticao || "").toLowerCase().trim();
   const uDir = String(user.direcao || "").toLowerCase().trim();
-  const uRole = String(user.role || "").toLowerCase().trim();
-  const uId = user.uid || user.id;
+  const uName = String(user.nome || user.name || user.displayName || "").toLowerCase().trim();
+  const uNuit = String(user.nuit || "").trim();
+  const uId = String(user.uid || user.id || "").trim();
 
-  if (!uEmail && !uDept && !uSector && !uDir && (uRole === "utilizador" || uRole === "" || !user.role)) {
+  // 1. ISOLAMENTO SOBERANO DA UGEA:
+  // Se o utilizador é da UGEA, EXCLUIR ESTRITAMENTE todas as actividades de Construção Civil e de outros departamentos
+  const isUserUgea = isUgeaUser(user);
+  if (isUserUgea) {
+    return validActivities.filter((a) => {
+      if (!a) return false;
+      return isUgeaActivity(a);
+    });
+  }
+
+  // 2. Administrador Global Master em visão global institucional irrestrita
+  const isGlobalMaster = user.isGlobalAdmin === true || user.email === "slaitertripas@gmail.com";
+  const hasSpecificContext = Boolean(user.setor || user.departamento || (user.title && user.title !== "Plano Setorial" && user.title !== "Sistema" && user.title !== "Geral"));
+
+  if (isGlobalMaster && !hasSpecificContext) {
     return validActivities;
   }
 
-  if (isSuperBossUser(user)) return validActivities;
-
-  const role = String(user.role || "").toLowerCase();
-  const isSysAdmin =
-    role === "admin" ||
-    role === "administrador" ||
-    role === "administrador do sistema" ||
-    role === "administrador de sistema" ||
-    role === "proprietario" ||
-    role === "proprietário" ||
-    user.isOwner === true ||
-    String(user.categoria || "").toLowerCase().includes("programador");
+  const userRoles = getRoles(user.title || user.cargo || user.cargoChefia || "");
+  const isNormalUser = !userRoles.isBoss && !userRoles.isDG && !userRoles.isDC && !userRoles.isCD && !userRoles.isCR && !isGlobalMaster;
 
   return validActivities.filter((a) => {
     if (!a) return false;
 
-    // 1. Criadores e Administradores têm acesso total
+    // Actividades da UGEA são estritamente isoladas para utilizadores fora da UGEA
+    if (isUgeaActivity(a) && !isGlobalMaster) {
+      return false;
+    }
+
+    // 1. Criador soberano direto tem acesso à sua actividade
     const creatorEmail = String(a.createdBy || a.emailCriador || a.autorEmail || a.responsavelEmail || a.publicadoPorEmail || "").toLowerCase().trim();
     const creatorName = String(a.createdByName || a.autor || a.autorNome || a.planificadoPor || a.criadoPor || a.publicadoPorNome || "").toLowerCase().trim();
-    const uName = String(user.nome || user.name || user.displayName || "").toLowerCase().trim();
-    const uEmail = String(user.email || "").toLowerCase().trim();
-    const uSector = String(user.setor || user.reparticao || "").toLowerCase().trim();
-    
-    if (
+    const actUserId = String(a.userId || a.userUid || a.uid || "").trim();
+    const actNuit = String(a.nuit || a.nuitCriador || "").trim();
+
+    const isDirectCreator =
       (creatorEmail && uEmail && creatorEmail === uEmail) ||
-      (creatorName && uName && creatorName === uName) ||
-      isSysAdmin
-    ) return true;
+      (actUserId && uId && actUserId === uId) ||
+      (actNuit && uNuit && actNuit === uNuit) ||
+      (creatorName && uName && (creatorName === uName || creatorName.includes(uName) || uName.includes(creatorName)));
 
-    // 2. Isolamento estrito para UGEA
-    const isActUgea = 
-      (a.departamento && a.departamento.toLowerCase().includes("ugea")) ||
-      (a.setor && a.setor.toLowerCase().includes("ugea")) ||
-      (a.reparticao && a.reparticao.toLowerCase().includes("ugea"));
-    const uSectorRaw = String(user.setor || user.reparticao || user.departamento || "").toLowerCase().trim();
-    const isUserUgea = uSectorRaw.includes("ugea") || uSectorRaw.includes("aquisicoes");
+    if (isDirectCreator) return true;
 
-    if (isActUgea && !isUserUgea) return false;
-    if (isUserUgea && !isActUgea) return false;
+    // Partilha explícita autorizada
+    if (Array.isArray(a.sharedWith)) {
+      if (uEmail && a.sharedWith.includes(uEmail)) return true;
+      if (uId && a.sharedWith.includes(uId)) return true;
+      for (const s of getUserSectors(user)) {
+        if (a.sharedWith.some((sw: any) => compareSectorsMatch(String(sw), s))) return true;
+      }
+    }
 
-    // 3. Isolamento estrito para Ajudas de Custo (Capítulo 11)
+    // Nível 1: Utilizador (Privacidade Máxima)
+    // O utilizador comum (sem cargo de chefia) vê exclusivamente o que ele próprio produziu/planificou
+    if (isNormalUser) {
+      return false;
+    }
+
+    // Ajudas de Custo (Capítulo 11) - Apenas o próprio setor criador
     const isAjudaDeCusto = Array.isArray(a.rubricas) && a.rubricas.some((r: any) => String(r.rubrica || "").toLowerCase().includes("ajuda") || String(r.rubrica || "").startsWith("11"));
     if (isAjudaDeCusto) {
-      // Apenas o próprio setor criador pode ver suas ajudas de custo
       return isActivityFromUserSector(a, user);
     }
 
-    const sentToSectors = [
-      a.enviadoParaSetor,
-      a.setorDestino,
-      a.departamentoDestino,
-      a.direcaoDestino,
-      a.currentGabinete,
-      a.gabineteDestinatario,
-      a.destinatarioSetor,
-    ]
-      .filter(Boolean)
-      .map((x) => String(x).toLowerCase().trim());
-
-    // 3. Regra padrão para demais actividades (hierarquia)
-    return isActivityFromUserSector(a, user) || sentToSectors.some(s => uSector.includes(s) || s.includes(uSector));
+    // Acesso hierárquico por chefia autorizada da área
+    return isActivityFromUserSector(a, user);
   });
 };
 
