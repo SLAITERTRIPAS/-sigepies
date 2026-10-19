@@ -1623,6 +1623,22 @@ export default function InformacaoPropostaForm({
         {/* Editor do Formulário Interativo */}
         <div className="bg-white rounded-2xl space-y-6 print:hidden">
 
+            {/* SIGEP — MODELO 1: TRAMITAÇÃO INTEGRAL DE DESLOCAÇÃO EM SERVIÇO */}
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-5 rounded-2xl shadow-lg border border-blue-700 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                  SIGEP — MODELO 1 ATIVO
+                </span>
+                <span className="text-[10px] text-blue-200 font-bold">Com Cabimento Orçamental & Sem Viatura Institucional</span>
+              </div>
+              <h3 className="text-sm font-black tracking-tight text-white">
+                Tramitação Integral do Pedido de Deslocação em Serviço (Viatura Própria ou Transporte Público)
+              </h3>
+              <p className="text-[11px] text-blue-200/90 leading-relaxed">
+                Procedimento digital completo para submissão, análise, verificação de cabimento no DAF, alocação de transporte (próprio ou público), aprovação pelo Diretor-Geral e arquivo institucional.
+              </p>
+            </div>
+
             {/* Seleção Inteligente de Assunto / Categoria de Documento (DROPDOWN) */}
             <div className="bg-slate-100 p-6 rounded-2xl space-y-4 shadow-sm border-2 border-slate-200">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import WeatherWidget from "../../components/WeatherWidget";
 import {
   ChevronLeft,
   ChevronRight,
@@ -451,6 +452,10 @@ export default function CalendarView({
                   <div className="text-xs font-bold text-amber-300">
                     {periodoPlanificacao?.dataFimPlanificacao || "Não definido"}
                   </div>
+                </div>
+                <div className="h-7 w-px bg-white/10" />
+                <div>
+                  <WeatherWidget />
                 </div>
               </div>
             </div>
@@ -2142,6 +2147,26 @@ export default function CalendarView({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Rodapé Oficial com a Cor de Cabeçalho */}
+      <footer className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-indigo-900/50 flex flex-col md:flex-row items-center justify-between gap-4 mt-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md">
+            <ShieldCheck size={22} />
+          </div>
+          <div>
+            <div className="text-xs font-black uppercase tracking-wider text-amber-400">
+              Calendário Oficial do Chefe do DPEP • Moçambique
+            </div>
+            <p className="text-xs text-indigo-200 mt-0.5">
+              Direção de Planificação, Estudos e Projetos • Deteção automática da província e distrito com temperatura real do local.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <WeatherWidget />
+        </div>
+      </footer>
     </div>
   );
 }

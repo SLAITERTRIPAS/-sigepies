@@ -1866,8 +1866,8 @@ export async function extractDominantColorsFromImage(
  */
 export function lazyRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default: T }>,
-  retriesLeft = 2,
-  interval = 500
+  retriesLeft = 4,
+  interval = 800
 ): Promise<{ default: T }> {
   return new Promise((resolve, reject) => {
     componentImport()
@@ -1895,7 +1895,7 @@ export function lazyRetry<T extends React.ComponentType<any>>(
         }
 
         setTimeout(() => {
-          lazyRetry(componentImport, retriesLeft - 1, interval).then(resolve, reject);
+          lazyRetry(componentImport, retriesLeft - 1, Math.min(interval * 1.4, 2500)).then(resolve, reject);
         }, interval);
       });
   });

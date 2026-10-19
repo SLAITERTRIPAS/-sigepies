@@ -83,6 +83,7 @@ export interface UserAllocatedDetails {
   dep: string;
   rep: string;
   setor: string;
+  curso?: string;
   source?: string;
   responsavel?: string;
   responsavelEmail?: string;
@@ -488,12 +489,33 @@ export function getUserAllocatedDetails(
       ? "Repartição de Pessoal (Cargos de Chefia)"
       : "Repartição de Pessoal (Efetivo Geral)";
 
+    let detectedCurso = matchedColab.curso || user?.curso || "";
+    if (!detectedCurso) {
+      const textToCheck = `${matchedColab.cargo || ""} ${matchedColab.cargoChefia || ""} ${matchedColab.reparticao || ""} ${user?.cargo || ""} ${user?.cargoChefia || ""} ${user?.title || ""} ${user?.reparticao || ""} ${user?.curso || ""}`.toLowerCase();
+      if (textToCheck.includes("elétrica") || textToCheck.includes("eletrica")) {
+        detectedCurso = "Engenharia Elétrica";
+      } else if (textToCheck.includes("eletrónica") || textToCheck.includes("eletronica") || textToCheck.includes("telecomun")) {
+        detectedCurso = "Engenharia Eletrónica e de Telecomunicações";
+      } else if (textToCheck.includes("renováveis") || textToCheck.includes("renovaveis")) {
+        detectedCurso = "Engenharia de Energias Renováveis";
+      } else if (textToCheck.includes("construção civil") || textToCheck.includes("construcao civil")) {
+        detectedCurso = "Engenharia de Construção Civil";
+      } else if (textToCheck.includes("hidráulica") || textToCheck.includes("hidraulica")) {
+        detectedCurso = "Engenharia Hidráulica";
+      } else if (textToCheck.includes("construção mecânica") || textToCheck.includes("construcao mecanica")) {
+        detectedCurso = "Engenharia de Construção Mecânica";
+      } else if (textToCheck.includes("termotécnica") || textToCheck.includes("termotecnica")) {
+        detectedCurso = "Engenharia Termotécnica";
+      }
+    }
+
     return {
       cat: catNormalized,
       dir: dirNormalized,
       dep: depNormalized,
       rep: repNormalized,
       setor: setorNormalized,
+      curso: detectedCurso,
       source: source,
       responsavel: matchedColab.nome || matchedColab.name || "",
       responsavelEmail:

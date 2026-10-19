@@ -52,20 +52,20 @@ import { IntelligentDiagnosticsView } from "./IntelligentDiagnosticsView";
 import SobreSistemaView from "./SobreSistemaView";
 import { BackgroundRemoverView } from "../../components/BackgroundRemoverView";
 import BiografiaView from "./BiografiaView";
-import ManualInstrucoesView from "../bloco8_gerais/ManualInstrucoesView";
+
 import CalendarView from "../bloco5_sistema/CalendarView";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import * as XLSX from "xlsx";
-import MonografiaView from "../bloco3_unidades_organicas/MonografiaView";
-import ProjetoCientificoView from "../bloco3_unidades_organicas/ProjetoCientificoView";
+
+
 import ResumoTemplateView from "../bloco8_gerais/ResumoTemplateView";
-import ReportsView from "../bloco7_relatorios/ReportsView";
-import RelatorioAcessoIndevidoView from "../bloco7_relatorios/RelatorioAcessoIndevidoView";
+
+
 import { ConformidadeNormativaView } from "./ConformidadeNormativaView";
 import { SystemLogsView } from "./SystemLogsView";
-import HolidaysAlertsManagementView from "./HolidaysAlertsManagementView";
-import UniversalRegistrationPicker from "./UniversalRegistrationPicker";
+
+
 import RegistarGraduadoForm from "../bloco8_gerais/RegistarGraduadoForm";
 import RegistarMateriaisBensForm from "../bloco8_gerais/RegistarMateriaisBensForm";
 import RegistarEspacoFisicoForm from "../bloco8_gerais/RegistarEspacoFisicoForm";
@@ -80,7 +80,7 @@ import MainHeader from "../bloco1_apresentacao/MainHeader";
 import { isSuperBossUser, isInstitutionalAdminUser, isHRBossUser, countInstitutionalAdmins } from "../../lib/auth";
 import { ProcessingCircle } from "../../components/ui/ProcessingCircle";
 import { FUNCIONARIOS } from "../../constants/formOptions";
-import GestaoProdutosPrecosView from "../bloco9_produtos_precos/GestaoProdutosPrecosView";
+
 import {
   DatabaseView,
   UserManagementView,
@@ -90,7 +90,7 @@ import {
 import { isProgrammerData, filterDeleted } from "../../lib/utils";
 import { EstruturaExplorer } from "./EstruturaExplorer";
 import { EstruturaHierarquicaConfigView } from "./EstruturaHierarquicaConfigView";
-import CaixaMensagensView from "./CaixaMensagensView";
+
 import { SystemAlertsAdmin } from "../../components/SystemAlertsAdmin";
 import { SistemaLembretesAdmin } from "../../components/SistemaLembretesAdmin";
 
@@ -98,6 +98,17 @@ import SearchableSelect from "../../components/ui/SearchableSelect";
 import { exportFullBackup, restoreFullBackup } from "../../lib/backupService";
 
 import { databaseMaintenance } from "../../lib/databaseMaintenance";
+
+const ManualInstrucoesView = lazy(() => import("../bloco8_gerais/ManualInstrucoesView"));
+const MonografiaView = lazy(() => import("../bloco3_unidades_organicas/MonografiaView"));
+const ProjetoCientificoView = lazy(() => import("../bloco3_unidades_organicas/ProjetoCientificoView"));
+const ReportsView = lazy(() => import("../bloco7_relatorios/ReportsView"));
+const RelatorioAcessoIndevidoView = lazy(() => import("../bloco7_relatorios/RelatorioAcessoIndevidoView"));
+const HolidaysAlertsManagementView = lazy(() => import("./HolidaysAlertsManagementView"));
+const UniversalRegistrationPicker = lazy(() => import("./UniversalRegistrationPicker"));
+const GestaoProdutosPrecosView = lazy(() => import("../bloco9_produtos_precos/GestaoProdutosPrecosView"));
+const CaixaMensagensView = lazy(() => import("./CaixaMensagensView"));
+
 
 export default function SistemaView({
   onBack,
@@ -2333,7 +2344,9 @@ export default function SistemaView({
             }`}
           >
             <Suspense fallback={<div className="p-8 text-center text-slate-500">A carregar...</div>}>
-          {renderContent()}
+          <Suspense fallback={<div className="p-12 flex justify-center"><ProcessingCircle /></div>}>
+            {renderContent()}
+          </Suspense>
         </Suspense>
           </div>
         </main>

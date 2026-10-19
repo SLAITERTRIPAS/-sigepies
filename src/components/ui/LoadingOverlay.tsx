@@ -1,8 +1,10 @@
 import React from "react";
 import { motion } from "motion/react";
 import { ProcessingCircle } from "./ProcessingCircle";
+import { useTranslation } from "react-i18next";
 
 export const LoadingOverlay = () => {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/60 backdrop-blur-md">
       <div className="relative flex flex-col items-center justify-center">
@@ -13,10 +15,10 @@ export const LoadingOverlay = () => {
             transition={{ duration: 1.5, repeat: Infinity }}
             className="text-slate-800 font-black text-sm tracking-[0.4em]"
           >
-            SISTEMA CARREGANDO
+            {t("SISTEMA CARREGANDO")}
           </motion.p>
           <p className="mt-2 text-[10px] text-slate-400 font-bold tracking-widest ">
-            Aguarde um momento...
+            {t("Aguarde um momento...")}
           </p>
         </div>
       </div>

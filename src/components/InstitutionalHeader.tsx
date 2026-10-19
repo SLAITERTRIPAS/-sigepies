@@ -3,7 +3,9 @@ import { toTitleCase as tc } from '../lib/utils';
 import { EFETIVO_GERAL_DATA } from '../constants/colaboradoresList';
 import { getActiveInstituicao } from '../lib/instituicaoEstruturaService';
 import { getSystemLogo } from '../lib/logoService';
-import { useCurrentLanguage, translateInstitutionalText } from '../lib/i18n';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
+import { LanguageSwitcher } from './ui/LanguageSwitcher';
 
 // Remove valores inválidos como "Songo", "ISPS", traços ou valores vazios
 export function cleanHierarchyField(val?: string): string {
@@ -240,36 +242,31 @@ export const InstitutionalHeader = ({
     lowestLevelName = displayUnidade;
   }
 
-  const currentLang = useCurrentLanguage();
+  const { t, i18n } = useTranslation();
+  const [, setLang] = React.useState(i18n.language);
+
+  React.useEffect(() => {
+    const handleLanguageChanged = (lng: string) => setLang(lng);
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
+  }, [i18n]);
+
+  const currentLang = i18n.language;
   const isEn = currentLang === "en";
 
-  let displayTitle = tc(String(title || "Plano de Actividade").trim());
-  if (displayTitle.toLowerCase() === "plano de actividade" || displayTitle.toLowerCase() === "plano de actividades") {
+  let displayTitle = tc(String(title || t("Plano de Actividade")).trim());
+  if (displayTitle.toLowerCase() === t("plano de actividade").toLowerCase() || displayTitle.toLowerCase() === t("plano de actividades").toLowerCase()) {
     if (lowestLevelName) {
-      displayTitle = isEn ? `Activity Plan of ${lowestLevelName}` : `Plano de Actividade de ${lowestLevelName}`;
+      displayTitle = t("Plano de Actividade de {{name}}", { name: lowestLevelName });
     }
   }
-  const finalTitle = isEn ? translateInstitutionalText(displayTitle, "en") : displayTitle;
+  const finalTitle = displayTitle;
 
-  const translatedUnidade = isEn
-    ? (displayUnidade === "Órgão de Direção e Gestão" ? "Governance and Management Body"
-      : displayUnidade === "Serviços Centrais" ? "Central Services"
-      : displayUnidade === "Unidade Orgânica" ? "Organic Unit"
-      : displayUnidade)
-    : displayUnidade;
-
-  const translatedDirecao = isEn
-    ? (displayDirecao.toLowerCase().includes("gabinete do diretor") ? "Office of the Director-General" : displayDirecao)
-    : displayDirecao;
-
-  const translatedCargo = isEn
-    ? (cargoResponsavel === "Chefe do Departamento" ? "Head of Department"
-      : cargoResponsavel === "Chefe da Repartição" ? "Head of Section"
-      : cargoResponsavel === "Responsável do Setor" ? "Sector Manager"
-      : cargoResponsavel === "Chefe do Gabinete" ? "Head of Cabinet"
-      : cargoResponsavel === "Diretor" ? "Director"
-      : cargoResponsavel)
-    : cargoResponsavel;
+  const translatedUnidade = displayUnidade; // O resolveOrgaoName já retorna texto em PT, precisará de chaves no i18n
+  const translatedDirecao = displayDirecao;
+  const translatedCargo = cargoResponsavel;
 
   // CABEÇALHO DO PESOE (OFICIAL GOVERNAMENTAL)
   if (isPESOEHeader) {
@@ -443,7 +440,8 @@ export const InstitutionalHeader = ({
 
   // CABEÇALHO DO PLANO DE ATIVIDADE & DOCUMENTOS INSTITUCIONAIS (FORMATO EXATO DA IMAGEM)
   return (
-    <div className="text-center mb-6 flex flex-col items-center justify-center w-full bg-transparent p-6 print:p-4 print:mb-4 print:w-full print:items-center print:text-center">
+    <div className="relative text-center mb-6 flex flex-col items-center justify-center w-full bg-transparent p-6 print:p-4 print:mb-4 print:w-full print:items-center print:text-center">
+      <div className="absolute top-4 right-4"><LanguageSwitcher /></div>
       {/* 1. Logotipo da Instituição Centrado */}
       <div className="mb-5 flex justify-center items-center w-full text-center print:mb-4 print:flex print:justify-center print:items-center">
         {instLogo ? (

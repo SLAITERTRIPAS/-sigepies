@@ -3678,6 +3678,7 @@ export default function ActivityForm({
                         departamento: allocated.dep || prev.departamento,
                         reparticao: allocated.rep || prev.reparticao,
                         setor: allocated.setor || prev.setor,
+                        curso: allocated.curso || prev.curso,
                         responsavel: allocated.responsavel || activeUser.nome || activeUser.name || activeUser.fullName || "",
                         responsavelEmail: allocated.responsavelEmail || activeUser.email || "",
                       }));

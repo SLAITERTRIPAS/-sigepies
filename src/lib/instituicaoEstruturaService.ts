@@ -620,62 +620,85 @@ export async function persistEstruturaFromOrganograma(
   let deptsCount = 0;
   let repsCount = 0;
 
-  for (const org of parsedOrgaos) {
-    const orgSlug = org.nome.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 30);
-    const orgDocId = `org_${instituicaoId}_${orgSlug}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const normalizarNome = (nome: string): string => {
+    return (nome || "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLocaleLowerCase("pt");
+  };
 
+  const codificarNome = (nome: string): string => {
+    return Array.from(new TextEncoder().encode(nome))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  };
+
+  for (const org of parsedOrgaos) {
+    const orgCode = codificarNome(normalizarNome(org.nome));
+    const orgDocId = `org_${instituicaoId}_${orgCode}`;
     await firestoreService.orgaos_custom.set(orgDocId, {
       id: orgDocId,
       title: org.nome,
+      nome: org.nome,
       type: org.tipo || "Unidade Estrutural",
       instituicaoId: instituicaoId,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
     orgaosCount++;
 
     for (const dir of org.direcoes) {
-      const dirSlug = dir.nome.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 30);
-      const dirDocId = `dir_${instituicaoId}_${dirSlug}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-
+      const dirCode = codificarNome(normalizarNome(dir.nome));
+      const dirDocId = `dir_${instituicaoId}_${dirCode}`;
       await firestoreService.direcoes_organicas.set(dirDocId, {
         id: dirDocId,
         title: dir.nome,
+        nome: dir.nome,
         rawTitle: dir.rawTitle || dir.nome,
         unitType: org.nome,
         instituicaoId: instituicaoId,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
       direcoesCount++;
 
       for (const dept of dir.departamentos) {
-        const deptDocId = `dept_${instituicaoId}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const deptCode = codificarNome(normalizarNome(dept.nome));
+        const deptDocId = `dept_${instituicaoId}_${deptCode}`;
         await firestoreService.estrutura_adicionais.set(deptDocId, {
           id: deptDocId,
           type: "departamento",
           name: dept.nome,
+          nome: dept.nome,
           directionTitle: dir.rawTitle || dir.nome,
           instituicaoId: instituicaoId,
           createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
         deptsCount++;
 
         for (const rep of dept.reparticoes) {
-          const repDocId = `rep_${instituicaoId}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          const repName = typeof rep === "string" ? rep : ((rep as any)?.nome || (rep as any)?.name || "");
+          const repCode = codificarNome(normalizarNome(repName));
+          const repDocId = `rep_${instituicaoId}_${repCode}`;
           await firestoreService.estrutura_adicionais.set(repDocId, {
             id: repDocId,
             type: "reparticao",
-            name: rep,
+            name: repName,
+            nome: repName,
             directionTitle: dir.rawTitle || dir.nome,
             parentDepartmentTitle: dept.nome,
             instituicaoId: instituicaoId,
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           });
           repsCount++;
         }
       }
     }
   }
-
   notifyEstruturaUpdated();
   return { orgaosCount, direcoesCount, deptsCount, repsCount };
 }

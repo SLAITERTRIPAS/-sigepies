@@ -5,7 +5,9 @@ import {
   UNIDADES_ORGANICAS_SISTEMA,
   DEPARTAMENTOS,
   FUNCIONARIOS,
+  CURSOS,
 } from "../../constants/formOptions";
+import { getUserAllocatedDetails } from "../../lib/allocationUtils";
 
 interface IndividualPlanFormProps {
   onClose: () => void;
@@ -24,11 +26,13 @@ export default function IndividualPlanForm({
   colaboradores = [],
   user,
 }: IndividualPlanFormProps) {
+  const allocated = getUserAllocatedDetails(user, colaboradores);
+
   const isUserChefia =
     user?.cargoChefia &&
     user?.cargoChefia !== "Nenhum" &&
     user?.cargoChefia !== "";
-  const initialUnidadeOrganica = "";
+  const initialUnidadeOrganica = allocated?.cat || user?.unidade || user?.unidadeOrganica || "";
 
   const isMandatoLocked =
     user?.estadoMandato !== "Cessado" &&
@@ -42,9 +46,10 @@ export default function IndividualPlanForm({
   );
   const [formData, setFormData] = useState({
     unidadeOrganica: initialUnidadeOrganica,
-    direcao: user?.direcao || "",
-    departamento: user?.departamento || "",
-    nomeColaborador: user?.name || "",
+    direcao: allocated?.dir || user?.direcao || "",
+    departamento: allocated?.dep || user?.departamento || "",
+    curso: allocated?.curso || user?.curso || "",
+    nomeColaborador: user?.name || user?.nome || "",
     nomeActividade: "",
     objetivo: "",
     dataInicial: "",
@@ -216,7 +221,7 @@ export default function IndividualPlanForm({
           className="max-w-7xl mx-auto space-y-12"
         >
           {/* Top Row: Unidade, Direção, Departamento, Nome Colaborador */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 border-t-2 border-[#1a4b84] pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 border-t-2 border-[#1a4b84] pt-4">
             <div className="space-y-1">
               <label className="block text-[#1a4b84] font-serif text-lg italic">
                 Órgão
@@ -232,6 +237,7 @@ export default function IndividualPlanForm({
                     unidadeOrganica: e.target.value,
                     direcao: "",
                     departamento: "",
+                    curso: "",
                   }));
                 }}
                 className="w-full p-2 border-2 border-gray-400 rounded-xl text-sm outline-none focus:border-[#1a4b84] transition-all bg-white disabled:bg-gray-100 disabled:text-gray-500"
@@ -259,6 +265,7 @@ export default function IndividualPlanForm({
                     ...prev,
                     direcao: e.target.value,
                     departamento: "",
+                    curso: "",
                   }));
                 }}
                 className="w-full p-2 border-2 border-gray-400 rounded-xl text-sm outline-none focus:border-[#1a4b84] transition-all bg-white disabled:bg-gray-100 disabled:text-gray-500"
@@ -283,25 +290,46 @@ export default function IndividualPlanForm({
               <select
                 name="departamento"
                 value={formData.departamento}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  setFormData((prev) => ({ ...prev, curso: "" }));
+                }}
                 className="w-full p-2 border-2 border-gray-400 rounded-xl text-sm outline-none focus:border-[#1a4b84] transition-all bg-white disabled:bg-gray-100 disabled:text-gray-500"
                 required
                 disabled={isMandatoLocked}
               >
                 <option value=""></option>
                 {formData.direcao &&
-                (DEPARTAMENTOS[formData.direcao] ||
-                  DEPARTAMENTOS[formData.direcao]) ? (
-                  (
-                    DEPARTAMENTOS[formData.direcao] ||
-                    DEPARTAMENTOS[formData.direcao]
-                  ).map((dept) => (
+                DEPARTAMENTOS[formData.direcao] ? (
+                  DEPARTAMENTOS[formData.direcao].map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
                     </option>
                   ))
                 ) : (
                   <option disabled>Selecione uma Direção primeiro</option>
+                )}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[#1a4b84] font-serif text-lg italic">
+                Curso
+              </label>
+              <select
+                name="curso"
+                value={formData.curso}
+                onChange={handleChange}
+                className="w-full p-2 border-2 border-gray-400 rounded-xl text-sm outline-none focus:border-[#1a4b84] transition-all bg-white disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                <option value=""></option>
+                {formData.departamento && CURSOS[formData.departamento] ? (
+                  CURSOS[formData.departamento].map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>Selecione um Departamento primeiro</option>
                 )}
               </select>
             </div>

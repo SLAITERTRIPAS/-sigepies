@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./index.css";
+import "./i18n.ts";
 import { initFaviconSync } from "./lib/logoService";
 
 // Sincroniza imediatamente o logotipo recente do sistema com o favicon da aba do navegador

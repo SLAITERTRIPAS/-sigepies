@@ -639,8 +639,8 @@ export const EstruturaExplorer = ({
     }));
   }
 
-  // Merge static organs, custom ones and organograma-derived ones
-  const mergedOrgaos = [
+  // Merge static organs, custom ones and organograma-derived ones com Deduplicação Estrita
+  const rawMergedOrgaos = [
     ...baseOrgans.map((org) => ({
       ...org,
       title: applyRename(org.title, selectedInstId, "orgao"),
@@ -660,6 +660,15 @@ export const EstruturaExplorer = ({
       rawTitle: doOrg.title,
     }))
   ];
+  const seenOrgaos = new Set<string>();
+  const mergedOrgaos: any[] = [];
+  for (const org of rawMergedOrgaos) {
+    const norm = (org.title || org.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+    if (norm && !seenOrgaos.has(norm)) {
+      seenOrgaos.add(norm);
+      mergedOrgaos.push(org);
+    }
+  }
 
   // Merge static directions and dynamic custom directions for the active unit
   const activeUnitFromState = selectedUnit 
@@ -678,7 +687,7 @@ export const EstruturaExplorer = ({
 
   const activeUnitRawTitle = activeUnitFromState ? (activeUnitFromState.rawTitle || activeUnitFromState.title) : "";
 
-  const mergedDirecoes = selectedUnit && activeUnitFromState ? [
+  const rawMergedDirecoes = selectedUnit && activeUnitFromState ? [
     ...activeUnitDirecoesFiltered.map((d: any) => {
       const dirTitleClean = d.title || d.nome || "";
       const renamedDirTitle = applyRename(dirTitleClean, selectedInstId, "direcao");
@@ -714,6 +723,17 @@ export const EstruturaExplorer = ({
       })
   ] : [];
 
+  const seenDirs = new Set<string>();
+  const mergedDirecoes: any[] = [];
+  for (const dir of rawMergedDirecoes) {
+    const norm = (dir.rawTitle || dir.title || dir.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+    if (norm && !seenDirs.has(norm)) {
+      seenDirs.add(norm);
+      mergedDirecoes.push(dir);
+    }
+  }
+
+
   const fullyEnrichedDirecoes = mergedDirecoes.map((dir: any) => {
     const dirTitle = dir.rawTitle || dir.title.split(" (")[0] || dir.title;
     const finalDirTitle = applyRename(dirTitle, selectedInstId, "direcao");
@@ -738,7 +758,16 @@ export const EstruturaExplorer = ({
       rawTitle: dp.title || dp.nome || ""
     }));
 
-    const allDepts = [...rawDepts, ...customDeptsForDir];
+    const rawAllDepts = [...rawDepts, ...customDeptsForDir];
+    const seenDepts = new Set<string>();
+    const allDepts: any[] = [];
+    for (const dp of rawAllDepts) {
+      const norm = (dp.rawTitle || dp.title || dp.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      if (norm && !seenDepts.has(norm)) {
+        seenDepts.add(norm);
+        allDepts.push(dp);
+      }
+    }
 
     // Append custom repartições to each department
     const enrichedDepts = allDepts.map((dept: any) => {
@@ -770,7 +799,20 @@ export const EstruturaExplorer = ({
       return {
         ...dept,
         title: finalDeptTitle,
-        reparticoes: [...staticReps, ...customRepsForDept]
+        reparticoes: (() => {
+          const rawReps = [...staticReps, ...customRepsForDept];
+          const seenReps = new Set<string>();
+          const dedupedReps: any[] = [];
+          for (const rep of rawReps) {
+            const repName = typeof rep === "string" ? rep : (rep.name || rep.title || "");
+            const norm = repName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+            if (norm && !seenReps.has(norm)) {
+              seenReps.add(norm);
+              dedupedReps.push(rep);
+            }
+          }
+          return dedupedReps;
+        })()
       };
     });
 
