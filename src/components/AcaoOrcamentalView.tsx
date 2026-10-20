@@ -2280,7 +2280,11 @@ export default function AcaoOrcamentalView({
         );
       }
 
-      const fonte = (act.orcamento || act.fonteFinanciamento || "OE").toUpperCase();
+      const rawFonte = act.orcamento || act.fonteFinanciamento || "OE";
+      const fonteStr = typeof rawFonte === "object" && rawFonte !== null 
+        ? (rawFonte.name || rawFonte.code || rawFonte.sigla || "OE") 
+        : String(rawFonte || "OE");
+      const fonte = fonteStr.toUpperCase();
 
       if (
         fonte.includes("OE") ||

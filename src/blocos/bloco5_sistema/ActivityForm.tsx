@@ -5739,16 +5739,56 @@ export default function ActivityForm({
                       {isAjudaCusto ? (
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                           <div className="space-y-1">
-                            <label className="block text-[11px] font-bold text-blue-800 tracking-tight leading-tight">
-                              Total de dias de Trabalho
+                            <label className="block text-[11px] font-bold text-blue-800 tracking-tight leading-tight flex items-center justify-between">
+                              <span>Dias de Trabalho (D/T)</span>
+                              <span className="text-[9px] text-blue-500 font-extrabold bg-blue-100/70 px-1 rounded">D/T</span>
                             </label>
-                            <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
-                              {isIdaVoltaGeral
-                                ? "1D de ida e volta"
-                                : isMotoristaIdaVoltaManual
-                                  ? 2
-                                  : formData.totalDias || 1}
-                            </div>
+                            {isIdaVoltaGeral ? (
+                              <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
+                                1D de ida e volta
+                              </div>
+                            ) : isMotoristaIdaVoltaManual ? (
+                              <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
+                                2 dias
+                              </div>
+                            ) : (
+                              <input
+                                type="number"
+                                min={1}
+                                value={rubrica.diasTrabalho !== undefined ? rubrica.diasTrabalho : (formData.totalDias || 1)}
+                                disabled={isBlocked}
+                                onChange={(e) => {
+                                  const newRubricas = [...formData.rubricas];
+                                  const diasT = Math.max(1, Number(e.target.value) || 1);
+                                  const qtd = isAjudaCustoMotoristaReal || isMotoristaIdaVoltaManual ? 1 : (rubrica.quantidade || 0);
+                                  const realValorDiario =
+                                    isAjudaCustoMotoristaReal
+                                      ? 1800
+                                      : isMotoristaIdaVoltaManual
+                                        ? rubrica.precoUnitario || 1800
+                                        : isFora
+                                          ? rubrica.precoUnitario || 0
+                                          : valorDiario;
+
+                                  const taxa30 = (isMotoristaIdaVoltaManual || isIdaVoltaGeral) ? 0 : 0.3 * realValorDiario * qtd;
+                                  const valorTotal = (qtd * diasT * realValorDiario) + taxa30;
+
+                                  newRubricas[index] = {
+                                    ...rubrica,
+                                    diasTrabalho: diasT,
+                                    precoUnitario: realValorDiario,
+                                    valorTotal: valorTotal,
+                                  };
+                                  setFormData({
+                                    ...formData,
+                                    rubricas: newRubricas,
+                                  });
+                                }}
+                                placeholder="D/T"
+                                title="Indique o número de dias de trabalho efetivos para o cálculo de ajudas de custo"
+                                className="w-full p-2.5 border-2 border-blue-900/40 rounded-xl text-[14px] font-black text-blue-900 outline-none focus:border-blue-900 transition-all text-center h-11 bg-white shadow-xs"
+                              />
+                            )}
                           </div>
                           <div className="space-y-1">
                             <label className="block text-[11px] font-bold text-blue-800 tracking-tight leading-tight">
@@ -5772,7 +5812,7 @@ export default function ActivityForm({
                                 const qtd = Number(e.target.value);
                                 const dias = isIdaVoltaGeral
                                   ? 1
-                                  : formData.totalDias || 1;
+                                  : (rubrica.diasTrabalho !== undefined ? rubrica.diasTrabalho : (formData.totalDias || 1));
                                 const realValorDiario =
                                   isAjudaCustoMotoristaReal
                                     ? 1800
@@ -5784,14 +5824,15 @@ export default function ActivityForm({
                                           ? 1800
                                           : valorDiario;
 
+                                const taxa30 = (isMotoristaIdaVoltaManual || isIdaVoltaGeral) ? 0 : 0.3 * realValorDiario * qtd;
                                 const valorTotal = isIdaVoltaGeral
                                   ? qtd * 1800
-                                  : qtd * dias * realValorDiario +
-                                    0.3 * realValorDiario * qtd;
+                                  : (qtd * dias * realValorDiario) + taxa30;
 
                                 newRubricas[index] = {
                                   ...rubrica,
                                   quantidade: qtd,
+                                  diasTrabalho: dias,
                                   precoUnitario: realValorDiario,
                                   valorTotal: valorTotal,
                                 };
@@ -5817,12 +5858,13 @@ export default function ActivityForm({
                                   const newRubricas = [...formData.rubricas];
                                   const preco = Number(e.target.value);
                                   const qtd = rubrica.quantidade || 0;
-                                  const dias = formData.totalDias || 1;
+                                  const dias = rubrica.diasTrabalho !== undefined ? rubrica.diasTrabalho : (formData.totalDias || 1);
                                   const valorTotal =
-                                    qtd * dias * preco + 0.3 * preco * qtd;
+                                    (qtd * dias * preco) + (0.3 * preco * qtd);
                                   newRubricas[index] = {
                                     ...rubrica,
                                     precoUnitario: preco,
+                                    diasTrabalho: dias,
                                     valorTotal: valorTotal,
                                   };
                                   setFormData({

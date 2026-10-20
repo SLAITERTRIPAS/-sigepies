@@ -312,7 +312,8 @@
         "currentSessionToken": { "type": "string", "maxLength": 100 },
         "lastLoginAt": { "type": "string", "format": "date-time" },
         "lastSeenAt": { "type": "string", "format": "date-time" },
-        "isOnline": { "type": "boolean" },
+        "idioma": { "type": "string", "maxLength": 10 },
+        "idioma_mode": { "type": "string", "maxLength": 10 },
         "uid": { "type": "string", "maxLength": 128 },
         "tenantId": { "type": "string", "maxLength": 50 },
         "createdAt": { "type": "string", "format": "date-time" }

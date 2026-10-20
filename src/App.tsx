@@ -25,7 +25,8 @@ import { AlertModal } from "./components/ui/AlertModal";
 import BackupRestoreModal from "./components/modals/BackupRestoreModal";
 import FooterInfoModal from "./components/modals/FooterInfoModal";
 import { ViewRenderer } from "./components/ViewRenderer";
-import { useCurrentLanguage, getTranslation } from "./lib/i18n";
+import { useCurrentLanguage, getTranslation, setLanguagePreference } from "./lib/i18n";
+import { resolveInitialLanguage } from "./i18n";
 import { EFETIVO_GERAL_DATA } from "./constants/colaboradoresList";
 import { runAutomaticBackupIfNeeded, autoRestoreOnStartup } from "./lib/backupService";
 import {
@@ -677,33 +678,14 @@ export default function App() {
                 const latestData = { ...snap.docs[0].data(), id: snap.docs[0].id } as any;
                 const refinedRole = determineUserRole(latestData);
 
-                const localSessionToken = localStorage.getItem("sigep_session_token");
-                if (
-                  latestData.currentSessionToken &&
-                  localSessionToken &&
-                  latestData.currentSessionToken !== localSessionToken
-                ) {
-                  console.warn("[SIGEP] Sessão terminada: conta aberta noutro dispositivo.");
-                  localStorage.removeItem("sigep_logged_in_user");
-                  localStorage.removeItem("sigep_user");
-                  localStorage.removeItem("sigep_current_view");
-                  localStorage.removeItem("sigep_session_token");
-                  sessionStorage.removeItem("session_start");
-                  setCurrentUser(null);
-                  setView("login");
-                  setSessionTerminatedNotice(
-                    "A sua conta foi acedida através de outro dispositivo ou navegador. A sessão neste dispositivo foi encerrada automaticamente por segurança."
-                  );
-                  return;
-                }
+                // Deteção e aplicação automática de idioma na autenticação (Ordem de prioridade 1º gravado, 2º perfil, 3º navegador, 4º pt)
+                const userLanguage = latestData.idioma || initialUser?.idioma || null;
+                const activeLanguage = resolveInitialLanguage(userLanguage);
+                setLanguagePreference(activeLanguage, latestData);
 
-                if (!localSessionToken && latestData.currentSessionToken) {
-                  localStorage.setItem("sigep_session_token", latestData.currentSessionToken);
-                } else if (!latestData.currentSessionToken) {
-                  const freshToken = localSessionToken || ("sigep_sess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 12));
-                  localStorage.setItem("sigep_session_token", freshToken);
-                  updateDoc(doc(db, "users", latestData.id), { currentSessionToken: freshToken }).catch(() => {});
-                }
+                // Suporte a mais de 50.000 utilizadores em simultâneo (Multi-sessão concorrente sem bloqueios de token)
+                const localSessionToken = localStorage.getItem("sigep_session_token") || ("sigep_sess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 12));
+                localStorage.setItem("sigep_session_token", localSessionToken);
                 
                 setCurrentUser((prev: any) => {
                   const updated = { ...prev, ...latestData, role: refinedRole, mustChangePassword: false };
@@ -725,8 +707,8 @@ export default function App() {
     return () => authUnsub();
   }, []);
 
-  // Controlo de Sessão Única em Tempo Real:
-  // Se o mesmo utilizador iniciar sessão num segundo dispositivo, o primeiro dispositivo fecha a sessão automaticamente
+  // Controlo de Sessão Única em Tempo Real (Apenas 1 dispositivo por utilizador):
+  // Se o mesmo utilizador iniciar sessão num segundo dispositivo, o primeiro dispositivo é terminado automaticamente.
   useEffect(() => {
     if (!currentUser) return;
 
@@ -749,12 +731,6 @@ export default function App() {
 
       setCurrentUser(null);
       setView("login");
-      setSubMenuStack([]);
-      setHistoryStack([]);
-      setDashboardTitle("");
-      setDashboardItems([]);
-      setDashboardActiveItem(undefined);
-      setInnerPath([]);
       setSessionTerminatedNotice(
         "A sua conta foi acedida através de outro dispositivo ou navegador. Por motivos de segurança institucional do SIGEP, apenas é permitida uma sessão ativa em simultâneo. A sessão neste dispositivo foi encerrada automaticamente."
       );

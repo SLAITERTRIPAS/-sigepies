@@ -29,6 +29,7 @@ import {
   safeJSONParse,
 } from "../../lib/utils";
 import { setLanguagePreference, getCurrentLanguage, Language } from "../../lib/i18n";
+import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import { EFETIVO_GERAL_DATA } from "../../constants/colaboradoresList";
 import { printElementById } from "../../lib/printUtils";
 import RegistarFuncionarioForm from "../bloco8_gerais/RegistarFuncionarioForm";
@@ -1609,22 +1610,10 @@ export default function LoginScreen({
                 Insira as suas credenciais de acesso.
               </p>
 
-              {/* Seletor de Idioma no Ecrã de Login */}
+              {/* Seletor de Idioma no Ecrã de Login com suporte a PT, EN, FR, ES e AUTO */}
               <div className="mb-6 flex items-center justify-center gap-2">
-                <Globe size={16} className="text-[#0a0a5a]" />
-                <span className="text-xs font-bold text-[#0a0a5a] uppercase tracking-wider">Idioma / Language:</span>
-                <select
-                  value={loginLanguage}
-                  onChange={(e) => {
-                    const lang = e.target.value as Language;
-                    setLoginLanguage(lang);
-                    setLanguagePreference(lang);
-                  }}
-                  className="bg-gray-100 border border-gray-200 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0a0a5a]/20 text-[#0a0a5a]"
-                >
-                  <option value="pt">Português</option>
-                  <option value="en">English</option>
-                </select>
+                <span className="text-xs font-bold text-[#0a0a5a] uppercase tracking-wider">Idioma:</span>
+                <LanguageDropdown compact={false} />
               </div>
 
               <form className="space-y-8" onSubmit={handleSubmit}>

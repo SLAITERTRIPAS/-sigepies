@@ -1867,11 +1867,16 @@ export async function extractDominantColorsFromImage(
 export function lazyRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default: T }>,
   retriesLeft = 4,
-  interval = 800
+  interval = 600
 ): Promise<{ default: T }> {
   return new Promise((resolve, reject) => {
     componentImport()
-      .then(resolve)
+      .then((module) => {
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("sigep_chunk_reload_triggered");
+        }
+        resolve(module);
+      })
       .catch((error) => {
         const errorMsg = String(error?.message || error || "").toLowerCase();
         const isFetchOrChunkError =
@@ -1881,12 +1886,11 @@ export function lazyRetry<T extends React.ComponentType<any>>(
           errorMsg.includes("error loading dynamically imported module");
 
         if (retriesLeft <= 0) {
-          // If chunk failed after retries and hasn't reloaded page in this session, trigger a smooth reload
           if (isFetchOrChunkError && typeof window !== "undefined") {
             const hasReloaded = sessionStorage.getItem("sigep_chunk_reload_triggered");
             if (!hasReloaded) {
               sessionStorage.setItem("sigep_chunk_reload_triggered", "true");
-              window.location.reload();
+              window.location.replace(window.location.pathname + "?reload=" + Date.now());
               return;
             }
           }
@@ -1895,7 +1899,7 @@ export function lazyRetry<T extends React.ComponentType<any>>(
         }
 
         setTimeout(() => {
-          lazyRetry(componentImport, retriesLeft - 1, Math.min(interval * 1.4, 2500)).then(resolve, reject);
+          lazyRetry(componentImport, retriesLeft - 1, Math.min(interval * 1.3, 2000)).then(resolve, reject);
         }, interval);
       });
   });

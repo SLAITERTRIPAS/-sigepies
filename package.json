@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && mkdir -p .artifacts build && cp -r dist/* .artifacts/ && cp -r dist/* build/",
+    "build": "vite build && node -e \"const fs=require('fs'); ['build', '.artifacts'].forEach(d=>{fs.mkdirSync(d,{recursive:true}); fs.cpSync('dist', d, {recursive:true}); console.log('Copied dist to ' + d);})\"",
     "preview": "vite preview",
     "start": "node server.ts",
-    "clean": "rm -rf dist build",
+    "clean": "rm -rf dist build .artifacts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

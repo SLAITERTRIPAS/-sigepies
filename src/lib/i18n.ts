@@ -1,11 +1,22 @@
 /**
- * Módulo de Internacionalização (i18n) do SIGEP
- * Suporta Português (pt) e Inglês (en) com aplicação instantânea em todo o sistema e documentos.
+ * Módulo Central de Internacionalização (i18n) do SIGEP
+ * Suporta Português (pt), Inglês (en), Francês (fr) e Espanhol (es)
+ * Aplicação instantânea em menus, formulários, botões, notificações, dashboards e relatórios.
  */
 
 import { useState, useEffect } from "react";
+import i18n, {
+  SUPPORTED_LANGUAGES,
+  SupportedLanguage,
+  changeSystemLanguage,
+  resolveInitialLanguage,
+  LANGUAGE_OPTIONS,
+  LanguageOption,
+} from "../i18n";
 
-export type Language = "pt" | "en";
+export type Language = SupportedLanguage;
+export { LANGUAGE_OPTIONS };
+export type { LanguageOption, SupportedLanguage };
 
 export const translations = {
   pt: {
@@ -15,7 +26,9 @@ export const translations = {
     identifierLabel: "Identificador (Email, NUIT ou ID)",
     passwordLabel: "Palavra-passe",
     loginButton: "Entrar no Sistema",
-    languageLabel: "Idioma / Language",
+    languageLabel: "Idioma",
+    selectLanguage: "Selecionar Idioma",
+    autoLanguage: "Automático (Navegador)",
     forgotPassword: "Esqueceu a palavra-passe?",
     contactAdmin: "Contactar Administrador",
     changePasswordRequired: "Alteração Obrigatória de Palavra-passe",
@@ -25,7 +38,9 @@ export const translations = {
     profileSettings: "Configurações do Perfil",
     languagePreference: "Idioma Preferido",
     portuguese: "Português",
-    english: "English (Inglês)",
+    english: "English",
+    french: "Français",
+    spanish: "Español",
     save: "Guardar",
     cancel: "Cancelar",
     success: "Sucesso",
@@ -156,7 +171,7 @@ export const translations = {
     analytics: "Análise",
     backup: "Cópia de Segurança",
     audit: "Auditoria",
-    system: "Sistema"
+    system: "Sistema",
   },
   en: {
     systemTitle: "SIGEP - Integrated Strategic Management and Planning System",
@@ -166,6 +181,8 @@ export const translations = {
     passwordLabel: "Password",
     loginButton: "Sign In",
     languageLabel: "Language",
+    selectLanguage: "Select Language",
+    autoLanguage: "Automatic (Browser)",
     forgotPassword: "Forgot password?",
     contactAdmin: "Contact Administrator",
     changePasswordRequired: "Mandatory Password Change",
@@ -174,8 +191,10 @@ export const translations = {
     savePassword: "Save New Password",
     profileSettings: "Profile Settings",
     languagePreference: "Preferred Language",
-    portuguese: "Portuguese (Português)",
+    portuguese: "Portuguese",
     english: "English",
+    french: "Français",
+    spanish: "Español",
     save: "Save",
     cancel: "Cancel",
     success: "Success",
@@ -306,11 +325,322 @@ export const translations = {
     analytics: "Analytics",
     backup: "Backup",
     audit: "Audit",
-    system: "System"
-  }
+    system: "System",
+  },
+  fr: {
+    systemTitle: "SIGEP - Système Intégré de Gestion Stratégique et de Planification",
+    loginTitle: "Connexion au Système",
+    loginSubtitle: "Entrez vos identifiants institutionnels pour accéder",
+    identifierLabel: "Identifiant (Email, NUIT ou ID)",
+    passwordLabel: "Mot de passe",
+    loginButton: "Se connecter",
+    languageLabel: "Langue",
+    selectLanguage: "Choisir la Langue",
+    autoLanguage: "Automatique (Navigateur)",
+    forgotPassword: "Mot de passe oublié?",
+    contactAdmin: "Contacter l'Administrateur",
+    changePasswordRequired: "Changement de mot de passe obligatoire",
+    newPassword: "Nouveau Mot de Passe",
+    confirmPassword: "Confirmer le Mot de Passe",
+    savePassword: "Enregistrer le Nouveau Mot de Passe",
+    profileSettings: "Paramètres du Profil",
+    languagePreference: "Langue Préférée",
+    portuguese: "Portugais",
+    english: "Anglais",
+    french: "Français",
+    spanish: "Espagnol",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    success: "Succès",
+    error: "Erreur",
+    workspace: "Espace de Travail",
+    sync: "Synchroniser",
+    database: "Base de Données",
+    minimize: "Réduire",
+    fullscreen: "Plein Écran",
+    restoreScreen: "Restaurer l'Écran",
+    logout: "Déconnexion",
+    back: "Retour",
+    online: "EN LIGNE",
+    userConnected: "Utilisateur Connecté",
+    institution: "Institution",
+    loggedInstitution: "INSTITUTION CONNECTÉE",
+    integratedSystem: "SYSTÈME DE GESTION INTÉGRÉE",
+    generalAdminPanel: "PANNEAU D'ADMINISTRATION GÉNÉRALE",
+    changePassword: "Changer le Mot de Passe",
+    version: "Version Quantique 2026.9.1",
+    developedBy: "Développé par Slaiter Tripas",
+    systemFooterTitle: "SIGEP - Système Intégré de Gestion des Processus",
+    repMozambique: "République du Mozambique",
+    minEducation: "Ministère de l'Éducation et de la Culture",
+    dirHigherEd: "Direction Nationale de l'Enseignement Supérieur",
+    fiscalYear: "Exercice Financier:",
+    date: "Date:",
+    subject: "Objet:",
+    to: "À:",
+    from: "De:",
+    ourRef: "N/Réf:",
+    infoProposta: "INFORMATION / PROPOSITION",
+    infoPropostaNum: "Information Proposition N°",
+    parecerDicosafa: "1. Avis Technique & Approbation (DICOSAFA)",
+    despachoGDG: "2. Décision & Approbation (Directeur Général)",
+    detalhesDeslocacao: "Détails du Déplacement:",
+    actividade: "Activité:",
+    local: "Lieu:",
+    datas: "Dates:",
+    participantes: "Participant(s):",
+    tabelaCustos: "Tableau des Coûts / Indemnités:",
+    ordemServico: "ORDRE DE SERVICE",
+    ordemServicoNum: "ORDRE DE SERVICE N°",
+    transferenciaFuncionario: "Transfert de l'employé:",
+    guiaApresentacao: "LETTRE DE PRÉSENTATION INTERNE",
+    pedidoDispensa: "DEMANDE DE DISPENSE",
+    justificacaoFaltas: "JUSTIFICATION D'ABSENCES",
+    pedidoDispensaOuFaltas: "DEMANDE DE DISPENSE OU JUSTIFICATION D'ABSENCES",
+    nomeFuncionario: "Nom de l'Employé(e):",
+    categoriaCarreira: "Catégorie / Carrière:",
+    departamentoDirecao: "Département / Direction:",
+    reparticaoSeccao: "Section / Bureau:",
+    parecerChefe: "AVIS DU SUPÉRIEUR HIÉRARCHIQUE",
+    infoDRH: "INFORMATION DU DÉPARTEMENT DES RESSOURCES HUMAINES [DRH]",
+    despacho: "DÉCISION",
+    planoActividade: "Plan d'Activité",
+    planoActividades: "Plan d'Activités",
+    requerimentoFerias: "DEMANDE DE CONGÉ",
+    orgaoDirecaoGestao: "Organe de Direction et de Gestion",
+    servicosCentrais: "Services Centraux",
+    unidadeOrganica: "Unité Organique",
+    diretorGeral: "Directeur Général",
+    diretorDicosafa: "Directeur de la DICOSAFA",
+    chefeGabinete: "Chef de Cabinet",
+    chefeDepartamento: "Chef de Département",
+    chefeReparticao: "Chef de Section",
+    responsavelSetor: "Responsable de Secteur",
+    pagina: "Page",
+    campusPrincipal: "Campus Principal",
+    distritoDe: "District de",
+    provinciaDe: "Province de",
+    caixaPostal: "Boîte Postale N°",
+    paginaOficial: "Site officiel:",
+    cliqueParaAssinar: "Cliquez pour signer",
+    areaEmBrancoParecer: "Zone blanche (en attente d'avis)",
+    areaEmBrancoDespacho: "Zone blanche (en attente de décision)",
+    imprimirPdf: "Imprimer / PDF",
+    guardarSistema: "Enregistrer dans le Système",
+    voltar: "Retour",
+    registadoSucesso: "Enregistré avec succès!",
+    aguarde: "Veuillez patienter...",
+    aGuardar: "Enregistrement...",
+    geral: "Général",
+    selecioneDocumento: "Sélectionnez le Document Normatif",
+    selecioneUmDoc: "Sélectionnez un document...",
+    modelosFormulariosOficiais: "Modèles et Formulaires Officiels",
+    modelosDesc: "Sélectionnez le document normatif souhaité dans la liste ci-dessous",
+    cumprase: "Qu'il en soit fait ainsi.",
+    efeitosImediatos: "Cet Ordre de Service prend effet immédiat",
+    guiaTransferenciaBens: "BON DE TRANSFERT DE BIENS",
+    requisicaoInterna: "RÉQUISITION INTERNE",
+    fichaInventarioMovel: "FICHE D'INVENTAIRE DES BIENS MEUBLES",
+    totalGeral: "Total Général (MZN)",
+    valorTotal: "Montant Total (MZN)",
+    valorDiario: "Montant Journalier",
+    dias: "Jours",
+    descricao: "Description",
+    beneficiario: "Nom du Bénéficiaire",
+    ord: "N°",
+    justificacao: "Justification:",
+    anexos: "Pièces jointes:",
+    verAnexoOficial: "Voir / Ouvrir la Pièce Jointe Officielle:",
+    fechoCortesia: "Dans l'attente de votre approbation, je vous prie d'agréer mes salutations distinguées.",
+    chefeMaximoDept: "LE CHEF DU DÉPARTEMENT",
+    secretariaGeral: "1. SECRÉTARIAT GÉNÉRAL",
+    parecerDpep: "2. AVIS DU DPEP",
+    parecerDaf: "3. AVIS DU DAF",
+    repTransporte: "4. SECTION TRANSPORT",
+    emBranco: "En blanc",
+    assinar: "Signer",
+    favoravel: "Favorable",
+    desfavoravel: "Défavorable",
+    autorizado: "Autorisé",
+    naoAutorizado: "Non Autorisé",
+    propostaActividadesPESO: "PROPOSITION D'ACTIVITÉS POUR LE PESO",
+    actividadesPlanificadas: "Activités Planifiées",
+    novaActividade: "Nouvelle Activité",
+    organizarPorMes: "Organiser par Mois & Ordre",
+    pesquisar: "Rechercher",
+    filtros: "Filtres",
+    todos: "Tous",
+    dashboard: "Tableau de Bord",
+    planning: "Planification",
+    reports: "Rapports",
+    settings: "Paramètres",
+    users: "Utilisateurs",
+    institutions: "Institutions",
+    analytics: "Analytique",
+    backup: "Sauvegarde",
+    audit: "Audit",
+    system: "Système",
+  },
+  es: {
+    systemTitle: "SIGEP - Sistema Integrado de Gestión Estratégica y Planificación",
+    loginTitle: "Acceso al Sistema",
+    loginSubtitle: "Ingrese sus credenciales institucionales para acceder",
+    identifierLabel: "Identificador (Email, NUIT o ID)",
+    passwordLabel: "Contraseña",
+    loginButton: "Iniciar Sesión",
+    languageLabel: "Idioma",
+    selectLanguage: "Seleccionar Idioma",
+    autoLanguage: "Automático (Navegador)",
+    forgotPassword: "¿Olvidó su contraseña?",
+    contactAdmin: "Contactar al Administrador",
+    changePasswordRequired: "Cambio Obligatorio de Contraseña",
+    newPassword: "Nueva Contraseña",
+    confirmPassword: "Confirmar Contraseña",
+    savePassword: "Guardar Nueva Contraseña",
+    profileSettings: "Configuraciones del Perfil",
+    languagePreference: "Idioma Preferido",
+    portuguese: "Portugués",
+    english: "Inglés",
+    french: "Francés",
+    spanish: "Español",
+    save: "Guardar",
+    cancel: "Cancelar",
+    success: "Éxito",
+    error: "Error",
+    workspace: "Área de Trabajo",
+    sync: "Sincronizar",
+    database: "Base de Datos",
+    minimize: "Minimizar",
+    fullscreen: "Pantalla Completa",
+    restoreScreen: "Restaurar Pantalla",
+    logout: "Cerrar Sesión",
+    back: "Volver",
+    online: "EN LÍNEA",
+    userConnected: "Usuario Conectado",
+    institution: "Institución",
+    loggedInstitution: "INSTITUCIÓN CONECTADA",
+    integratedSystem: "SISTEMA DE GESTIÓN INTEGRADA",
+    generalAdminPanel: "PANEL ADMINISTRADOR GENERAL",
+    changePassword: "Cambiar Contraseña",
+    version: "Versión Cuántica 2026.9.1",
+    developedBy: "Desarrollado por Slaiter Tripas",
+    systemFooterTitle: "SIGEP - Sistema Integrado de Gestión de Procesos",
+    repMozambique: "República de Mozambique",
+    minEducation: "Ministerio de Educación y Cultura",
+    dirHigherEd: "Dirección Nacional de Educación Superior",
+    fiscalYear: "Ejercicio Económico:",
+    date: "Fecha:",
+    subject: "Asunto:",
+    to: "A:",
+    from: "De:",
+    ourRef: "N/Ref:",
+    infoProposta: "INFORMACIÓN / PROPUESTA",
+    infoPropostaNum: "Información Propuesta Nº",
+    parecerDicosafa: "1. Dictamen Técnico & Homologación (DICOSAFA)",
+    despachoGDG: "2. Despacho & Homologación (Director General)",
+    detalhesDeslocacao: "Detalles del Desplazamiento:",
+    actividade: "Actividad:",
+    local: "Lugar:",
+    datas: "Fechas:",
+    participantes: "Participante(s):",
+    tabelaCustos: "Tabla de Costos / Viáticos:",
+    ordemServico: "ORDEN DE SERVICIO",
+    ordemServicoNum: "ORDEN DE SERVICIO Nº",
+    transferenciaFuncionario: "Transferencia del funcionario:",
+    guiaApresentacao: "GUÍA DE PRESENTACIÓN INTERNA",
+    pedidoDispensa: "SOLICITUD DE DISPENSA",
+    justificacaoFaltas: "JUSTIFICACIÓN DE FALTAS",
+    pedidoDispensaOuFaltas: "SOLICITUD DE DISPENSA O JUSTIFICACIÓN DE FALTAS",
+    nomeFuncionario: "Nombre del Funcionario(a):",
+    categoriaCarreira: "Categoría / Carrera:",
+    departamentoDirecao: "Departamento / Dirección:",
+    reparticaoSeccao: "Sección / Oficina:",
+    parecerChefe: "DICTAMEN DEL JEFE JERÁRQUICO",
+    infoDRH: "INFORMACIÓN DEL DEPARTAMENTO DE RECURSOS HUMANOS [DRH]",
+    despacho: "DESPACHO",
+    planoActividade: "Plan de Actividades",
+    planoActividades: "Plan de Actividades",
+    requerimentoFerias: "SOLICITUD DE VACACIONES",
+    orgaoDirecaoGestao: "Órgano de Dirección y Gestión",
+    servicosCentrais: "Servicios Centrales",
+    unidadeOrganica: "Unidad Orgánica",
+    diretorGeral: "Director General",
+    diretorDicosafa: "Director de la DICOSAFA",
+    chefeGabinete: "Jefe de Gabinete",
+    chefeDepartamento: "Jefe de Departamento",
+    chefeReparticao: "Jefe de Sección",
+    responsavelSetor: "Responsable del Sector",
+    pagina: "Pág.",
+    campusPrincipal: "Campus Principal",
+    distritoDe: "Distrito de",
+    provinciaDe: "Provincia de",
+    caixaPostal: "Apartado Postal Nº",
+    paginaOficial: "Página oficial:",
+    cliqueParaAssinar: "Haga clic para firmar",
+    areaEmBrancoParecer: "Área en blanco (espera dictamen)",
+    areaEmBrancoDespacho: "Área en blanco (espera despacho)",
+    imprimirPdf: "Imprimir / PDF",
+    guardarSistema: "Guardar en el Sistema",
+    voltar: "Volver",
+    registadoSucesso: "¡Registrado con éxito!",
+    aguarde: "Espere por favor...",
+    aGuardar: "Guardando...",
+    geral: "General",
+    selecioneDocumento: "Seleccione el Documento Normativo",
+    selecioneUmDoc: "Seleccione un documento...",
+    modelosFormulariosOficiais: "Modelos y Formularios Oficiales",
+    modelosDesc: "Seleccione el documento normativo deseado en la lista a continuación",
+    cumprase: "Cúmplase.",
+    efeitosImediatos: "La presente Orden de Servicio produce efectos inmediatos",
+    guiaTransferenciaBens: "GUÍA DE TRANSFERENCIA DE BIENES",
+    requisicaoInterna: "REQUISICIÓN INTERNA",
+    fichaInventarioMovel: "FICHA DE REGISTRO DE INVENTARIO DE BIENES MUEBLES",
+    totalGeral: "Total General (MZN)",
+    valorTotal: "Valor Total (MZN)",
+    valorDiario: "Valor Diario",
+    dias: "Días",
+    descricao: "Descripción",
+    beneficiario: "Nombre del Beneficiario",
+    ord: "Nº",
+    justificacao: "Justificación:",
+    anexos: "Anexos:",
+    verAnexoOficial: "Ver / Abrir Anexo Oficial:",
+    fechoCortesia: "A la espera de su aprobación, le saluda atentamente.",
+    chefeMaximoDept: "EL JEFE DEL DEPARTAMENTO",
+    secretariaGeral: "1. SECRETARÍA GENERAL",
+    parecerDpep: "2. DICTAMEN DEL DPEP",
+    parecerDaf: "3. DICTAMEN DEL DAF",
+    repTransporte: "4. SECCIÓN DE TRANSPORTE",
+    emBranco: "En blanco",
+    assinar: "Firmar",
+    favoravel: "Favorable",
+    desfavoravel: "Desfavorable",
+    autorizado: "Autorizado",
+    naoAutorizado: "No Autorizado",
+    propostaActividadesPESO: "PROPUESTA DE ACTIVIDADES PARA EL PESO",
+    actividadesPlanificadas: "Actividades Planificadas",
+    novaActividade: "Nueva Actividad",
+    organizarPorMes: "Organizar por Mes y Orden",
+    pesquisar: "Buscar",
+    filtros: "Filtros",
+    todos: "Todos",
+    dashboard: "Panel de Control",
+    planning: "Planificación",
+    reports: "Informes",
+    settings: "Configuraciones",
+    users: "Usuarios",
+    institutions: "Instituciones",
+    analytics: "Analítica",
+    backup: "Copia de Seguridad",
+    audit: "Auditoría",
+    system: "Sistema",
+  },
 };
 
-export function getTranslation(lang: Language = "pt", key: keyof typeof translations.pt): string {
+export function getTranslation(
+  lang: Language = "pt",
+  key: keyof typeof translations.pt
+): string {
   const dict = translations[lang] || translations.pt;
   return dict[key] || translations.pt[key] || String(key);
 }
@@ -318,50 +648,49 @@ export function getTranslation(lang: Language = "pt", key: keyof typeof translat
 export function getCurrentLanguage(): Language {
   try {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("sigep_language");
-      if (stored === "en" || stored === "pt") {
+      const stored = localStorage.getItem("idioma") || localStorage.getItem("sigep_language");
+      if (stored && (SUPPORTED_LANGUAGES as readonly string[]).includes(stored)) {
         return stored as Language;
       }
       const user = JSON.parse(localStorage.getItem("sigep_logged_in_user") || "null");
-      if (user && (user.idioma === "en" || user.idioma === "pt")) {
+      if (user && user.idioma && (SUPPORTED_LANGUAGES as readonly string[]).includes(user.idioma)) {
         return user.idioma as Language;
       }
     }
   } catch (e) {}
-  return "pt";
+  return resolveInitialLanguage();
 }
 
-export function setLanguagePreference(lang: Language) {
-  try {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("sigep_language", lang);
-      const userStr = localStorage.getItem("sigep_logged_in_user");
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        user.idioma = lang;
-        localStorage.setItem("sigep_logged_in_user", JSON.stringify(user));
-      }
-      // Notificar todos os componentes no DOM imediatamente
-      window.dispatchEvent(new CustomEvent("sigep_language_changed", { detail: { lang } }));
-    }
-  } catch (e) {}
+export function setLanguagePreference(lang: Language | "auto", user?: any) {
+  return changeSystemLanguage(lang, user);
 }
 
 /**
  * Hook do React para sincronização instantânea de idioma em qualquer componente
  */
 export function useCurrentLanguage(): Language {
-  const [lang, setLang] = useState<Language>(() => getCurrentLanguage());
+  const [lang, setLang] = useState<Language>(() => {
+    const active = (i18n.language || getCurrentLanguage()) as Language;
+    return (SUPPORTED_LANGUAGES as readonly string[]).includes(active) ? active : "pt";
+  });
 
   useEffect(() => {
     const handleLangChange = (e: any) => {
-      const newLang = e?.detail?.lang || getCurrentLanguage();
-      setLang(newLang);
+      const newLang = e?.detail?.lang || (i18n.language as Language) || getCurrentLanguage();
+      setLang((SUPPORTED_LANGUAGES as readonly string[]).includes(newLang) ? newLang : "pt");
+    };
+
+    const handleI18nChange = (lng: string) => {
+      const clean = lng ? (lng.split("-")[0].toLowerCase() as Language) : "pt";
+      setLang((SUPPORTED_LANGUAGES as readonly string[]).includes(clean) ? clean : "pt");
     };
 
     window.addEventListener("sigep_language_changed", handleLangChange);
+    i18n.on("languageChanged", handleI18nChange);
+
     return () => {
       window.removeEventListener("sigep_language_changed", handleLangChange);
+      i18n.off("languageChanged", handleI18nChange);
     };
   }, []);
 
@@ -372,110 +701,73 @@ export function useCurrentLanguage(): Language {
  * Tradutor de frases institucionais, cargos e nomes de documentos comuns
  */
 export function translateInstitutionalText(text: string, lang: Language): string {
-  if (!text || lang === "pt") return text;
+  if (!text) return "";
+  if (lang === "pt") return text;
 
   const t = text.trim();
   const lower = t.toLowerCase();
 
-  // Mapeamentos diretos
-  if (lower === "informação / proposta" || lower === "informacao / proposta" || lower === "informação proposta" || lower === "informacao proposta") {
-    return "INFORMATION / PROPOSAL";
-  }
-  if (lower === "ordem de serviço" || lower === "ordem de servico") {
-    return "SERVICE ORDER";
-  }
-  if (lower === "ordem de serviço: transferência interna" || lower === "ordem de servico: transferencia interna") {
-    return "SERVICE ORDER: INTERNAL TRANSFER";
-  }
-  if (lower === "guia de apresentação interna" || lower === "guia de apresentacao interna" || lower === "guia de apresentação") {
-    return "INTERNAL PRESENTATION LETTER";
-  }
-  if (lower === "pedido de dispensa") {
-    return "DISPENSATION REQUEST";
-  }
-  if (lower === "justificação de faltas" || lower === "justificacao de faltas") {
-    return "JUSTIFICATION OF ABSENCES";
-  }
-  if (lower === "pedido de dispensa ou justificação de faltas" || lower === "pedido de dispensa ou justificacao de faltas" || lower === "pedido de dispensa / justificativa de faltas") {
-    return "DISPENSATION REQUEST OR ABSENCE JUSTIFICATION";
-  }
-  if (lower === "guia de transferência de bens" || lower === "guia de transferencia de bens" || lower === "pedido de transferência interna") {
-    return "ASSET TRANSFER LETTER";
-  }
-  if (lower === "requisição interna" || lower === "requisicao interna") {
-    return "INTERNAL REQUISITION";
-  }
-  if (lower === "minuta de pedido de férias" || lower === "requerimento de férias" || lower === "requerimento de ferias") {
-    return "VACATION REQUEST";
-  }
-  if (lower === "documentos normativos") {
-    return "Normative Documents";
-  }
-  if (lower.startsWith("plano de actividade") || lower.startsWith("plano de atividade")) {
-    return t.replace(/plano de actividade(s)? de/i, "Activity Plan of").replace(/plano de atividade(s)? de/i, "Activity Plan of").replace(/plano de actividade(s)?/i, "Activity Plan").replace(/plano de atividade(s)?/i, "Activity Plan");
-  }
-  if (lower === "órgão de direção e gestão" || lower === "orgao de direcao e gestao") {
-    return "Governance and Management Body";
-  }
-  if (lower === "serviços centrais" || lower === "servicos centrais") {
-    return "Central Services";
-  }
-  if (lower === "unidade orgânica" || lower === "unidade organica") {
-    return "Organic Unit";
-  }
-  if (lower === "gabinete do diretor-geral" || lower === "gabinete do diretor geral") {
-    return "Office of the Director-General";
-  }
-  if (lower.includes("unidade gestora e executora de aquisições") || lower.includes("ugea")) {
-    return t.replace(/unidade gestora e executora de aquisições/i, "Procurement Management and Executing Unit");
-  }
-  if (lower.includes("departamento de recursos humanos") || lower.includes("drh")) {
-    return t.replace(/departamento de recursos humanos/i, "Human Resources Department");
-  }
-  if (lower.includes("departamento de administração e finanças") || lower.includes("daf")) {
-    return t.replace(/departamento de administração e finanças/i, "Administration and Finance Department").replace(/departamento de administracao e financas/i, "Administration and Finance Department");
-  }
-  if (lower.includes("departamento de registo académico") || lower.includes("dra")) {
-    return t.replace(/departamento de registo académico/i, "Academic Registry Department").replace(/departamento de registo academico/i, "Academic Registry Department");
-  }
-  if (lower.includes("repartição de pessoal") || lower.includes("reparticao de pessoal")) {
-    return t.replace(/repartição de pessoal/i, "Personnel Section").replace(/reparticao de pessoal/i, "Personnel Section");
-  }
-  if (lower.includes("repartição de transporte") || lower.includes("reparticao de transporte")) {
-    return t.replace(/repartição de transporte/i, "Transport Section").replace(/reparticao de transporte/i, "Transport Section");
-  }
-  if (lower === "chefe do departamento") return "Head of Department";
-  if (lower === "chefe da repartição" || lower === "chefe da reparticao") return "Head of Section";
-  if (lower === "responsável do setor" || lower === "responsavel do setor") return "Sector Manager";
-  if (lower === "chefe do gabinete") return "Head of Cabinet";
-  if (lower === "diretor" || lower === "director") return "Director";
-  if (lower === "diretor-geral" || lower === "director-geral") return "Director-General";
-  if (lower === "república de moçambique" || lower === "republica de mocambique") {
-    return "Republic of Mozambique";
-  }
-  if (lower === "ministério da educação e cultura" || lower === "ministerio da educacao e cultura") {
-    return "Ministry of Education and Culture";
-  }
-  if (lower === "direcção nacional de ensino superior" || lower === "direccao nacional de ensino superior") {
-    return "National Directorate of Higher Education";
-  }
-  if (lower.startsWith("província de") || lower.startsWith("provincia de")) {
-    return t.replace(/província de/i, "Province of").replace(/provincia de/i, "Province of");
-  }
-  if (lower.startsWith("distrito de")) {
-    return t.replace(/distrito de/i, "District of");
+  if (lang === "en") {
+    if (lower === "informação / proposta" || lower === "informacao / proposta") return "INFORMATION / PROPOSAL";
+    if (lower === "ordem de serviço" || lower === "ordem de servico") return "SERVICE ORDER";
+    if (lower === "guia de apresentação interna") return "INTERNAL PRESENTATION LETTER";
+    if (lower === "pedido de dispensa") return "DISPENSATION REQUEST";
+    if (lower === "justificação de faltas") return "JUSTIFICATION OF ABSENCES";
+    if (lower === "órgão de direção e gestão") return "Governance and Management Body";
+    if (lower === "serviços centrais") return "Central Services";
+    if (lower === "unidade orgânica") return "Organic Unit";
+    if (lower === "diretor-geral") return "Director-General";
+    if (lower === "chefe do departamento") return "Head of Department";
+    if (lower === "chefe da repartição") return "Head of Section";
+    if (lower === "responsável do setor") return "Sector Manager";
+    if (lower === "república de moçambique") return "Republic of Mozambique";
+    if (lower === "ministério da educação e cultura") return "Ministry of Education and Culture";
+    if (lower === "direcção nacional de ensino superior") return "National Directorate of Higher Education";
+  } else if (lang === "fr") {
+    if (lower === "informação / proposta" || lower === "informacao / proposta") return "INFORMATION / PROPOSITION";
+    if (lower === "ordem de serviço" || lower === "ordem de servico") return "ORDRE DE SERVICE";
+    if (lower === "guia de apresentação interna") return "LETTRE DE PRÉSENTATION INTERNE";
+    if (lower === "pedido de dispensa") return "DEMANDE DE DISPENSE";
+    if (lower === "justificação de faltas") return "JUSTIFICATION D'ABSENCES";
+    if (lower === "órgão de direção e gestão") return "Organe de Direction et de Gestion";
+    if (lower === "serviços centrais") return "Services Centraux";
+    if (lower === "unidade orgânica") return "Unité Organique";
+    if (lower === "diretor-geral") return "Directeur Général";
+    if (lower === "chefe do departamento") return "Chef de Département";
+    if (lower === "chefe da repartição") return "Chef de Section";
+    if (lower === "responsável do setor") return "Responsable de Secteur";
+    if (lower === "república de moçambique") return "République du Mozambique";
+    if (lower === "ministério da educação e cultura") return "Ministère de l'Éducation et de la Culture";
+    if (lower === "direcção nacional de ensino superior") return "Direction Nationale de l'Enseignement Supérieur";
+  } else if (lang === "es") {
+    if (lower === "informação / proposta" || lower === "informacao / proposta") return "INFORMACIÓN / PROPUESTA";
+    if (lower === "ordem de serviço" || lower === "ordem de servico") return "ORDEN DE SERVICIO";
+    if (lower === "guia de apresentação interna") return "GUÍA DE PRESENTACIÓN INTERNA";
+    if (lower === "pedido de dispensa") return "SOLICITUD DE DISPENSA";
+    if (lower === "justificação de faltas") return "JUSTIFICACIÓN DE FALTAS";
+    if (lower === "órgão de direção e gestão") return "Órgano de Dirección y Gestión";
+    if (lower === "serviços centrais") return "Servicios Centrales";
+    if (lower === "unidade orgânica") return "Unidad Orgánica";
+    if (lower === "diretor-geral") return "Director General";
+    if (lower === "chefe do departamento") return "Jefe de Departamento";
+    if (lower === "chefe da repartição") return "Jefe de Sección";
+    if (lower === "responsável do setor") return "Responsable del Sector";
+    if (lower === "república de moçambique") return "República de Mozambique";
+    if (lower === "ministério da educação e cultura") return "Ministerio de Educación y Cultura";
+    if (lower === "direcção nacional de ensino superior") return "Dirección Nacional de Educación Superior";
   }
 
   return text;
 }
 
 /**
- * Hook personalizado useTranslation para tradução instantânea em tempo real em todos os componentes de interface (menus, tabelas, modais)
+ * Hook personalizado useTranslation para tradução instantânea em tempo real
  */
 export function useTranslation() {
   const lang = useCurrentLanguage();
   const t = (key: keyof typeof translations.pt) => getTranslation(lang, key);
-  const changeLanguage = (newLang: Language) => setLanguagePreference(newLang);
+  const changeLanguage = (newLang: Language | "auto", user?: any) =>
+    changeSystemLanguage(newLang, user);
 
   return {
     t,
@@ -484,4 +776,3 @@ export function useTranslation() {
     translateText: (text: string) => translateInstitutionalText(text, lang),
   };
 }
-

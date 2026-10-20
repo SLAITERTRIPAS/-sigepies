@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { quantumAI, QuantumTelemetry, QuantumInsight } from "../../lib/quantumAiService";
 import { intelligentDiagnostics } from "../../lib/intelligentDiagnostics";
+import { useCurrentLanguage } from "../../lib/i18n";
 
 interface QuantumCopilotModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export function QuantumCopilotModal({
   onClose,
   currentView = "Dashboard",
 }: QuantumCopilotModalProps) {
+  const currentLang = useCurrentLanguage();
   const [activeTab, setActiveTab] = useState<"telemetria" | "insights" | "otimizador" | "oraculo" | "teoria">("telemetria");
   const [teoriaSection, setTeoriaSection] = useState<"fundamentos" | "blocos" | "metricas">("blocos");
   const [selectedBloco, setSelectedBloco] = useState<number>(1);
@@ -56,8 +58,10 @@ export function QuantumCopilotModal({
   const [oracleQuery, setOracleQuery] = useState("");
   const [oracleHistory, setOracleHistory] = useState<{ query: string; answer: string; time: string }[]>([
     {
-      query: "Qual é o estado atual de coerência do sistema?",
-      answer: "O Núcleo de IA Quântica opera a 99.84% de coerência operacional, com zero divergência orçamentária no PESOE e sincronização atômica ativa em todos os 9 blocos.",
+      query: currentLang === "en" ? "What is the current system coherence status?" : "Qual é o estado atual de coerência do sistema?",
+      answer: currentLang === "en" 
+        ? "The Quantum AI Core operates at 99.84% operational coherence with zero divergence in PESOE." 
+        : "O Núcleo de IA Quântica opera a 99.84% de coerência operacional, com zero divergência orçamentária no PESOE e sincronização atômica ativa em todos os 9 blocos.",
       time: "Agora",
     },
   ]);
@@ -65,10 +69,10 @@ export function QuantumCopilotModal({
   useEffect(() => {
     if (isOpen) {
       setTelemetry(quantumAI.getTelemetry());
-      setInsights(quantumAI.getInsightsForView(currentView));
+      setInsights(quantumAI.getInsightsForView(currentView, currentLang));
       setOptimizationMsg(null);
     }
-  }, [isOpen, currentView]);
+  }, [isOpen, currentView, currentLang]);
 
   // Atualização periódica leve da telemetria quântica
   useEffect(() => {
@@ -83,10 +87,10 @@ export function QuantumCopilotModal({
     setIsOptimizing(true);
     setOptimizationMsg(null);
     try {
-      const res = await quantumAI.runQuantumOptimization(currentView);
+      const res = await quantumAI.runQuantumOptimization(currentView, currentLang);
       setOptimizationMsg(res.message);
       setTelemetry(quantumAI.getTelemetry());
-      setInsights(quantumAI.getInsightsForView(currentView));
+      setInsights(quantumAI.getInsightsForView(currentView, currentLang));
     } finally {
       setIsOptimizing(false);
     }
@@ -95,12 +99,12 @@ export function QuantumCopilotModal({
   const handleAskOracle = (text?: string) => {
     const q = text || oracleQuery;
     if (!q.trim()) return;
-    const answer = quantumAI.queryOracle(q, currentView);
+    const answer = quantumAI.queryOracle(q, currentView, currentLang);
     setOracleHistory((prev) => [
       {
         query: q,
         answer,
-        time: new Date().toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" }),
+        time: new Date().toLocaleTimeString(currentLang === "en" ? "en-US" : "pt-PT", { hour: "2-digit", minute: "2-digit" }),
       },
       ...prev,
     ]);

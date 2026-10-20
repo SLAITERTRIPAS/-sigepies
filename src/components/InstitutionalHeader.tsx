@@ -441,7 +441,7 @@ export const InstitutionalHeader = ({
   // CABEÇALHO DO PLANO DE ATIVIDADE & DOCUMENTOS INSTITUCIONAIS (FORMATO EXATO DA IMAGEM)
   return (
     <div className="relative text-center mb-6 flex flex-col items-center justify-center w-full bg-transparent p-6 print:p-4 print:mb-4 print:w-full print:items-center print:text-center">
-      <div className="absolute top-4 right-4"><LanguageSwitcher /></div>
+      <div className="absolute top-4 right-4 print:hidden"><LanguageSwitcher user={user} /></div>
       {/* 1. Logotipo da Instituição Centrado */}
       <div className="mb-5 flex justify-center items-center w-full text-center print:mb-4 print:flex print:justify-center print:items-center">
         {instLogo ? (

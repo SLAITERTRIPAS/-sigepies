@@ -43,6 +43,7 @@ import InstitutionalProfileModal from "../../components/modals/InstitutionalProf
 import AtualizarDadosColaboradorModal from "../../components/modals/AtualizarDadosColaboradorModal";
 import { useCurrentLanguage, setLanguagePreference, getTranslation } from "../../lib/i18n";
 import WeatherWidget from "../../components/WeatherWidget";
+import LanguageDropdown from "../../components/ui/LanguageDropdown";
 
 interface MainHeaderProps {
   user?: any;
@@ -738,6 +739,9 @@ export default function MainHeader({
 
             {/* System Actions */}
             <div className="flex items-center gap-2 bg-black/20 p-1.5 rounded-xl border border-white/5">
+              {/* Menu Suspenso de Idioma (PT, EN, FR, ES, AUTO) */}
+              <LanguageDropdown user={user} />
+
               <button
                 onClick={onSync}
                 title={getTranslation(currentLang, "sync")}

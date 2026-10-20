@@ -121,7 +121,8 @@ export async function createServer() {
 
   // Rota de análise Grammarly AI
   app.post("/api/grammarly/check", async (req, res) => {
-    const { text, mode } = req.body;
+    const { text, mode, language, idioma } = req.body;
+    const targetLang = idioma || language || "pt";
 
     if (!text || typeof text !== "string") {
       res
@@ -144,7 +145,9 @@ export async function createServer() {
       const client = getGeminiClient();
 
       let promptInstruction =
-        "Aja como o assistente Grammarly de Língua Portuguesa.\n";
+        `Aja como o assistente de correção e aprimoramento de texto multilíngue do SIGEP.\n`;
+      promptInstruction +=
+        `Responda exclusivamente no idioma ${targetLang} (pt = Português, en = English, fr = Français, es = Español).\n`;
       promptInstruction +=
         "Analise gramaticalmente, ortograficamente, em estilo e clareza o texto fornecido pelo usuário.\n";
 
@@ -163,7 +166,7 @@ export async function createServer() {
       }
 
       promptInstruction +=
-        "Identifique termos individuais ou frases para serem substituídos e retorne a lista de correções específicas. Toda a sua resposta deve ser em Português de Moçambique/padrão.";
+        `Identifique termos individuais ou frases para serem substituídos e retorne a lista de correções específicas. Toda a sua resposta deve ser exclusivamente em ${targetLang}.`;
 
       let response;
       let usedBackupModel = false;
