@@ -246,7 +246,7 @@ export function openPrintDocumentWindow(options: PrintDocumentOptions) {
   const instName = activeInst?.nome || "Instituição de Ensino Superior";
   const rawInstLogo = activeInst?.logo;
   const sysLogo = typeof window !== "undefined" ? localStorage.getItem("systemLogo") : null;
-  const instLogo = rawInstLogo && !rawInstLogo.includes("11zvvpOpZARM1yk_irEDpjJ-qBKlTlhad") ? rawInstLogo : (sysLogo || "/image.png");
+  const instLogo = rawInstLogo && !rawInstLogo.includes("11zvvpOpZARM1yk_irEDpjJ-qBKlTlhad") ? rawInstLogo : (sysLogo || "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png");
   const instProvincia = activeInst?.provincia ? (activeInst.provincia.toLowerCase().startsWith("província") ? activeInst.provincia : `Província de ${activeInst.provincia}`) : "";
   const instDistrito = activeInst?.distrito ? (activeInst.distrito.toLowerCase().startsWith("distrito") ? activeInst.distrito : `Distrito de ${activeInst.distrito}`) : "";
   const instAddress = activeInst?.endereco || activeInst?.distrito || "Moçambique";

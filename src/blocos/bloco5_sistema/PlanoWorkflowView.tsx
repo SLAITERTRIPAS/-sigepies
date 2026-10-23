@@ -4562,6 +4562,7 @@ export default function PlanoWorkflowView({
                   year={selectedYear}
                   isOwner={isSuperBossUser(user)}
                   user={user}
+                  isPlanificacaoHeader={true}
                 />
 
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6 border-b-2 border-slate-100 pb-3">

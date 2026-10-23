@@ -21,6 +21,7 @@ import MainHeader from "../bloco1_apresentacao/MainHeader";
 import { UNIDADES_ORGANICAS_SISTEMA, DEPARTAMENTOS } from "../../constants/formOptions";
 import { getActiveInstituicao } from "../../lib/instituicaoEstruturaService";
 import { firestoreService } from "../../lib/firestoreService";
+import { useCurrentLanguage, getTranslation, translateMenuTitle } from "../../lib/i18n";
 
 const getActivityValue = (act: any) => {
   let actVal = 0;
@@ -453,6 +454,7 @@ export default function SubMenu({
   ];
 
   const sidebarColor = activeInst?.sidebarColor || activeInst?.secondaryColor;
+  const lang = useCurrentLanguage();
 
   const colors = sidebarColor 
     ? [sidebarColor]
@@ -477,12 +479,12 @@ export default function SubMenu({
           <div className="flex flex-col items-center justify-center w-full gap-4 text-center">
             <div className="text-center">
               <h2 className="text-xl sm:text-3xl font-black text-amber-600 hover:text-amber-500 transition-colors cursor-pointer mb-1 sm:mb-2 tracking-tight font-serif inline-block bg-transparent focus:bg-transparent active:bg-transparent hover:bg-transparent border-0 outline-none select-none">
-                {isCursos ? "Cursos Disponíveis" : "Selecione a Área"}
+                {isCursos ? getTranslation(lang, "availableCourses") : getTranslation(lang, "selectArea")}
               </h2>
               <p className="text-xs sm:text-base text-slate-600 font-medium font-serif italic">
                 {isCursos
-                  ? "Selecione um curso para ver mais detalhes."
-                  : "Navegue pelas repartições e setores disponíveis."}
+                  ? getTranslation(lang, "selectCourseDetails")
+                  : getTranslation(lang, "navigateSectors")}
               </p>
             </div>
           </div>
@@ -499,7 +501,7 @@ export default function SubMenu({
               className="w-full flex items-center justify-center gap-2.5 bg-[#b91c1c] text-white px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm tracking-wider hover:bg-red-800 active:scale-95 touch-manipulation transition-all shadow-lg cursor-pointer"
             >
               <DollarSign size={20} />
-              <span>Teto Orçamental: {formattedBudget}</span>
+              <span>{getTranslation(lang, "budgetCeiling")}: {formattedBudget}</span>
             </button>
 
             {/* Bottom Row: Relatório Anual & Plano Setorial */}
@@ -513,7 +515,7 @@ export default function SubMenu({
                 className="flex-1 flex items-center justify-center gap-2 bg-[#1e3a8a] text-white px-4 py-3 rounded-2xl font-black text-xs tracking-wider hover:bg-blue-900 active:scale-95 touch-manipulation transition-all shadow-md cursor-pointer"
               >
                 <FileText size={18} />
-                <span>Relatório Anual</span>
+                <span>{getTranslation(lang, "annualReport")}</span>
               </button>
 
               <button
@@ -525,7 +527,7 @@ export default function SubMenu({
                 className="flex-1 flex items-center justify-center gap-2 bg-purple-700 text-white px-4 py-3 rounded-2xl font-black text-xs tracking-wider hover:bg-purple-800 active:scale-95 touch-manipulation transition-all shadow-md cursor-pointer"
               >
                 <LayoutGrid size={18} />
-                <span>Plano Setorial ({totalActivitiesCount} Actividades)</span>
+                <span>{getTranslation(lang, "sectorPlan")} ({totalActivitiesCount} {getTranslation(lang, "actividade")})</span>
               </button>
             </div>
           </div>
@@ -574,12 +576,12 @@ export default function SubMenu({
                 <span
                   className={`font-black font-serif tracking-tight leading-snug  group-hover:text-amber-300 transition-colors ${isServicosCentrais ? 'text-white text-sm sm:text-base' : 'flex-1 text-xs sm:text-sm lg:text-base'}`}
                 >
-                  {item.title}
+                  {translateMenuTitle(item.title, lang)}
                 </span>
                 
                 {itemBudget > 0 && (
                   <div className="bg-black/20 backdrop-blur-xs text-amber-300 font-extrabold text-[10px] sm:text-xs px-2.5 py-1 rounded-md my-1">
-                    Orçamento: {formattedItemBudget}
+                    {getTranslation(lang, "budget")}: {formattedItemBudget}
                   </div>
                 )}
 
@@ -597,7 +599,7 @@ export default function SubMenu({
                     <span
                       className="font-bold bg-white/20 px-2 py-0.5 rounded-md text-[8px] sm:text-[9px]"
                     >
-                      Aceder
+                      {getTranslation(lang, "access")}
                     </span>
                   )}
                 </div>

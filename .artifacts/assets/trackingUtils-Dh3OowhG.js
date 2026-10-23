@@ -1,1 +1,0 @@
-function e(n){return n?n.split(" ").filter(t=>t.length>2).map(t=>t[0].toUpperCase()).join(""):""}function g(n,t,o,s,f){const p=e(n)||"Dir",a=e(t)||"Dep",i=e(o),u=String(s).padStart(4,"0"),c=new Date().getFullYear(),r=[p,a];return i&&r.push(i),r.push(u),r.push(String(c)),r.join("/")}export{g as f};

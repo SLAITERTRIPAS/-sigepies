@@ -55,6 +55,7 @@ export const translations = {
     back: "Voltar",
     online: "ON-LINE",
     userConnected: "Utilizador Conectado",
+    selectLanguageToContinue: "Selecione a língua para continuar",
     institution: "Instituição",
     loggedInstitution: "INSTITUIÇÃO LOGADA",
     integratedSystem: "SISTEMA DE GESTÃO INTEGRADA",
@@ -172,6 +173,59 @@ export const translations = {
     backup: "Cópia de Segurança",
     audit: "Auditoria",
     system: "Sistema",
+    welcome: "Bem-vindo",
+    enterCredentials: "Insira as suas credenciais de acesso.",
+    identifierInputPlaceholder: "ID, NUIT ou E-mail",
+    passwordInputPlaceholder: "•••••",
+    signInSystem: "Entrar no sistema",
+    aboutSystem: "Sobre o Sistema",
+    clearCacheHelp: "Resolver problemas de acesso (Limpar Cache)",
+    forgotPasswordHelp: "Esqueci a minha senha (Validação Dinâmica de Identidade)",
+    plansAndDeadlines: "Publicação de Planos & Prazos Definidos",
+    activitiesToExecute: "Actividades a Executar no Mês",
+    commemorativeDates: "Datas comemorativas",
+    nationalHolidays: "Feriados nacionais",
+    institutionalHolidays: "Feriados institucionais",
+    noEventsScheduled: "Nenhum evento agendado nos próximos dias.",
+    developedByFooter: "Desenvolvido por Franzíssi Tripalonga - 2025-2026 | @todos os direitos reservados",
+    instPlanningService: "SERVIÇO DE PLANIFICAÇÃO INSTITUCIONAL",
+    integratedInstPlatform: "Plataforma Institucional Integrada",
+    multiInstPlatform: "SIGEP - Plataforma Multi-Institucional",
+    institutionalCoverTitle: "NOTA INSTITUCIONAL DE APRESENTAÇÃO — SIGEP V1.1.2.0",
+    institutionalCoverSubtitle: "Plataforma Inteligente de Gestão Estratégica e Projeção Académica • Moçambique",
+    repMozambiqueMCTES: "REPÚBLICA DE MOÇAMBIQUE • MINISTÉRIO DA CIÊNCIA, TECNOLOGIA E ENSINO SUPERIOR",
+    userDataTitle: "Dados do Utilizador Conectado no Sistema",
+    userServerLabel: "Utilizador / Servidor:",
+    roleFunctionLabel: "Cargo / Função:",
+    organUnitLabel: "Órgão / Unidade:",
+    confirmCoverAccess: "Confirmar Leitura e Aceder à Área de Trabalho (SIGEP)",
+    institutionalNoteP1: "O SIGEP (Sistema Integrado de Gestão de Processos) é a Plataforma Oficial de Gestão Estratégica, Projeção Académica e Tramitação Eletrónica implementada para assegurar a excelência operacional, a transparência e a celeridade administrativa nas instituições de ensino superior e técnico de Moçambique.",
+    institutionalNoteP2: "Através desta nota institucional, certifica-se que o utilizador autenticado encontra-se devidamente autorizado e enquadrado nos fluxos de trabalho parametrizados, com acesso em tempo real aos órgãos de gestão, diretórios executivos, controlo de expediente, tesouraria, património e relatórios gerenciais automatizados.",
+    institutionalNoteP3: "Todos os prazos, tramitações e despachos executados por este utilizador são auditados e sincronizados com a base de dados central, garantindo o rigor normativo e o cumprimento das metas estratégicas da instituição.",
+    presentationTitle: "SIGEP Moçambique",
+    presentationSubtitle: "Apresentação Institucional de Sistemas",
+    accessSigep: "Aceder ao SIGEP",
+    enter: "Entrar",
+    slideCounter: "Slide {{current}} de {{total}} (4s)",
+    moduleCapabilities: "Capacidades Principais do Módulo",
+    home: "Início",
+    quantumAi: "IA QUÂNTICA",
+    onlineBadge: "SISTEMA ON-LINE",
+    editDataAndPhoto: "ON-LINE • EDITAR DADOS & FOTO",
+    userOnline: "Online",
+    pendingProcesses: "Processos Pendentes",
+    pendingNotificationsMsg: "Existem notificações que requerem a sua atenção imediata no sistema.",
+    mainMenu: "Menu Principal",
+    selectAreaToAccess: "Selecione a área a que deseja aceder",
+    availableCourses: "Cursos Disponíveis",
+    selectArea: "Selecione a Área",
+    selectCourseDetails: "Selecione um curso para ver mais detalhes.",
+    navigateSectors: "Navegue pelas repartições e setores disponíveis.",
+    budgetCeiling: "Teto Orçamental",
+    annualReport: "Relatório Anual",
+    sectorPlan: "Plano Setorial",
+    budget: "Orçamento",
+    access: "Aceder",
   },
   en: {
     systemTitle: "SIGEP - Integrated Strategic Management and Planning System",
@@ -209,6 +263,7 @@ export const translations = {
     back: "Back",
     online: "ONLINE",
     userConnected: "Connected User",
+    selectLanguageToContinue: "Select the language to continue",
     institution: "Institution",
     loggedInstitution: "LOGGED INSTITUTION",
     integratedSystem: "INTEGRATED MANAGEMENT SYSTEM",
@@ -326,6 +381,59 @@ export const translations = {
     backup: "Backup",
     audit: "Audit",
     system: "System",
+    welcome: "Welcome",
+    enterCredentials: "Enter your login credentials.",
+    identifierInputPlaceholder: "ID, TAX ID or Email",
+    passwordInputPlaceholder: "•••••",
+    signInSystem: "Sign In",
+    aboutSystem: "About System",
+    clearCacheHelp: "Resolve access issues (Clear Cache)",
+    forgotPasswordHelp: "Forgot password (Dynamic Identity Validation)",
+    plansAndDeadlines: "Publication of Plans & Defined Deadlines",
+    activitiesToExecute: "Activities to Execute This Month",
+    commemorativeDates: "Commemorative dates",
+    nationalHolidays: "National holidays",
+    institutionalHolidays: "Institutional holidays",
+    noEventsScheduled: "No events scheduled in the coming days.",
+    developedByFooter: "Developed by Franzíssi Tripalonga - 2025-2026 | @all rights reserved",
+    instPlanningService: "INSTITUTIONAL PLANNING SERVICE",
+    integratedInstPlatform: "Integrated Institutional Platform",
+    multiInstPlatform: "SIGEP - Multi-Institutional Platform",
+    institutionalCoverTitle: "INSTITUTIONAL PRESENTATION NOTE — SIGEP V1.1.2.0",
+    institutionalCoverSubtitle: "Intelligent Strategic Management and Academic Projection Platform • Mozambique",
+    repMozambiqueMCTES: "REPUBLIC OF MOZAMBIQUE • MINISTRY OF SCIENCE, TECHNOLOGY AND HIGHER EDUCATION",
+    userDataTitle: "Connected User Information in the System",
+    userServerLabel: "User / Officer:",
+    roleFunctionLabel: "Position / Role:",
+    organUnitLabel: "Governance Body / Unit:",
+    confirmCoverAccess: "Confirm Reading and Access Workspace (SIGEP)",
+    institutionalNoteP1: "SIGEP (Integrated Process Management System) is the Official Platform for Strategic Management, Academic Projection, and Electronic Workflow implemented to ensure operational excellence, transparency, and administrative speed in higher education and technical institutions of Mozambique.",
+    institutionalNoteP2: "Through this institutional note, it is certified that the authenticated user is duly authorized and assigned within parametrized workflows, with real-time access to governance bodies, executive directories, document tracking, treasury, asset management, and automated management reports.",
+    institutionalNoteP3: "All deadlines, proceedings, and authorizations performed by this user are audited and synchronized with the central database, guaranteeing regulatory compliance and fulfillment of the institution's strategic objectives.",
+    presentationTitle: "SIGEP Mozambique",
+    presentationSubtitle: "Institutional Systems Presentation",
+    accessSigep: "Access SIGEP",
+    enter: "Sign In",
+    slideCounter: "Slide {{current}} of {{total}} (4s)",
+    moduleCapabilities: "Core Module Capabilities",
+    home: "Home",
+    quantumAi: "QUANTUM AI",
+    onlineBadge: "SYSTEM ONLINE",
+    editDataAndPhoto: "ONLINE • EDIT PROFILE & PHOTO",
+    userOnline: "Online",
+    pendingProcesses: "Pending Processes",
+    pendingNotificationsMsg: "There are notifications requiring your immediate attention in the system.",
+    mainMenu: "Main Menu",
+    selectAreaToAccess: "Select the area you wish to access",
+    availableCourses: "Available Courses",
+    selectArea: "Select Area",
+    selectCourseDetails: "Select a course to view more details.",
+    navigateSectors: "Navigate through available sections and sectors.",
+    budgetCeiling: "Budget Ceiling",
+    annualReport: "Annual Report",
+    sectorPlan: "Sector Plan",
+    budget: "Budget",
+    access: "Access",
   },
   fr: {
     systemTitle: "SIGEP - Système Intégré de Gestion Stratégique et de Planification",
@@ -363,6 +471,7 @@ export const translations = {
     back: "Retour",
     online: "EN LIGNE",
     userConnected: "Utilisateur Connecté",
+    selectLanguageToContinue: "Sélectionnez la langue pour continuer",
     institution: "Institution",
     loggedInstitution: "INSTITUTION CONNECTÉE",
     integratedSystem: "SYSTÈME DE GESTION INTÉGRÉE",
@@ -480,6 +589,59 @@ export const translations = {
     backup: "Sauvegarde",
     audit: "Audit",
     system: "Système",
+    welcome: "Bienvenue",
+    enterCredentials: "Entrez vos identifiants d'accès.",
+    identifierInputPlaceholder: "ID, NUIT ou Email",
+    passwordInputPlaceholder: "•••••",
+    signInSystem: "Se connecter",
+    aboutSystem: "À propos du système",
+    clearCacheHelp: "Résoudre les problèmes d'accès (Vider le cache)",
+    forgotPasswordHelp: "Mot de passe oublié (Validation dynamique d'identité)",
+    plansAndDeadlines: "Publication des Plans & Délais Définis",
+    activitiesToExecute: "Activités à Exécuter ce Mois",
+    commemorativeDates: "Dates commémoratives",
+    nationalHolidays: "Jours fériés nationaux",
+    institutionalHolidays: "Jours fériés institutionnels",
+    noEventsScheduled: "Aucun événement prévu dans les prochains jours.",
+    developedByFooter: "Développé par Franzíssi Tripalonga - 2025-2026 | @tous droits réservés",
+    instPlanningService: "SERVICE DE PLANIFICATION INSTITUTIONNELLE",
+    integratedInstPlatform: "Plateforme Institutionnelle Intégrée",
+    multiInstPlatform: "SIGEP - Plateforme Multi-Institutionnelle",
+    institutionalCoverTitle: "NOTE INSTITUTIONNELLE DE PRÉSENTATION — SIGEP V1.1.2.0",
+    institutionalCoverSubtitle: "Plateforme Intelligente de Gestion Stratégique et Projection Académique • Mozambique",
+    repMozambiqueMCTES: "RÉPUBLIQUE DU MOZAMBIQUE • MINISTÈRE DE LA SCIENCE, DE LA TECHNOLOGIE ET DE L'ENSEIGNEMENT SUPÉRIEUR",
+    userDataTitle: "Données de l'Utilisateur Connecté dans le Système",
+    userServerLabel: "Utilisateur / Agent:",
+    roleFunctionLabel: "Poste / Fonction:",
+    organUnitLabel: "Organe / Unité:",
+    confirmCoverAccess: "Confirmer la Lecture et Accéder à l'Espace de Travail (SIGEP)",
+    institutionalNoteP1: "Le SIGEP est la Plateforme Officielle de Gestion Stratégique, de Projection Académique et de Traitement Électronique mise en place pour assurer l'excellence opérationnelle et la transparence.",
+    institutionalNoteP2: "Par cette note institutionnelle, il est certifié que l'utilisateur authentifié est dûment autorisé et intégré aux flux de travail paramétrés.",
+    institutionalNoteP3: "Tous les délais et décisions exécutés par cet utilisateur sont audités et synchronisés avec la base de données centrale.",
+    presentationTitle: "SIGEP Mozambique",
+    presentationSubtitle: "Présentation Institutionnelle des Systèmes",
+    accessSigep: "Accéder au SIGEP",
+    enter: "Entrer",
+    slideCounter: "Diapositive {{current}} sur {{total}} (4s)",
+    moduleCapabilities: "Capacités Principales du Module",
+    home: "Accueil",
+    quantumAi: "IA QUANTIQUE",
+    onlineBadge: "SYSTÈME EN LIGNE",
+    editDataAndPhoto: "EN LIGNE • MODIFIER PROFIL & PHOTO",
+    userOnline: "En ligne",
+    pendingProcesses: "Processus en Attente",
+    pendingNotificationsMsg: "Il y a des notifications nécessitant votre attention immédiate.",
+    mainMenu: "Menu Principal",
+    selectAreaToAccess: "Sélectionnez la zone à accéder",
+    availableCourses: "Cours Disponibles",
+    selectArea: "Sélectionner la Zone",
+    selectCourseDetails: "Sélectionnez un cours pour plus de détails.",
+    navigateSectors: "Naviguez parmi les sections et secteurs disponibles.",
+    budgetCeiling: "Plafond Budgétaire",
+    annualReport: "Rapport Annuel",
+    sectorPlan: "Plan Sectoriel",
+    budget: "Budget",
+    access: "Accéder",
   },
   es: {
     systemTitle: "SIGEP - Sistema Integrado de Gestión Estratégica y Planificación",
@@ -517,6 +679,7 @@ export const translations = {
     back: "Volver",
     online: "EN LÍNEA",
     userConnected: "Usuario Conectado",
+    selectLanguageToContinue: "Seleccione el idioma para continuar",
     institution: "Institución",
     loggedInstitution: "INSTITUCIÓN CONECTADA",
     integratedSystem: "SISTEMA DE GESTIÓN INTEGRADA",
@@ -634,6 +797,59 @@ export const translations = {
     backup: "Copia de Seguridad",
     audit: "Auditoría",
     system: "Sistema",
+    welcome: "Bienvenido",
+    enterCredentials: "Ingrese sus credenciales de acceso.",
+    identifierInputPlaceholder: "ID, NUIT o Correo",
+    passwordInputPlaceholder: "•••••",
+    signInSystem: "Iniciar Sesión",
+    aboutSystem: "Sobre el Sistema",
+    clearCacheHelp: "Resolver problemas de acceso (Borrar Caché)",
+    forgotPasswordHelp: "Olvidé mi contraseña (Validación Dinámica de Identidad)",
+    plansAndDeadlines: "Publicación de Planes y Plazos Definidos",
+    activitiesToExecute: "Actividades a Ejecutar en el Mes",
+    commemorativeDates: "Fechas conmemorativas",
+    nationalHolidays: "Feriados nacionales",
+    institutionalHolidays: "Feriados institucionales",
+    noEventsScheduled: "Ningún evento programado en los próximos días.",
+    developedByFooter: "Desarrollado por Franzíssi Tripalonga - 2025-2026 | @todos los derechos reservados",
+    instPlanningService: "SERVICIO DE PLANIFICACIÓN INSTITUCIONAL",
+    integratedInstPlatform: "Plataforma Institucional Integrada",
+    multiInstPlatform: "SIGEP - Plataforma Multi-Institucional",
+    institutionalCoverTitle: "NOTA INSTITUCIONAL DE PRESENTACIÓN — SIGEP V1.1.2.0",
+    institutionalCoverSubtitle: "Plataforma Inteligente de Gestión Estratégica y Proyección Académica • Mozambique",
+    repMozambiqueMCTES: "REPÚBLICA DE MOZAMBIQUE • MINISTERIO DE CIENCIA, TECNOLOGÍA Y EDUCACIÓN SUPERIOR",
+    userDataTitle: "Datos del Usuario Conectado en el Sistema",
+    userServerLabel: "Usuario / Funcionario:",
+    roleFunctionLabel: "Cargo / Función:",
+    organUnitLabel: "Órgano / Unidad:",
+    confirmCoverAccess: "Confirmar Lectura y Acceder al Espacio de Trabajo (SIGEP)",
+    institutionalNoteP1: "El SIGEP es la Plataforma Oficial de Gestión Estratégica, Proyección Académica y Tramitación Electrónica implementada para asegurar la excelencia operativa y la transparencia.",
+    institutionalNoteP2: "A través de esta nota institucional, se certifica que el usuario autenticado se encuentra debidamente autorizado y encuadrado en los flujos de trabajo parametrizados.",
+    institutionalNoteP3: "Todos los plazos y decisiones ejecutados por este usuario son auditados y sincronizados con la base de datos central.",
+    presentationTitle: "SIGEP Mozambique",
+    presentationSubtitle: "Presentación Institucional de Sistemas",
+    accessSigep: "Acceder al SIGEP",
+    enter: "Entrar",
+    slideCounter: "Diapositiva {{current}} de {{total}} (4s)",
+    moduleCapabilities: "Capacidades Principales del Módulo",
+    home: "Inicio",
+    quantumAi: "IA CUÁNTICA",
+    onlineBadge: "SISTEMA EN LÍNEA",
+    editDataAndPhoto: "EN LÍNEA • EDITAR PERFIL Y FOTO",
+    userOnline: "En línea",
+    pendingProcesses: "Procesos Pendientes",
+    pendingNotificationsMsg: "Hay notificaciones que requieren su atención inmediata.",
+    mainMenu: "Menú Principal",
+    selectAreaToAccess: "Seleccione el área que desea acceder",
+    availableCourses: "Cursos Disponibles",
+    selectArea: "Seleccionar el Área",
+    selectCourseDetails: "Seleccione un curso para ver más detalles.",
+    navigateSectors: "Navegue por las secciones y sectores disponibles.",
+    budgetCeiling: "Techo Presupuestario",
+    annualReport: "Informe Anual",
+    sectorPlan: "Plan Sectorial",
+    budget: "Presupuesto",
+    access: "Acceder",
   },
 };
 
@@ -713,51 +929,215 @@ export function translateInstitutionalText(text: string, lang: Language): string
     if (lower === "guia de apresentação interna") return "INTERNAL PRESENTATION LETTER";
     if (lower === "pedido de dispensa") return "DISPENSATION REQUEST";
     if (lower === "justificação de faltas") return "JUSTIFICATION OF ABSENCES";
-    if (lower === "órgão de direção e gestão") return "Governance and Management Body";
-    if (lower === "serviços centrais") return "Central Services";
-    if (lower === "unidade orgânica") return "Organic Unit";
-    if (lower === "diretor-geral") return "Director-General";
-    if (lower === "chefe do departamento") return "Head of Department";
-    if (lower === "chefe da repartição") return "Head of Section";
-    if (lower === "responsável do setor") return "Sector Manager";
-    if (lower === "república de moçambique") return "Republic of Mozambique";
-    if (lower === "ministério da educação e cultura") return "Ministry of Education and Culture";
-    if (lower === "direcção nacional de ensino superior") return "National Directorate of Higher Education";
+    if (lower === "órgão de direção e gestão" || lower === "orgao de direcao e gestao") return "Governance and Management Body";
+    if (lower === "serviços centrais" || lower === "servicos centrais") return "Central Services";
+    if (lower === "unidade orgânica" || lower === "unidade organica") return "Organic Unit";
+    if (lower === "diretor-geral" || lower === "diretor geral" || lower === "director-geral") return "Director-General";
+    if (lower === "chefe do gabinete" || lower === "chefe de gabinete") return "Head of Cabinet";
+    if (lower === "chefe do departamento" || lower === "chefe de departamento") return "Head of Department";
+    if (lower === "chefe da repartição" || lower === "chefe de repartição" || lower === "chefe da reparticao") return "Head of Section";
+    if (lower === "responsável do setor" || lower === "responsavel do setor") return "Sector Manager";
+    if (lower === "diretor da divisão" || lower === "diretor da divisao") return "Division Director";
+    if (lower === "diretor" || lower === "director") return "Director";
+    if (lower === "gabinete do diretor-geral" || lower === "gabinete do diretor geral") return "Director-General's Cabinet";
+    if (lower === "república de moçambique" || lower === "republica de mocambique") return "Republic of Mozambique";
+    if (lower === "ministério da educação e cultura" || lower === "ministerio da educacao e cultura") return "Ministry of Education and Culture";
+    if (lower === "direcção nacional de ensino superior" || lower === "direccao nacional de ensino superior") return "National Directorate of Higher Education";
+    if (lower === "ministério da ciência, tecnologia e ensino superior" || lower === "ministerio da ciencia, tecnologia e ensino superior") return "Ministry of Science, Technology and Higher Education";
+    if (lower === "sistema de gestão integrada" || lower === "sistema de gestao integrada") return "INTEGRATED MANAGEMENT SYSTEM";
+    if (lower === "painel administrador geral") return "GENERAL ADMIN PANEL";
+    if (lower === "instituição logada" || lower === "instituicao logada") return "LOGGED INSTITUTION";
+    if (lower === "início" || lower === "inicio") return "Home";
+    if (lower === "serviço de planificação institucional" || lower === "servico de planificacao institucional") return "INSTITUTIONAL PLANNING SERVICE";
+    if (lower === "plataforma institucional integrada") return "Integrated Institutional Platform";
+    if (lower === "plano de actividade" || lower === "plano de atividade") return "Activity Plan";
+    if (lower === "plano de actividades" || lower === "plano de atividades") return "Activity Plan";
   } else if (lang === "fr") {
     if (lower === "informação / proposta" || lower === "informacao / proposta") return "INFORMATION / PROPOSITION";
     if (lower === "ordem de serviço" || lower === "ordem de servico") return "ORDRE DE SERVICE";
     if (lower === "guia de apresentação interna") return "LETTRE DE PRÉSENTATION INTERNE";
     if (lower === "pedido de dispensa") return "DEMANDE DE DISPENSE";
     if (lower === "justificação de faltas") return "JUSTIFICATION D'ABSENCES";
-    if (lower === "órgão de direção e gestão") return "Organe de Direction et de Gestion";
-    if (lower === "serviços centrais") return "Services Centraux";
-    if (lower === "unidade orgânica") return "Unité Organique";
-    if (lower === "diretor-geral") return "Directeur Général";
+    if (lower === "órgão de direção e gestão" || lower === "orgao de direcao e gestao") return "Organe de Direction et de Gestion";
+    if (lower === "serviços centrais" || lower === "servicos centrais") return "Services Centraux";
+    if (lower === "unidade orgânica" || lower === "unidade organica") return "Unité Organique";
+    if (lower === "diretor-geral" || lower === "diretor geral") return "Directeur Général";
     if (lower === "chefe do departamento") return "Chef de Département";
-    if (lower === "chefe da repartição") return "Chef de Section";
-    if (lower === "responsável do setor") return "Responsable de Secteur";
-    if (lower === "república de moçambique") return "République du Mozambique";
+    if (lower === "chefe da repartição" || lower === "chefe da reparticao") return "Chef de Section";
+    if (lower === "responsável do setor" || lower === "responsavel do setor") return "Responsable de Secteur";
+    if (lower === "república de moçambique" || lower === "republica de mocambique") return "République du Mozambique";
     if (lower === "ministério da educação e cultura") return "Ministère de l'Éducation et de la Culture";
     if (lower === "direcção nacional de ensino superior") return "Direction Nationale de l'Enseignement Supérieur";
+    if (lower === "início" || lower === "inicio") return "Accueil";
   } else if (lang === "es") {
     if (lower === "informação / proposta" || lower === "informacao / proposta") return "INFORMACIÓN / PROPUESTA";
     if (lower === "ordem de serviço" || lower === "ordem de servico") return "ORDEN DE SERVICIO";
     if (lower === "guia de apresentação interna") return "GUÍA DE PRESENTACIÓN INTERNA";
     if (lower === "pedido de dispensa") return "SOLICITUD DE DISPENSA";
     if (lower === "justificação de faltas") return "JUSTIFICACIÓN DE FALTAS";
-    if (lower === "órgão de direção e gestão") return "Órgano de Dirección y Gestión";
-    if (lower === "serviços centrais") return "Servicios Centrales";
-    if (lower === "unidade orgânica") return "Unidad Orgánica";
-    if (lower === "diretor-geral") return "Director General";
+    if (lower === "órgão de direção e gestão" || lower === "orgao de direcao e gestao") return "Órgano de Dirección y Gestión";
+    if (lower === "serviços centrais" || lower === "servicos centrais") return "Servicios Centrales";
+    if (lower === "unidade orgânica" || lower === "unidade organica") return "Unidad Orgánica";
+    if (lower === "diretor-geral" || lower === "diretor geral") return "Director General";
     if (lower === "chefe do departamento") return "Jefe de Departamento";
-    if (lower === "chefe da repartição") return "Jefe de Sección";
-    if (lower === "responsável do setor") return "Responsable del Sector";
-    if (lower === "república de moçambique") return "República de Mozambique";
+    if (lower === "chefe da repartição" || lower === "chefe da reparticao") return "Jefe de Sección";
+    if (lower === "responsável do setor" || lower === "responsavel do setor") return "Responsable del Sector";
+    if (lower === "república de moçambique" || lower === "republica de mocambique") return "República de Mozambique";
     if (lower === "ministério da educação e cultura") return "Ministerio de Educación y Cultura";
     if (lower === "direcção nacional de ensino superior") return "Dirección Nacional de Educación Superior";
+    if (lower === "início" || lower === "inicio") return "Inicio";
   }
 
   return text;
+}
+
+/**
+ * Traduz nomes de instituições conforme o idioma seleccionado
+ */
+export function translateInstitutionName(name: string, lang: Language): string {
+  if (!name || lang === "pt") return name || "";
+  const trimmed = name.trim();
+  const lower = trimmed.toLowerCase();
+
+  if (lang === "en") {
+    if (lower.includes("instituto superior politécnico de songo") || lower.includes("instituto superior politecnico de songo")) {
+      return "Higher Polytechnic Institute of Songo";
+    }
+    if (lower.includes("serviço de planificação institucional") || lower.includes("servico de planificacao institucional")) {
+      return "INSTITUTIONAL PLANNING SERVICE";
+    }
+    if (lower.includes("universidade eduardo mondlane")) {
+      return "Eduardo Mondlane University";
+    }
+    if (lower.includes("universidade pedagógica") || lower.includes("universidade pedagogica")) {
+      return "Pedagogical University";
+    }
+    if (lower.includes("universidade lúrio") || lower.includes("universidade lurio")) {
+      return "Lúrio University";
+    }
+    if (lower.includes("universidade zambeze")) {
+      return "Zambeze University";
+    }
+    if (lower.includes("instituto superior de artes e cultura")) {
+      return "Higher Institute of Arts and Culture";
+    }
+    if (lower.includes("instituto superior de ciências e tecnologia") || lower.includes("instituto superior de ciencias e tecnologia")) {
+      return "Higher Institute of Science and Technology of Mozambique";
+    }
+    if (lower === "instituição" || lower === "instituicao") {
+      return "INSTITUTION";
+    }
+    if (lower === "instituição logada" || lower === "instituicao logada") {
+      return "LOGGED INSTITUTION";
+    }
+    if (lower === "instituição de ensino superior" || lower === "instituicao de ensino superior") {
+      return "Higher Education Institution";
+    }
+    if (lower === "administração geral" || lower === "administracao geral") {
+      return "GENERAL ADMINISTRATION";
+    }
+  } else if (lang === "fr") {
+    if (lower.includes("instituto superior politécnico de songo") || lower.includes("instituto superior politecnico de songo")) {
+      return "Institut Supérieur Polytechnique de Songo";
+    }
+    if (lower.includes("serviço de planificação institucional") || lower.includes("servico de planificacao institucional")) {
+      return "SERVICE DE PLANIFICATION INSTITUTIONNELLE";
+    }
+    if (lower === "instituição" || lower === "instituicao") {
+      return "INSTITUTION";
+    }
+  } else if (lang === "es") {
+    if (lower.includes("instituto superior politécnico de songo") || lower.includes("instituto superior politecnico de songo")) {
+      return "Instituto Superior Politécnico de Songo";
+    }
+    if (lower.includes("serviço de planificação institucional") || lower.includes("servico de planificacao institucional")) {
+      return "SERVICIO DE PLANIFICACIÓN INSTITUCIONAL";
+    }
+    if (lower === "instituição" || lower === "instituicao") {
+      return "INSTITUCIÓN";
+    }
+  }
+
+  return trimmed;
+}
+
+/**
+ * Traduz itens de menu do DirectorDashboard e navegação
+ */
+export function translateMenuTitle(title: string, lang: Language): string {
+  if (!title || lang === "pt") return title || "";
+  const trimmed = title.trim();
+  const lower = trimmed.toLowerCase();
+
+  if (lang === "en") {
+    if (lower === "visão geral" || lower === "visao geral") return "Overview";
+    if (lower === "plano") return "Plan";
+    if (lower === "gestão de planos" || lower === "gestao de planos") return "Plan Management";
+    if (lower === "ação orçamental" || lower === "acao orcamental") return "Budget Action";
+    if (lower === "calendário" || lower === "calendario") return "Calendar";
+    if (lower === "caixa de mensagens") return "Message Inbox";
+    if (lower === "assinatura digital") return "Digital Signature";
+    if (lower === "gestão de expediente" || lower === "gestao de expediente") return "Document Dispatch";
+    if (lower === "histórico de documentos" || lower === "historico de documentos") return "Document History";
+    if (lower === "documentos normativos") return "Regulatory Documents";
+    if (lower === "relatórios" || lower === "relatorios") return "Reports";
+    if (lower === "balanço" || lower === "balanco") return "Balance & Review";
+    if (lower === "atribuir atividade") return "Assign Activity";
+    if (lower === "gestão de pessoal" || lower === "gestao de pessoal") return "Staff Management";
+    if (lower === "corpo discente") return "Student Body";
+    if (lower === "estatística da repartição de pessoal" || lower === "estatistica da reparticao de pessoal") return "Staff Section Statistics";
+    if (lower === "gestão estudantil" || lower === "gestao estudantil") return "Student Management";
+    if (lower === "gestão de frota" || lower === "gestao de frota") return "Fleet Management";
+    if (lower === "gestão de viatura" || lower === "gestao de viatura") return "Vehicle Management";
+    if (lower === "bolsa de estudos" || lower === "bolsas de estudo") return "Scholarships";
+    if (lower === "estatística" || lower === "estatistica") return "Statistics";
+    if (lower === "biblioteca") return "Library";
+    if (lower === "produtos e preços" || lower === "produtos e precos") return "Products & Prices";
+    if (lower === "ugea") return "Procurement (UGEA)";
+    if (lower === "arquivo geral") return "General Archive";
+    if (lower === "quadro de atividades") return "Activity Board";
+    if (lower === "minha matriz") return "My Matrix";
+    if (lower === "gestão de formação" || lower === "gestao de formacao") return "Training Management";
+    if (lower === "horários" || lower === "horarios") return "Schedules";
+    if (lower === "exames") return "Exams";
+    if (lower === "graduados") return "Graduates";
+    if (lower === "disciplina" || lower === "disciplinas") return "Courses & Subjects";
+    if (lower === "laboratório" || lower === "laboratorios" || lower === "laboratórios") return "Laboratories";
+    if (lower === "oficinas") return "Workshops";
+    if (lower === "blocos e sala de aula") return "Buildings & Classrooms";
+  } else if (lang === "fr") {
+    if (lower === "visão geral" || lower === "visao geral") return "Vue d'Ensemble";
+    if (lower === "plano") return "Plan";
+    if (lower === "ação orçamental" || lower === "acao orcamental") return "Action Budgétaire";
+    if (lower === "calendário" || lower === "calendario") return "Calendrier";
+    if (lower === "caixa de mensagens") return "Boîte de Réception";
+    if (lower === "assinatura digital") return "Signature Numérique";
+    if (lower === "gestão de expediente" || lower === "gestao de expediente") return "Gestion du Courrier";
+    if (lower === "documentos normativos") return "Documents Normatifs";
+    if (lower === "relatórios" || lower === "relatorios") return "Rapports";
+    if (lower === "balanço" || lower === "balanco") return "Bilan";
+    if (lower === "atribuir atividade") return "Attribuer Activité";
+    if (lower === "gestão de pessoal" || lower === "gestao de pessoal") return "Gestion du Personnel";
+    if (lower === "corpo discente") return "Corps Étudiant";
+    if (lower === "gestão estudantil" || lower === "gestao estudantil") return "Gestion Étudiante";
+  } else if (lang === "es") {
+    if (lower === "visão geral" || lower === "visao geral") return "Visión General";
+    if (lower === "plano") return "Plan";
+    if (lower === "ação orçamental" || lower === "acao orcamental") return "Acción Presupuestaria";
+    if (lower === "calendário" || lower === "calendario") return "Calendario";
+    if (lower === "caixa de mensagens") return "Bandeja de Mensajes";
+    if (lower === "assinatura digital") return "Firma Digital";
+    if (lower === "gestão de expediente" || lower === "gestao de expediente") return "Gestión de Expedientes";
+    if (lower === "documentos normativos") return "Documentos Normativos";
+    if (lower === "relatórios" || lower === "relatorios") return "Informes";
+    if (lower === "balanço" || lower === "balanco") return "Balance";
+    if (lower === "atribuir atividade") return "Asignar Actividad";
+    if (lower === "gestão de pessoal" || lower === "gestao de pessoal") return "Gestión de Personal";
+    if (lower === "corpo discente") return "Cuerpo Estudiantil";
+    if (lower === "gestão estudantil" || lower === "gestao estudantil") return "Gestión Estudiantil";
+  }
+
+  return trimmed;
 }
 
 /**

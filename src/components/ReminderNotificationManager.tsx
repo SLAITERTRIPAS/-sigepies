@@ -113,8 +113,8 @@ export const ReminderNotificationManager: React.FC<ReminderNotificationManagerPr
             try {
               new Notification(`[SIGEP] ${rem.titulo}`, {
                 body: `${rem.mensagem}\n(Área: ${rem.areaDestinoNome || rem.areaDestino})`,
-                icon: "/image.png",
-                badge: "/image.png",
+                icon: "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png",
+                badge: "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png",
               });
               sessionStorage.setItem(`sigep_push_sent_${rem.id}`, "true");
             } catch (err) {

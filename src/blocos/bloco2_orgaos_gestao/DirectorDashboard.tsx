@@ -126,6 +126,7 @@ import {
 import RHStatView from "../bloco7_relatorios/RHStatisticsWorkflowView";
 import BolsasEstudosView from "../bloco4_servicos_centrais/BolsasEstudosView";
 import GestaoEstudantilView from "../bloco3_unidades_organicas/GestaoEstudantilView";
+import { useCurrentLanguage, translateMenuTitle, translateInstitutionalText, getTranslation } from "../../lib/i18n";
 
 export default function DirectorDashboard({
   title = "Painel de Gestão",
@@ -200,6 +201,7 @@ export default function DirectorDashboard({
   setDashboardTitle: (title: string) => void;
   initialActiveItem?: string;
 }) {
+  const currentLang = useCurrentLanguage();
   const safeTitle = typeof title === "string" ? title : String(title || "Painel de Gestão");
   const upperTitle = safeTitle.toUpperCase();
 
@@ -1800,7 +1802,9 @@ export default function DirectorDashboard({
                 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Nível Académico:</span>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
+                      {currentLang === "en" ? "By Academic Level:" : "Por Nível Académico:"}
+                    </span>
                     <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
                       {colabNivelAcademico.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
@@ -1812,7 +1816,9 @@ export default function DirectorDashboard({
                   </div>
 
                   <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Área de Formação:</span>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
+                      {currentLang === "en" ? "By Study Area:" : "Por Área de Formação:"}
+                    </span>
                     <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
                       {colabAreaFormacao.slice(0, 5).map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
@@ -1824,8 +1830,12 @@ export default function DirectorDashboard({
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 flex justify-between items-center font-black">
-                    <span className="text-slate-600 text-[11px]">Com Cargos de Chefia:</span>
-                    <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl">{colabChefia.comChefia} chefias</span>
+                    <span className="text-slate-600 text-[11px]">
+                      {currentLang === "en" ? "With Management Roles:" : "Com Cargos de Chefia:"}
+                    </span>
+                    <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl">
+                      {colabChefia.comChefia} {currentLang === "en" ? "roles" : "chefias"}
+                    </span>
                   </div>
                 </div>
               </button>
@@ -1837,14 +1847,20 @@ export default function DirectorDashboard({
                     <GraduationCap size={20} />
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-900 text-sm tracking-tight">Corpo Discente</h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {estudantesDb.length} estudantes</p>
+                    <h3 className="font-black text-slate-900 text-sm tracking-tight">
+                      {translateMenuTitle("Corpo Discente", currentLang)}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">
+                      {currentLang === "en" ? `Total: ${estudantesDb.length} students` : `Total: ${estudantesDb.length} estudantes`}
+                    </p>
                   </div>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Curso:</span>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
+                      {currentLang === "en" ? "By Program:" : "Por Curso:"}
+                    </span>
                     <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
                       {discenteCurso.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
@@ -1856,7 +1872,9 @@ export default function DirectorDashboard({
                   </div>
 
                   <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Naturalidade (Origem):</span>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
+                      {currentLang === "en" ? "By Birthplace (Origin):" : "Por Naturalidade (Origem):"}
+                    </span>
                     <div className="max-h-24 overflow-y-auto space-y-1 pr-1">
                       {discenteNaturalidade.slice(0, 4).map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
@@ -1868,7 +1886,9 @@ export default function DirectorDashboard({
                   </div>
 
                   <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">Por Nível / Ano:</span>
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
+                      {currentLang === "en" ? "By Level / Year:" : "Por Nível / Ano:"}
+                    </span>
                     <div className="flex gap-2 flex-wrap">
                       {discenteNivel.map((item, idx) => (
                         <span key={idx} className="bg-blue-50 text-blue-900 border border-blue-200 px-2.5 py-1 rounded-xl font-black text-[10px]">
@@ -1887,36 +1907,46 @@ export default function DirectorDashboard({
                     <Calendar size={20} />
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-900 text-sm tracking-tight">Plano de Atividades</h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {planoAtividadesStats.total} atividades</p>
+                    <h3 className="font-black text-slate-900 text-sm tracking-tight">
+                      {translateMenuTitle("Plano de Atividades", currentLang)}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">
+                      {currentLang === "en" ? `Total: ${planoAtividadesStats.total} activities` : `Total: ${planoAtividadesStats.total} atividades`}
+                    </p>
                   </div>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
-                      <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-wider">Já Executadas</span>
+                      <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-wider">
+                        {currentLang === "en" ? "Completed" : "Já Executadas"}
+                      </span>
                       <span className="text-xl font-black text-emerald-900">{planoAtividadesStats.executadas}</span>
                     </div>
                     <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
-                      <span className="block text-[9px] font-black text-amber-600 uppercase tracking-wider">Por Executar</span>
+                      <span className="block text-[9px] font-black text-amber-600 uppercase tracking-wider">
+                        {currentLang === "en" ? "Pending" : "Por Executar"}
+                      </span>
                       <span className="text-xl font-black text-amber-900">{planoAtividadesStats.porExecutar}</span>
                     </div>
                   </div>
 
                   <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-2">
-                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Análise por Orçamento</span>
+                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                      {currentLang === "en" ? "Budget Analysis" : "Análise por Orçamento"}
+                    </span>
                     <div className="flex justify-between font-bold text-slate-800">
-                      <span>Orçamento Total:</span>
-                      <span>{planoAtividadesStats.orcamentoTotal.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
+                      <span>{currentLang === "en" ? "Total Budget:" : "Orçamento Total:"}</span>
+                      <span>{planoAtividadesStats.orcamentoTotal.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ", { style: "currency", currency: "MZN" })}</span>
                     </div>
                     <div className="flex justify-between font-bold text-emerald-700 text-[11px]">
-                      <span>Executado:</span>
-                      <span>{planoAtividadesStats.orcamentoExecutadas.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
+                      <span>{currentLang === "en" ? "Executed:" : "Executado:"}</span>
+                      <span>{planoAtividadesStats.orcamentoExecutadas.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ", { style: "currency", currency: "MZN" })}</span>
                     </div>
                     <div className="flex justify-between font-bold text-amber-700 text-[11px]">
-                      <span>Por Executar:</span>
-                      <span>{planoAtividadesStats.orcamentoPorExecutar.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}</span>
+                      <span>{currentLang === "en" ? "Pending:" : "Por Executar:"}</span>
+                      <span>{planoAtividadesStats.orcamentoPorExecutar.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ", { style: "currency", currency: "MZN" })}</span>
                     </div>
                   </div>
                 </div>
@@ -2005,7 +2035,7 @@ export default function DirectorDashboard({
                       }
                       navigateTo(item.title);
                     }}
-                    title={item.title}
+                    title={translateMenuTitle(item.title, currentLang)}
                     className={`w-auto md:w-full flex flex-none items-center justify-between gap-3 p-2 md:p-3 rounded-xl transition-all text-left ${
                       isSidebarCollapsed ? "md:justify-center md:p-2.5" : ""
                     } ${
@@ -2018,7 +2048,7 @@ export default function DirectorDashboard({
                       <item.icon size={20} className="shrink-0" />
                       {!isSidebarCollapsed && (
                         <span className="text-xs md:text-sm whitespace-nowrap md:whitespace-normal">
-                          {item.title}
+                          {translateMenuTitle(item.title, currentLang)}
                         </span>
                       )}
                     </div>
@@ -2048,7 +2078,7 @@ export default function DirectorDashboard({
                           key={sub.title}
                           type="button"
                           onClick={() => navigateTo(sub.title)}
-                          title={sub.title}
+                          title={translateMenuTitle(sub.title, currentLang)}
                           className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all text-left ${
                             isSubActive
                               ? "bg-blue-600 text-white shadow-sm font-bold"
@@ -2056,7 +2086,7 @@ export default function DirectorDashboard({
                           }`}
                         >
                           <SubIcon size={14} className={isSubActive ? "text-white" : "text-slate-400"} />
-                          <span className="truncate">{sub.title}</span>
+                          <span className="truncate">{translateMenuTitle(sub.title, currentLang)}</span>
                         </button>
                       );
                     })}
@@ -2098,9 +2128,9 @@ export default function DirectorDashboard({
                   setActiveItem("Visão Geral");
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100/80 hover:bg-blue-600 text-blue-900 hover:text-white rounded-xl font-bold transition shadow-xs cursor-pointer"
-                title={`Voltar à Direção mãe: ${parentDirecao}`}
+                title={currentLang === "en" ? `Back to parent Directorate: ${parentDirecao}` : `Voltar à Direção mãe: ${parentDirecao}`}
               >
-                <span>← Direção: {parentDirecao}</span>
+                <span>{currentLang === "en" ? `← Directorate: ${parentDirecao}` : `← Direção: ${parentDirecao}`}</span>
               </button>
             )}
 
@@ -2108,7 +2138,7 @@ export default function DirectorDashboard({
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
                   <Layers size={11} className="text-blue-600" />
-                  Departamentos:
+                  {currentLang === "en" ? "Departments:" : "Departamentos:"}
                 </span>
                 {currentDepartamentos.map((deptName, idx) => (
                   <button
@@ -2132,7 +2162,7 @@ export default function DirectorDashboard({
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
                   <Network size={11} className="text-indigo-600" />
-                  Setores / Repartições:
+                  {currentLang === "en" ? "Sectors / Sections:" : "Setores / Repartições:"}
                 </span>
                 {currentReparticoes.map((repName, idx) => (
                   <button
@@ -2156,7 +2186,9 @@ export default function DirectorDashboard({
           {/* Seletor de Setores Múltiplos para o Chefe ou Técnico que opera em vários setores */}
           {userAssignedSectors.length > 1 && (
             <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-2xs ml-auto">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Operar em:</span>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                {currentLang === "en" ? "Operate in:" : "Operar em:"}
+              </span>
               <select
                 value={title}
                 onChange={(e) => {
@@ -2183,8 +2215,12 @@ export default function DirectorDashboard({
             title="Atribuir setores que o técnico opera, assim como a si próprio (Chefia do Departamento)"
           >
             <Users size={14} className="text-white" />
-            <span className="hidden sm:inline">Atribuir Setores da Equipa</span>
-            <span className="sm:hidden">Equipa</span>
+            <span className="hidden sm:inline">
+              {currentLang === "en" ? "Assign Team Sectors" : "Atribuir Setores da Equipa"}
+            </span>
+            <span className="sm:hidden">
+              {currentLang === "en" ? "Team" : "Equipa"}
+            </span>
           </button>
 
           {/* Botão de Personalização e Ocultação de Menus do Setor - Disponível apenas para Administradores da Instituição e Geral */}
@@ -2196,8 +2232,12 @@ export default function DirectorDashboard({
               title="Personalizar e ocultar/mostrar funcionalidades atribuídas especificamente a este setor (Apenas Administradores)"
             >
               <Sliders size={14} className="text-amber-700 font-bold" />
-              <span className="hidden sm:inline">Configurar Menus do Setor</span>
-              <span className="sm:hidden">Menus</span>
+              <span className="hidden sm:inline">
+                {currentLang === "en" ? "Configure Sector Menus" : "Configurar Menus do Setor"}
+              </span>
+              <span className="sm:hidden">
+                {currentLang === "en" ? "Menus" : "Menus"}
+              </span>
             </button>
           )}
 
@@ -2210,7 +2250,7 @@ export default function DirectorDashboard({
               title="Navegar por toda a Instituição (Reservado ao Diretor-Geral)"
             >
               <Compass size={13} className="text-amber-400" />
-              <span>Navegador Geral</span>
+              <span>{currentLang === "en" ? "General Navigator" : "Navegador Geral"}</span>
             </button>
           )}
         </div>

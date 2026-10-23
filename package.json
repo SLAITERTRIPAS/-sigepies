@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "prebuild": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
     "build": "vite build && node -e \"const fs=require('fs'); ['build', '.artifacts'].forEach(d=>{fs.mkdirSync(d,{recursive:true}); fs.cpSync('dist', d, {recursive:true}); console.log('Copied dist to ' + d);})\"",
     "preview": "vite preview",
     "start": "node server.ts",
-    "clean": "rm -rf dist build .artifacts",
-    "lint": "tsc --noEmit"
+    "clean": "rm -rf dist build .artifacts node_modules/.vite",
+    "lint": "tsc --noEmit",
+    "fix": "eslint --fix src/"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

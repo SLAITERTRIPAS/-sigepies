@@ -5740,7 +5740,7 @@ export default function ActivityForm({
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                           <div className="space-y-1">
                             <label className="block text-[11px] font-bold text-blue-800 tracking-tight leading-tight flex items-center justify-between">
-                              <span>Dias de Trabalho (D/T)</span>
+                              <span>Dias de Trabalho (Ajudas de Custo)</span>
                               <span className="text-[9px] text-blue-500 font-extrabold bg-blue-100/70 px-1 rounded">D/T</span>
                             </label>
                             {isIdaVoltaGeral ? (
@@ -5906,12 +5906,19 @@ export default function ActivityForm({
                                     : isFora
                                       ? rubrica.precoUnitario || 0
                                       : valorDiario;
+                                const total = 0.3 * realValorDiario * (rubrica.quantidade || 0);
                                 return (
-                                  (
-                                    0.3 *
-                                    realValorDiario *
-                                    (rubrica.quantidade || 0)
-                                  ).toLocaleString("pt-MZ") + " MZN"
+                                  <div className="flex flex-col items-center text-[10px] w-full">
+                                    <span className="text-gray-500 text-[9px] mb-1">
+                                      Fórmula: 0.3 x {rubrica.quantidade || 0} x {realValorDiario.toLocaleString("pt-MZ")}
+                                    </span>
+                                    <div className="flex flex-col w-full px-1">
+                                        <label className="text-[8px] font-bold text-blue-700 uppercase">Valor Final Calculado</label>
+                                        <span className="font-extrabold text-[12px] p-1 bg-white border border-gray-200 rounded text-center">
+                                            {total.toLocaleString("pt-MZ")} MZN
+                                        </span>
+                                    </div>
+                                  </div>
                                 );
                               })()}
                             </div>

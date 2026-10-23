@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { X, Search, Database, Shield, Clock } from "lucide-react";
@@ -9,6 +9,37 @@ export default function DiagnosticPanel({ onClose }: { onClose: () => void }) {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [moduleStatus, setModuleStatus] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const checkModules = async () => {
+      const CRITICAL_MODULES = [
+        { name: "LibraryVisitForm", path: "../blocos/bloco3_unidades_organicas/LibraryVisitForm" },
+        { name: "BookRegistrationForm", path: "../blocos/bloco3_unidades_organicas/BookRegistrationForm" },
+        { name: "ArchiveView", path: "../blocos/bloco5_sistema/ArchiveView" },
+        { name: "ManualInstrucoesView", path: "../blocos/bloco8_gerais/ManualInstrucoesView" },
+        { name: "MonografiaView", path: "../blocos/bloco3_unidades_organicas/MonografiaView" },
+        { name: "ProjetoCientificoView", path: "../blocos/bloco3_unidades_organicas/ProjetoCientificoView" },
+        { name: "ReportsView", path: "../blocos/bloco7_relatorios/ReportsView" },
+        { name: "RelatorioAcessoIndevidoView", path: "../blocos/bloco7_relatorios/RelatorioAcessoIndevidoView" },
+        { name: "GestaoProdutosPrecosView", path: "../blocos/bloco9_produtos_precos/GestaoProdutosPrecosView" },
+        { name: "DocumentosView", path: "../blocos/bloco6_documentos/DocumentosView" },
+      ];
+
+      const status: Record<string, string> = {};
+      for (const mod of CRITICAL_MODULES) {
+        try {
+          await import(`${mod.path}.tsx`);
+          status[mod.name] = "ok";
+        } catch (e) {
+          status[mod.name] = "error";
+        }
+      }
+      setModuleStatus(status);
+    };
+
+    checkModules();
+  }, []);
 
   const runDiagnostic = async () => {
     if (!identifier) return;
@@ -77,13 +108,25 @@ export default function DiagnosticPanel({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-3">
           <Shield className="text-amber-500" size={32} />
           <div>
-            <h1 className="text-white text-2xl font-bold">Painel de Diagnóstico de Autenticação</h1>
-            <p className="text-slate-400 text-sm">Auditoria de documentos de utilizador e persistência de senhas</p>
+            <h1 className="text-white text-2xl font-bold">Painel de Diagnóstico</h1>
+            <p className="text-slate-400 text-sm">Auditoria de sistema e autenticação</p>
           </div>
         </div>
         <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors">
           <X size={24} />
         </button>
+      </div>
+
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
+        <h2 className="text-white font-bold mb-4">Integridade dos Módulos</h2>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {Object.entries(moduleStatus).map(([name, status]) => (
+            <div key={name} className={`px-3 py-2 rounded-lg text-xs font-mono flex items-center gap-2 ${status === 'ok' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+              <div className={`w-2 h-2 rounded-full ${status === 'ok' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+              {name}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-2 mb-8 max-w-2xl">

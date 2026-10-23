@@ -21,6 +21,7 @@ import {
   getActiveInstituicao,
   getActiveInstituicaoId,
 } from "../../lib/instituicaoEstruturaService";
+import { useCurrentLanguage, getTranslation, translateMenuTitle } from "../../lib/i18n";
 
 export default function MainMenu({
   user,
@@ -212,6 +213,7 @@ export default function MainMenu({
   }, [user, activeInstId, estruturaVersion, disabledMenus, disabledSubItems]);
 
   const sidebarColor = activeInst?.sidebarColor || activeInst?.secondaryColor;
+  const lang = useCurrentLanguage();
 
   return (
     <div 
@@ -230,9 +232,9 @@ export default function MainMenu({
                 <Bell size={24} />
               </div>
               <div className="text-left">
-                <h4 className="text-red-900 font-black text-sm tracking-tight">Processos Pendentes</h4>
+                <h4 className="text-red-900 font-black text-sm tracking-tight">{getTranslation(lang, "pendingProcesses")}</h4>
                 <p className="text-red-700 text-xs font-bold leading-tight">
-                  Existem {pendingForMe.length} notificações que requerem a sua atenção imediata no sistema.
+                  {getTranslation(lang, "pendingNotificationsMsg").replace("{count}", String(pendingForMe.length))}
                 </p>
               </div>
             </motion.div>
@@ -244,10 +246,10 @@ export default function MainMenu({
                 "1px 1px 0 #000, 2px 2px 0 #000, 3px 3px 0 #000, 4px 4px 0 #000",
             }}
           >
-            Menu Principal
+            {getTranslation(lang, "mainMenu")}
           </h2>
           <p className="text-sm sm:text-base lg:text-lg text-gray-500 font-medium font-serif italic">
-            Selecione a área a que deseja aceder
+            {getTranslation(lang, "selectAreaToAccess")}
           </p>
         </div>
 
@@ -272,7 +274,7 @@ export default function MainMenu({
                     />
                   </div>
                   <span className="text-sm sm:text-base lg:text-lg font-black font-serif tracking-tight leading-tight flex-1 text-center">
-                    {item.title}
+                    {translateMenuTitle(item.title, lang)}
                   </span>
                   <ChevronRight
                     size={16}

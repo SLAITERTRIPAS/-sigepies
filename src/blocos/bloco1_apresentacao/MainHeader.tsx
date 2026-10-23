@@ -41,7 +41,7 @@ import { getActiveInstituicao } from "../../lib/instituicaoEstruturaService";
 import { getSystemLogo } from "../../lib/logoService";
 import InstitutionalProfileModal from "../../components/modals/InstitutionalProfileModal";
 import AtualizarDadosColaboradorModal from "../../components/modals/AtualizarDadosColaboradorModal";
-import { useCurrentLanguage, setLanguagePreference, getTranslation } from "../../lib/i18n";
+import { useCurrentLanguage, setLanguagePreference, getTranslation, translateInstitutionName, translateMenuTitle, translateInstitutionalText } from "../../lib/i18n";
 import WeatherWidget from "../../components/WeatherWidget";
 import LanguageDropdown from "../../components/ui/LanguageDropdown";
 
@@ -80,7 +80,10 @@ const textShadowLight = {
   textShadow: "1px 1px 0px #000, 2px 2px 0px #000",
 };
 
-const LogoutDoorIcon: React.FC<{ className?: string }> = ({ className = "h-[17px] sm:h-[20px] md:h-[22px]" }) => (
+const LogoutDoorIcon: React.FC<{ className?: string; label?: string }> = ({
+  className = "h-[17px] sm:h-[20px] md:h-[22px]",
+  label = "Sair",
+}) => (
   <svg
     viewBox="0 0 165 70"
     className={`${className} w-auto`}
@@ -119,7 +122,7 @@ const LogoutDoorIcon: React.FC<{ className?: string }> = ({ className = "h-[17px
       fontFamily="Arial, sans-serif"
       letterSpacing="0.5"
     >
-      Sair
+      {label}
     </text>
   </svg>
 );
@@ -202,9 +205,9 @@ export default function MainHeader({
   // Logótipo oficial centralizado com suporte a atualização em tempo real
   const [currentSystemLogo, setCurrentSystemLogo] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("systemLogo") || "/image.png";
+      return localStorage.getItem("systemLogo") || "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
     }
-    return "/image.png";
+    return "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
   });
 
   useEffect(() => {
@@ -226,8 +229,9 @@ export default function MainHeader({
   const headerLogoToDisplay = isSuperAdmin ? currentSystemLogo : (userInstLogo || currentSystemLogo);
   const clockBackgroundLogo = isSuperAdmin ? currentSystemLogo : (userInstLogo || currentSystemLogo);
 
-  const instName = isSuperAdmin ? "SIGEP" : (loggedInst?.nome || user?.instituicaoNome || "Instituição de Ensino Superior");
-  const instAbreviatura = isSuperAdmin ? "ADMINISTRAÇÃO GERAL" : (loggedInst?.nome || user?.instituicaoNome || instName);
+  const rawInstName = isSuperAdmin ? "SIGEP" : (loggedInst?.nome || user?.instituicaoNome || "Instituição de Ensino Superior");
+  const instName = isSuperAdmin ? "SIGEP" : translateInstitutionName(rawInstName, currentLang);
+  const instAbreviatura = isSuperAdmin ? getTranslation(currentLang, "generalAdminPanel") : translateInstitutionName(loggedInst?.nome || user?.instituicaoNome || instName, currentLang);
 
   // Nome real do utilizador logado
   const realUserName = React.useMemo(() => {
@@ -548,7 +552,7 @@ export default function MainHeader({
                   alt={instName}
                   className="h-10 md:h-12 w-auto max-w-[150px] object-contain drop-shadow-md transition-all duration-300 group-hover:brightness-110 rounded-xl"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/image.png";
+                    (e.target as HTMLImageElement).src = "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
                   }}
                 />
               </div>
@@ -557,14 +561,14 @@ export default function MainHeader({
               <div className="flex flex-col min-w-0 text-left">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none">
-                    {isSuperAdmin ? "SISTEMA DE GESTÃO INTEGRADA" : "INSTITUIÇÃO LOGADA"}
+                    {isSuperAdmin ? getTranslation(currentLang, "integratedSystem") : getTranslation(currentLang, "loggedInstitution")}
                   </span>
                   {isAnyAdmin && !isSuperAdmin && (
                     <Settings size={9} className="text-white/30 group-hover:text-blue-400 transition-colors animate-pulse" />
                   )}
                 </div>
                 <h3 className="text-xs md:text-sm font-black text-white truncate max-w-[200px] sm:max-w-[280px] uppercase tracking-wide group-hover:text-blue-200 transition-colors">
-                  {isSuperAdmin ? "PAINEL ADMINISTRADOR GERAL" : instAbreviatura}
+                  {isSuperAdmin ? getTranslation(currentLang, "generalAdminPanel") : instAbreviatura}
                 </h3>
               </div>
             </div>
@@ -676,14 +680,14 @@ export default function MainHeader({
                           {shortRealUserName}
                         </span>
                         <span className="text-[8px] font-bold text-emerald-400 uppercase mt-0.5 tracking-wider truncate">
-                          ON-LINE • EDITAR DADOS & FOTO
+                          {getTranslation(currentLang, "editDataAndPhoto")}
                         </span>
                       </div>
                     </button>
                     <button
                       onClick={() => setShowMenu(!showMenu)}
                       className="p-2 text-white/40 hover:text-white transition-colors cursor-pointer border-l border-white/5"
-                      title="Mais opções da conta"
+                      title={getTranslation(currentLang, "moreAccountOptions" as any) || "Mais opções da conta"}
                     >
                       <ChevronDown size={14} />
                     </button>
@@ -699,14 +703,14 @@ export default function MainHeader({
                         className="absolute right-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 z-[60]"
                       >
                         <div className="px-4 py-3 border-b border-white/5 bg-white/5">
-                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Utilizador Conectado</p>
+                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">{getTranslation(currentLang, "userConnected")}</p>
                           <p className="text-xs font-black text-white mt-0.5 break-words">{activeRealUserName}</p>
-                          <p className="text-[10px] font-bold text-blue-400 mt-1">{realUserCargo}</p>
+                          <p className="text-[10px] font-bold text-blue-400 mt-1">{translateInstitutionalText(realUserCargo, currentLang)}</p>
                           {user?.email && (
                             <p className="text-[9px] text-white/40 truncate mt-0.5">{user.email}</p>
                           )}
                           <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
-                            <span className="text-[8px] font-bold text-amber-400/80 uppercase">Instituição</span>
+                            <span className="text-[8px] font-bold text-amber-400/80 uppercase">{getTranslation(currentLang, "institution")}</span>
                             <span className="text-[9px] font-black text-white truncate max-w-[140px] uppercase">{instAbreviatura}</span>
                           </div>
                         </div>
@@ -714,19 +718,19 @@ export default function MainHeader({
                           onClick={() => { setShowColabProfileModal(true); setShowMenu(false); }} 
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-emerald-300 hover:bg-white/10 hover:text-white transition-all text-left cursor-pointer border-b border-white/5"
                         >
-                          <UserCog size={14} className="text-emerald-400 shrink-0" /> Atualizar Dados do Colaborador
+                          <UserCog size={14} className="text-emerald-400 shrink-0" /> {getTranslation(currentLang, "updateEmployeeData" as any) || "Atualizar Dados do Colaborador"}
                         </button>
                         <button 
                           onClick={() => { setShowPasswordModal(true); setShowMenu(false); }} 
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-white/70 hover:bg-white/5 hover:text-white transition-all text-left cursor-pointer"
                         >
-                          <Settings size={14} /> Alterar Palavra-passe
+                          <Settings size={14} /> {getTranslation(currentLang, "changePassword")}
                         </button>
                         <button 
                           onClick={onLogout} 
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-red-400 hover:bg-red-500/10 transition-all text-left cursor-pointer"
                         >
-                          <LogOut size={14} /> Terminar Sessão
+                          <LogOut size={14} /> {getTranslation(currentLang, "logout")}
                         </button>
                       </motion.div>
                     )}
@@ -795,11 +799,11 @@ export default function MainHeader({
                   window.dispatchEvent(new CustomEvent("open_view", { detail: { view: "menu" } }));
                 }
               }}
-              title="Voltar à tela ou menu anterior"
+              title={getTranslation(currentLang, "back")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 hover:text-white border border-blue-400/30 hover:border-blue-400/60 transition-all font-bold text-xs shadow-sm active:scale-95 group shrink-0 cursor-pointer"
             >
               <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-              <span>Voltar</span>
+              <span>{getTranslation(currentLang, "back")}</span>
             </button>
 
             <div className="p-1.5 bg-blue-500/20 rounded-lg text-blue-400 shrink-0">
@@ -817,9 +821,9 @@ export default function MainHeader({
                   }
                 }}
                 className="text-[11px] font-black text-white/50 hover:text-white uppercase tracking-wider transition-colors cursor-pointer shrink-0"
-                title="Ir para o Início / Menu Principal"
+                title={getTranslation(currentLang, "home")}
               >
-                Início
+                {getTranslation(currentLang, "home")}
               </button>
 
               {breadcrumb && breadcrumb.length > 0 ? (
@@ -831,7 +835,7 @@ export default function MainHeader({
                       className="text-[11px] font-bold text-white/70 hover:text-white uppercase tracking-wide truncate max-w-[160px] transition-colors cursor-pointer shrink-0"
                       title={crumb}
                     >
-                      {crumb}
+                      {translateMenuTitle(crumb, currentLang)}
                     </button>
                   </React.Fragment>
                 ))
@@ -839,7 +843,7 @@ export default function MainHeader({
 
               <span className="text-white/30 text-xs shrink-0">/</span>
               <h2 className="text-xs sm:text-sm font-black text-white tracking-widest uppercase italic truncate">
-                {title || "SISTEMA"}
+                {title ? translateMenuTitle(title, currentLang) : getTranslation(currentLang, "system")}
               </h2>
             </div>
           </div>
@@ -856,8 +860,8 @@ export default function MainHeader({
             {isAnyAdmin && (
               <div className="flex items-center gap-3 bg-indigo-600/20 border border-indigo-500/30 px-4 py-1.5 rounded-xl">
                 <div className="flex flex-col items-end leading-none">
-                  <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">IA QUÂNTICA</span>
-                  <span className="text-[7px] font-bold text-emerald-400 uppercase mt-0.5">SISTEMA ON-LINE</span>
+                  <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">{getTranslation(currentLang, "quantumAi")}</span>
+                  <span className="text-[7px] font-bold text-emerald-400 uppercase mt-0.5">{getTranslation(currentLang, "onlineBadge")}</span>
                 </div>
                 <div className="relative w-8 h-8 flex items-center justify-center">
                   <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping"></div>

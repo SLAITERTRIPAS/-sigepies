@@ -171,38 +171,33 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
   // Estatísticas de Base
   const stats = useMemo(() => {
     // Utilizadores e Colaboradores
-    const totalUsers = colaboradores.length || 45;
+    const totalUsers = colaboradores.length;
     const totalDocentes = colaboradores.filter(
       (c) =>
         (c.tipo && c.tipo.toLowerCase().includes("docente")) ||
         (c.carreira && c.carreira.toLowerCase().includes("docente")) ||
         (c.cargo && c.cargo.toLowerCase().includes("docente"))
-    ).length || Math.round(totalUsers * 0.55);
+    ).length;
 
     // Estudantes e Cursos
-    const totalEstudantes = estudantes.length || 380;
+    const totalEstudantes = estudantes.length;
     const cursosMap = new Set<string>();
     estudantes.forEach((e) => {
       if (e.curso) cursosMap.add(e.curso);
     });
-    if (cursosMap.size === 0) {
-      cursosMap.add("Engenharia Elétrica");
-      cursosMap.add("Engenharia Hidráulica");
-      cursosMap.add("Engenharia Mecânica");
-      cursosMap.add("Construção Civil");
-    }
+    
     const totalCursos = cursosMap.size;
     const listaCursos = Array.from(cursosMap);
 
     // Planos e Atividades
     const allActs = [...matrixActivities, ...activities];
-    const totalAtividades = allActs.length || 24;
+    const totalAtividades = allActs.length;
     const concluidas = allActs.filter((a) =>
       (a.status || "").toLowerCase().includes("conclu") || (a.status || "").toLowerCase().includes("executad")
-    ).length || Math.round(totalAtividades * 0.65);
+    ).length;
     const emProgresso = allActs.filter((a) =>
       (a.status || "").toLowerCase().includes("progresso") || (a.status || "").toLowerCase().includes("andamento")
-    ).length || Math.round(totalAtividades * 0.25);
+    ).length;
     const atrasadas = Math.max(0, totalAtividades - concluidas - emProgresso);
 
     // Financeiro
@@ -222,15 +217,11 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
       }
     });
 
-    if (receitasTotal === 0) receitasTotal = 2450000;
-    if (propinasPagas === 0) propinasPagas = 1820000;
-    if (propinasAtraso === 0) propinasAtraso = 340000;
-
     // UGEA
-    const processosUgea = serviceRequests.length || 18;
-    const processosConcluidosUgea = serviceRequests.filter((s) => (s.status || "").toLowerCase().includes("conclu")).length || 11;
+    const processosUgea = serviceRequests.length;
+    const processosConcluidosUgea = serviceRequests.filter((s) => (s.status || "").toLowerCase().includes("conclu")).length;
     const processosPendentesUgea = Math.max(0, processosUgea - processosConcluidosUgea);
-    const totalFornecedores = suppliers.length || 14;
+    const totalFornecedores = suppliers.length;
 
     return {
       totalUsers: colaboradores.length,

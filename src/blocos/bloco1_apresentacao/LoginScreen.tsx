@@ -28,7 +28,7 @@ import {
   safeJSONStringify,
   safeJSONParse,
 } from "../../lib/utils";
-import { setLanguagePreference, getCurrentLanguage, Language } from "../../lib/i18n";
+import { setLanguagePreference, getCurrentLanguage, Language, useCurrentLanguage, getTranslation, translateInstitutionName } from "../../lib/i18n";
 import LanguageDropdown from "../../components/ui/LanguageDropdown";
 import { EFETIVO_GERAL_DATA } from "../../constants/colaboradoresList";
 import { printElementById } from "../../lib/printUtils";
@@ -235,6 +235,7 @@ export default function LoginScreen({
   onRegisterClick: () => void;
   events: any[];
 }) {
+  const currentLang = useCurrentLanguage();
   const [view, setView] = useState<"presentation" | "login" | "create_password">("login");
   const [showSobreSistemaModal, setShowSobreSistemaModal] = useState(false);
   const [systemLogo, setSystemLogo] = useState<string | null>(() => getSystemLogo());
@@ -1426,15 +1427,23 @@ export default function LoginScreen({
     <div className="fixed inset-0 flex flex-col md:flex-row h-screen w-full bg-white z-[100] overflow-y-auto">
       {/* Left Side - Blue */}
       <div className="hidden md:flex w-full md:w-1/2 bg-[#1e1e96] p-8 md:p-12 flex-col justify-between text-white relative overflow-y-auto">
-        {/* Fundo Limpo, Moderno e Profissional */}
-        <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-br from-[#0a1236] via-[#0f1d52] to-[#18296d]">
+        {/* Fundo Limpo, Moderno e Profissional com Marca d'Água SIGEP (Logótipo Oficial PNG) */}
+        <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-br from-[#0a1236] via-[#0f1d52] to-[#18296d] flex items-center justify-center">
           <div className="absolute inset-0 bg-[radial-gradient(#ffffff_0.5px,transparent_0.5px)] opacity-5 [background-size:24px_24px]" />
+          {/* Marca d'água fixa do novo logotipo SIGEP (80% da área, 80% transparente) */}
+          <div className="w-[80%] h-[80%] flex items-center justify-center opacity-[0.2] select-none pointer-events-none">
+            <img 
+              src="/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png" 
+              alt="Marca d'Água Institucional SIGEP" 
+              className="w-full h-full object-contain filter drop-shadow-2xl" 
+            />
+          </div>
         </div>
 
         <div className="relative z-10 flex flex-col">
           <div className="flex items-center gap-4">
             {(() => {
-              const activeLogo = systemLogo || "/image.png";
+              const activeLogo = systemLogo || "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
               return activeLogo ? (
                 <div className="flex items-center justify-center bg-transparent overflow-hidden w-12 h-12 shrink-0 rounded-xl">
                   <img
@@ -1452,10 +1461,10 @@ export default function LoginScreen({
             })()}
             <div>
               <h1 className="text-sm font-bold tracking-widest leading-tight uppercase text-white">
-                {currentInst?.nome ? currentInst.nome : "SERVIÇO DE PLANIFICAÇÃO INSTITUCIONAL"}
+                {currentInst?.nome ? translateInstitutionName(currentInst.nome, currentLang) : getTranslation(currentLang, "instPlanningService")}
               </h1>
               <p className="text-[10px] text-blue-200 tracking-wider">
-                {currentInst ? "Plataforma Institucional Integrada" : "SIGEP - Plataforma Multi-Institucional"}
+                {currentInst ? getTranslation(currentLang, "integratedInstPlatform") : getTranslation(currentLang, "multiInstPlatform")}
               </p>
             </div>
           </div>
@@ -1475,7 +1484,7 @@ export default function LoginScreen({
             {prazosEPublicacoes.length > 0 && (
               <div>
                 <h2 className="text-[10px] font-black underline mb-2 tracking-widest text-amber-300 flex items-center gap-1">
-                  <span>📌 Publicação de Planos & Prazos Definidos</span>
+                  <span>📌 {getTranslation(currentLang, "plansAndDeadlines")}</span>
                 </h2>
                 <div className="space-y-1">
                   {prazosEPublicacoes.map((e) => renderEvent(e))}
@@ -1485,7 +1494,7 @@ export default function LoginScreen({
             {actividadesAExecutar.length > 0 && (
               <div>
                 <h2 className="text-[10px] font-black underline mt-3 mb-2 tracking-widest text-emerald-300 flex items-center gap-1">
-                  <span>⚡ Actividades a Executar no Mês</span>
+                  <span>⚡ {getTranslation(currentLang, "activitiesToExecute")}</span>
                 </h2>
                 <div className="space-y-1">
                   {actividadesAExecutar.map((e) => renderEvent(e))}
@@ -1495,7 +1504,7 @@ export default function LoginScreen({
             {comemorativas.length > 0 && (
               <div>
                 <h2 className="text-[10px] font-black underline mt-3 mb-2 tracking-widest text-blue-200">
-                  Datas comemorativas
+                  {getTranslation(currentLang, "commemorativeDates")}
                 </h2>
                 <div className="space-y-1">
                   {comemorativas.map((e) => renderEvent(e))}
@@ -1505,7 +1514,7 @@ export default function LoginScreen({
             {feriadosNacionais.length > 0 && (
               <div>
                 <h2 className="text-[10px] font-black underline mt-3 mb-2 tracking-widest text-blue-200">
-                  Feriados nacionais
+                  {getTranslation(currentLang, "nationalHolidays")}
                 </h2>
                 <div className="space-y-1">
                   {feriadosNacionais.map((e) => renderEvent(e))}
@@ -1515,7 +1524,7 @@ export default function LoginScreen({
             {feriadosInstitucionais.length > 0 && (
               <div>
                 <h2 className="text-[10px] font-black underline mt-3 mb-2 tracking-widest text-blue-200">
-                  Feriados institucionais
+                  {getTranslation(currentLang, "institutionalHolidays")}
                 </h2>
                 <div className="space-y-1">
                   {feriadosInstitucionais.map((e) => renderEvent(e))}
@@ -1527,7 +1536,7 @@ export default function LoginScreen({
               comemorativas.length === 0 &&
               feriadosNacionais.length === 0 &&
               feriadosInstitucionais.length === 0 && (
-                <p className="text-sm opacity-80">Nenhum evento agendado nos próximos dias.</p>
+                <p className="text-sm opacity-80">{getTranslation(currentLang, "noEventsScheduled")}</p>
               )}
           </div>
         </div>
@@ -1539,7 +1548,7 @@ export default function LoginScreen({
               "1px 1px 0 #000, 2px 2px 0 #000, 3px 3px 0 #000, 4px 4px 4px rgba(0,0,0,0.5)",
           }}
         >
-          Desenvolvido por Franzíssi Tripalonga - 2025-2026 | @todos os direitos reservados
+          {getTranslation(currentLang, "developedByFooter")}
         </div>
 
         {/* Top Right Icons */}
@@ -1547,11 +1556,11 @@ export default function LoginScreen({
           <button
             type="button"
             onClick={() => setShowSobreSistemaModal(true)}
-            title="Sobre o Sistema (Manual do Sistema)"
+            title={getTranslation(currentLang, "aboutSystem")}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full transition-all text-white text-xs font-bold cursor-pointer shadow-md hover:scale-105 active:scale-95"
           >
             <BookOpen size={16} />
-            <span>Sobre o Sistema</span>
+            <span>{getTranslation(currentLang, "aboutSystem")}</span>
           </button>
           <button
             type="button"
@@ -1604,15 +1613,17 @@ export default function LoginScreen({
               </div>
 
               <h1 className="text-3xl sm:text-4xl font-bold text-[#0a0a5a] mb-2 font-serif tracking-tight">
-                Bem-vindo
+                {getTranslation(currentLang, "welcome")}
               </h1>
               <p className="text-base sm:text-lg text-gray-500 italic mb-4 font-serif">
-                Insira as suas credenciais de acesso.
+                {getTranslation(currentLang, "enterCredentials")}
               </p>
 
               {/* Seletor de Idioma no Ecrã de Login com suporte a PT, EN, FR, ES e AUTO */}
               <div className="mb-6 flex items-center justify-center gap-2">
-                <span className="text-xs font-bold text-[#0a0a5a] uppercase tracking-wider">Idioma:</span>
+                <span className="text-xs font-bold text-[#0a0a5a] uppercase tracking-wider">
+                  {getTranslation(currentLang, "languageLabel")}:
+                </span>
                 <LanguageDropdown compact={false} />
               </div>
 
@@ -1633,7 +1644,7 @@ export default function LoginScreen({
                           }}
                           className="text-[#0a0a5a] font-bold hover:underline mt-1 text-xs"
                         >
-                          Contactar o Administrador
+                          {getTranslation(currentLang, "contactAdmin")}
                         </button>
                       )}
                     </div>
@@ -1649,13 +1660,13 @@ export default function LoginScreen({
 
                 <div className="space-y-3">
                   <label className="block text-[10px] font-bold text-[#0a0a5a] tracking-[0.2em]">
-                    ID, NUIT ou E-mail
+                    {getTranslation(currentLang, "identifierInputPlaceholder")}
                   </label>
                   <input
                     type="text"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="ID, NUIT ou E-mail"
+                    placeholder={getTranslation(currentLang, "identifierInputPlaceholder")}
                     className="w-full p-4 bg-gray-100 rounded-xl text-sm text-center placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0a0a5a]/20 transition-all"
                     required
                     autoComplete="username"
@@ -1664,13 +1675,13 @@ export default function LoginScreen({
 
                 <div className="space-y-3">
                   <label className="block text-[10px] font-bold text-[#0a0a5a] tracking-[0.2em]">
-                    Palavra-passe
+                    {getTranslation(currentLang, "passwordLabel")}
                   </label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="•••••"
+                    placeholder={getTranslation(currentLang, "passwordInputPlaceholder")}
                     className="w-full p-4 bg-gray-100 rounded-xl text-sm text-center placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0a0a5a]/20 transition-all"
                     required
                     autoComplete="current-password"
@@ -1688,7 +1699,7 @@ export default function LoginScreen({
                     ) : (
                       <>
                         <span className="tracking-widest text-sm">
-                          Entrar no sistema
+                          {getTranslation(currentLang, "signInSystem")}
                         </span>
                         <ArrowRight
                           size={18}
@@ -1713,7 +1724,7 @@ export default function LoginScreen({
                       await new Promise((resolve) => setTimeout(resolve, 100));
                       await clearIndexedDbPersistence(db);
                       setSuccess(
-                        "Cache do sistema limpo com sucesso! A recarregar...",
+                        currentLang === "en" ? "System cache cleared successfully! Reloading..." : "Cache do sistema limpo com sucesso! A recarregar..."
                       );
                       setTimeout(() => {
                         window.location.reload();
@@ -1727,7 +1738,7 @@ export default function LoginScreen({
                   className="text-xs text-blue-700 hover:text-blue-900 font-bold transition-colors cursor-pointer hover:underline flex items-center justify-center gap-1.5"
                 >
                   <RotateCcw size={14} className="text-blue-600 shrink-0" />
-                  <span>Resolver problemas de acesso (Limpar Cache)</span>
+                  <span>{getTranslation(currentLang, "clearCacheHelp")}</span>
                 </button>
 
                 <button
@@ -1736,7 +1747,7 @@ export default function LoginScreen({
                   className="text-xs text-indigo-700 hover:text-indigo-900 font-bold transition-colors cursor-pointer hover:underline flex items-center justify-center gap-1.5 pt-1"
                 >
                   <Key size={14} className="text-indigo-600 shrink-0" />
-                  <span>Esqueci a minha senha (Validação Dinâmica de Identidade)</span>
+                  <span>{getTranslation(currentLang, "forgotPasswordHelp")}</span>
                 </button>
               </div>
             </>

@@ -24,7 +24,6 @@ import {
   Award,
   Lock,
   Cpu,
-  Sliders,
 } from "lucide-react";
 import { organizationService, OrgUnit } from "../organization/services/organizationService";
 import { db } from "../../lib/firebase";
@@ -310,7 +309,7 @@ export default function OrganizationalStructureManager({
         </div>
       )}
 
-      {/* Seletor Visual de Modelos com cores oficiais SIGEP (#050b38 e #FFB800) */}
+      {/* Seletor Visual de Modelos */}
       <div className="relative z-10 space-y-4">
         <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
           <Layers className="w-6 h-6 text-[#FFB800]" />
@@ -369,130 +368,52 @@ export default function OrganizationalStructureManager({
             );
           })}
         </div>
+      </div>
 
-        {/* Seletores Deslizantes (Sliders) para Hierarquia e Permissões */}
-        <div className="p-6 md:p-8 bg-[#050b38]/95 border border-[#FFB800]/40 rounded-3xl shadow-2xl space-y-6 backdrop-blur-md">
-          <div className="flex items-center gap-3 border-b border-blue-950 pb-4">
-            <Sliders className="w-6 h-6 text-[#FFB800]" />
-            <div>
-              <h4 className="text-lg font-black text-white">Parâmetros Avançados (Seletores Deslizantes)</h4>
-              <p className="text-xs text-slate-300">Ajuste a profundidade estrutural e o rigor de segurança e permissões da instituição.</p>
-            </div>
+      {/* Resumo e Ação de Gravação */}
+      <div className="relative z-10 p-6 md:p-8 bg-[#050b38]/95 border border-[#FFB800]/40 rounded-3xl shadow-2xl space-y-6 backdrop-blur-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t border-blue-950">
+          <div>
+            <span className="text-xs font-bold text-[#FFB800] tracking-wider uppercase">Modelo Selecionado para Gravação</span>
+            <h4 className="text-2xl font-black text-white flex items-center gap-2 mt-0.5">
+              <Cpu className="w-6 h-6 text-[#FFB800]" />
+              {currentModel.name}
+            </h4>
           </div>
+          <button
+            onClick={handleApplyModel}
+            disabled={loading}
+            className="px-8 py-3.5 bg-gradient-to-r from-[#FFB800] to-amber-500 hover:from-amber-400 hover:to-amber-400 text-[#050b38] font-black rounded-2xl shadow-xl transition transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            <Save className="w-5 h-5" />
+            {loading ? "A gravar no Firestore..." : "Aplicar Modelo, Permissões e Workflows"}
+          </button>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Slider 1: Profundidade Hierárquica */}
-            <div className="p-5 bg-[#081247]/80 border border-blue-900/80 rounded-2xl shadow-inner space-y-3">
-              <div className="flex justify-between items-center text-xs font-bold text-slate-200">
-                <span>Profundidade Hierárquica:</span>
-                <span className="text-[#FFB800] font-black text-sm">{hierarchyDepth} Níveis</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={hierarchyDepth}
-                onChange={(e) => setHierarchyDepth(Number(e.target.value))}
-                className="w-full accent-[#FFB800] cursor-pointer bg-[#050b38] h-2 rounded-lg"
-              />
-              <div className="text-[11px] text-slate-400">
-                {hierarchyDepth === 1 && "Apenas Setores Básicos"}
-                {hierarchyDepth === 2 && "Setores e Repartições"}
-                {hierarchyDepth === 3 && "Setores, Repartições e Departamentos"}
-                {hierarchyDepth === 4 && "Estrutura Completa até Direções"}
-                {hierarchyDepth === 5 && "Estrutura Máxima (Órgãos Centrais e Conselhos)"}
-              </div>
-            </div>
-
-            {/* Slider 2: Rigor de Permissões */}
-            <div className="p-5 bg-[#081247]/80 border border-blue-900/80 rounded-2xl shadow-inner space-y-3">
-              <div className="flex justify-between items-center text-xs font-bold text-slate-200">
-                <span>Rigor de Isolamento:</span>
-                <span className="text-[#FFB800] font-black text-sm">{permissionRigidity} / 5</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={permissionRigidity}
-                onChange={(e) => setPermissionRigidity(Number(e.target.value))}
-                className="w-full accent-[#FFB800] cursor-pointer bg-[#050b38] h-2 rounded-lg"
-              />
-              <div className="text-[11px] text-slate-400">
-                {permissionRigidity <= 2 && "Isolamento Moderado"}
-                {permissionRigidity === 3 && "Isolamento Departamental"}
-                {permissionRigidity === 4 && "Isolamento Estrito por Setor"}
-                {permissionRigidity === 5 && "Segurança Máxima e Autonomia Total por Unidade"}
-              </div>
-            </div>
-
-            {/* Slider 3: Nível de Workflow */}
-            <div className="p-5 bg-[#081247]/80 border border-blue-900/80 rounded-2xl shadow-inner space-y-3">
-              <div className="flex justify-between items-center text-xs font-bold text-slate-200">
-                <span>Níveis de Aprovação:</span>
-                <span className="text-[#FFB800] font-black text-sm">{workflowLevel} Etapas</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="4"
-                value={workflowLevel}
-                onChange={(e) => setWorkflowLevel(Number(e.target.value))}
-                className="w-full accent-[#FFB800] cursor-pointer bg-[#050b38] h-2 rounded-lg"
-              />
-              <div className="text-[11px] text-slate-400">
-                {workflowLevel === 1 && "Aprovação Direta Setorial"}
-                {workflowLevel === 2 && "Setor -> Chefe de Departamento"}
-                {workflowLevel === 3 && "Setor -> Departamento -> Direção"}
-                {workflowLevel === 4 && "Fluxo Ascendente Completo até DPEP / Superior"}
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <div className="p-5 bg-[#081247]/70 border border-blue-900/80 rounded-2xl shadow-inner">
+            <h5 className="text-xs font-black text-[#FFB800] uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Lock className="w-4 h-4 text-[#FFB800]" /> Permissões Padrão de Acesso
+            </h5>
+            <ul className="space-y-2 text-sm text-slate-200">
+              {currentModel.permissions.map((p, idx) => (
+                <li key={idx} className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-[#FFB800]" />
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          {/* Resumo e Ação de Gravação */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t border-blue-950">
-            <div>
-              <span className="text-xs font-bold text-[#FFB800] tracking-wider uppercase">Modelo Selecionado para Gravação</span>
-              <h4 className="text-2xl font-black text-white flex items-center gap-2 mt-0.5">
-                <Cpu className="w-6 h-6 text-[#FFB800]" />
-                {currentModel.name}
-              </h4>
-            </div>
-            <button
-              onClick={handleApplyModel}
-              disabled={loading}
-              className="px-8 py-3.5 bg-gradient-to-r from-[#FFB800] to-amber-500 hover:from-amber-400 hover:to-amber-400 text-[#050b38] font-black rounded-2xl shadow-xl transition transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              <Save className="w-5 h-5" />
-              {loading ? "A gravar no Firestore..." : "Aplicar Modelo, Permissões e Workflows"}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            <div className="p-5 bg-[#081247]/70 border border-blue-900/80 rounded-2xl shadow-inner">
-              <h5 className="text-xs font-black text-[#FFB800] uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-[#FFB800]" /> Permissões Padrão de Acesso
-              </h5>
-              <ul className="space-y-2 text-sm text-slate-200">
-                {currentModel.permissions.map((p, idx) => (
-                  <li key={idx} className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-[#FFB800]" />
-                    <span>{p}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="p-5 bg-[#081247]/70 border border-blue-900/80 rounded-2xl shadow-inner">
-              <h5 className="text-xs font-black text-[#FFB800] uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#FFB800]" /> Fluxos de Aprovação (Workflows)
-              </h5>
-              <div className="flex flex-wrap gap-2">
-                {currentModel.workflows.map((w, idx) => (
-                  <span key={idx} className="px-3 py-1.5 bg-[#050b38] border border-[#FFB800]/40 text-blue-100 rounded-xl text-xs font-bold shadow-sm">
-                    {w}
-                  </span>
-                ))}
-              </div>
+          <div className="p-5 bg-[#081247]/70 border border-blue-900/80 rounded-2xl shadow-inner">
+            <h5 className="text-xs font-black text-[#FFB800] uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#FFB800]" /> Fluxos de Aprovação (Workflows)
+            </h5>
+            <div className="flex flex-wrap gap-2">
+              {currentModel.workflows.map((w, idx) => (
+                <span key={idx} className="px-3 py-1.5 bg-[#050b38] border border-[#FFB800]/40 text-blue-100 rounded-xl text-xs font-bold shadow-sm">
+                  {w}
+                </span>
+              ))}
             </div>
           </div>
         </div>

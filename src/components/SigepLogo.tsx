@@ -30,9 +30,9 @@ export const SigepLogo: React.FC<SigepLogoProps> = ({
   const [activeSystemLogo, setActiveSystemLogo] = useState<string | null>(() => {
     if (customLogo !== undefined) return customLogo;
     if (typeof window !== "undefined") {
-      return localStorage.getItem("systemLogo") || "/image.png";
+      return localStorage.getItem("systemLogo") || "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
     }
-    return "/image.png";
+    return "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
   });
 
   // Carregamento oficial do logotipo apenas do Firestore (fonte única de verdade controlada pelo admin)

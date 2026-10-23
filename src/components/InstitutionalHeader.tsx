@@ -6,6 +6,7 @@ import { getSystemLogo } from '../lib/logoService';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
 import { LanguageSwitcher } from './ui/LanguageSwitcher';
+import { useCurrentLanguage, translateInstitutionName, translateInstitutionalText } from '../lib/i18n';
 
 // Remove valores inválidos como "Songo", "ISPS", traços ou valores vazios
 export function cleanHierarchyField(val?: string): string {
@@ -150,7 +151,7 @@ export const InstitutionalHeader = ({
 
   // Obter dados dinâmicos da instituição configurada na Gestão das Instituições
   const activeInst = getActiveInstituicao();
-  const instName = activeInst?.nome || user?.instituicaoNome || (user?.instituicaoId ? "" : "INSTITUIÇÃO");
+  const rawInstName = activeInst?.nome || user?.instituicaoNome || (user?.instituicaoId ? "" : "INSTITUIÇÃO");
   const rawLogo = activeInst?.logo || user?.instituicaoLogo;
   // O logotipo da instituição é exclusivo da instituição e nunca se confunde com o logotipo do sistema
   const instLogo = rawLogo && !rawLogo.includes("11zvvpOpZARM1yk_irEDpjJ-qBKlTlhad") ? rawLogo : null;
@@ -253,20 +254,30 @@ export const InstitutionalHeader = ({
     };
   }, [i18n]);
 
-  const currentLang = i18n.language;
+  const currentLang = (i18n.language || "pt") as any;
   const isEn = currentLang === "en";
 
+  const instName = translateInstitutionName(rawInstName, currentLang);
+
   let displayTitle = tc(String(title || t("Plano de Actividade")).trim());
+  if (isEn) {
+    displayTitle = displayTitle
+      .replace(/plano de actividades/gi, "Activity Plan")
+      .replace(/plano de actividade/gi, "Activity Plan")
+      .replace(/plano de atividade/gi, "Activity Plan");
+  }
   if (displayTitle.toLowerCase() === t("plano de actividade").toLowerCase() || displayTitle.toLowerCase() === t("plano de actividades").toLowerCase()) {
     if (lowestLevelName) {
-      displayTitle = t("Plano de Actividade de {{name}}", { name: lowestLevelName });
+      displayTitle = isEn
+        ? `Activity Plan of ${translateInstitutionalText(lowestLevelName, currentLang)}`
+        : t("Plano de Actividade de {{name}}", { name: lowestLevelName });
     }
   }
   const finalTitle = displayTitle;
 
-  const translatedUnidade = displayUnidade; // O resolveOrgaoName já retorna texto em PT, precisará de chaves no i18n
-  const translatedDirecao = displayDirecao;
-  const translatedCargo = cargoResponsavel;
+  const translatedUnidade = translateInstitutionalText(displayUnidade, currentLang);
+  const translatedDirecao = translateInstitutionalText(displayDirecao, currentLang);
+  const translatedCargo = translateInstitutionalText(cargoResponsavel, currentLang);
 
   // CABEÇALHO DO PESOE (OFICIAL GOVERNAMENTAL)
   if (isPESOEHeader) {

@@ -582,16 +582,17 @@ export default function App() {
     setInnerPath([]);
   }, [view, subMenuStack]);
 
-  // Atalho de teclado para Diagnóstico (Shift + D)
+  // Atalho de teclado para Diagnóstico (Shift + D) - Apenas para Desenvolvedor
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.shiftKey && e.key.toUpperCase() === "D") {
+      const isDeveloper = currentUser?.email === "slaitertripas@gmail.com";
+      if (isDeveloper && e.shiftKey && e.key.toUpperCase() === "D") {
         setShowDiagnosticPanel(prev => !prev);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     // Garantir autenticação do Firebase imediatamente no arranque para evitar erros de permissão
@@ -896,6 +897,9 @@ export default function App() {
               String(currentUser.role).toLowerCase().includes("admin");
 
             if ((isDeveloper || isAdmin) && currentUser.status !== "Afetado") {
+              // Limpeza única de logotipo obsoleto conforme pedido do utilizador
+              firestoreService.cleanupSystemLogo().catch(() => {});
+              
               const updatedUser = { ...currentUser, status: "Afetado" };
               setCurrentUser(updatedUser);
               localStorage.setItem("sigep_user", safeJSONStringify(updatedUser));

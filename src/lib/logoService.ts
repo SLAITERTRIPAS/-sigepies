@@ -1,12 +1,12 @@
 export function getSystemLogo(): string {
-  return "/sigep-official-logo.svg";
+  return "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
 }
 
 export function updateBrowserFavicon() {
   if (typeof document === "undefined") return;
 
   try {
-    const logoToApply = "/sigep-official-logo.svg";
+    const logoToApply = "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
 
     let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
     if (!link) {

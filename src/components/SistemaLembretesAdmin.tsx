@@ -107,7 +107,7 @@ export const SistemaLembretesAdmin: React.FC<SistemaLembretesAdminProps> = ({
         if (permission === "granted") {
           new Notification("Notificações Push Ativadas!", {
             body: "O SIGEP agora pode enviar alertas e lembretes diretamente ao seu navegador.",
-            icon: "/image.png",
+            icon: "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png",
           });
           if (onShowAlert) onShowAlert("Permissão de Notificação Push concedida com sucesso!", "success");
         } else {
@@ -153,7 +153,7 @@ export const SistemaLembretesAdmin: React.FC<SistemaLembretesAdminProps> = ({
       if ((formData.tipo === "push" || formData.tipo === "ambos") && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
         new Notification(`[LEMBRETE SIGEP] ${formData.titulo}`, {
           body: `${formData.mensagem} (Destinado a: ${newReminderData.areaDestinoNome})`,
-          icon: "/image.png",
+          icon: "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png",
         });
       }
 

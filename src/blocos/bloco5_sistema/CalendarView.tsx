@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import SigepLogo from "../../components/SigepLogo";
 import WeatherWidget from "../../components/WeatherWidget";
 import {
   ChevronLeft,
@@ -371,12 +372,17 @@ export default function CalendarView({
 
   return (
     <div className="w-full flex flex-col justify-center items-center py-6 px-4 relative overflow-hidden">
-      {/* Logótipo em marca d'água / fundo da área de eventos com 80% de transparência (20% de opacidade) */}
+      {/* Cabeçalho Fixo do SIGEP para Gestão de Eventos */}
+      <div className="event-container-header event-list-header w-full max-w-7xl flex justify-center mb-6 relative z-20">
+        <SigepLogo size="md" showText={true} animated={true} isDark={false} className="bg-white/80 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-200" />
+      </div>
+
+      {/* Logótipo oficial SIGEP em marca d'água / fundo da área de eventos (Novo PNG) */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0">
-        <img
-          src="/image.png"
-          alt="Logótipo de Fundo Eventos"
-          className="w-[500px] h-[500px] object-contain opacity-20 filter drop-shadow-sm select-none"
+        <img 
+          src="/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png" 
+          alt="Marca d'Água SIGEP" 
+          className="w-full max-w-[800px] opacity-[0.07] scale-[1.5] select-none pointer-events-none" 
         />
       </div>
 

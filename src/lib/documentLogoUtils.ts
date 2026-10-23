@@ -30,7 +30,7 @@ export function getActiveInstitutionLogo(activeInst?: any, currentUser?: any): s
       }
     }
   }
-  return getSystemLogo() || "/image.png";
+  return getSystemLogo() || "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
 }
 
 export function getActiveInstitutionName(activeInst?: any, currentUser?: any): string {

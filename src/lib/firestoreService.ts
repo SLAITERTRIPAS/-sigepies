@@ -243,6 +243,58 @@ export async function fetchCollection<T>(
   })) as (T & { id: string })[];
 }
 
+// Cache em memória primário para ultra performance e proteção definitiva contra QuotaExceededError (5MB do LocalStorage)
+const memoryCollectionCache = new Map<string, any[]>();
+const memoryDocCache = new Map<string, any>();
+
+// Chaves essenciais que NUNCA devem ser limpas da sessão do utilizador
+const PROTECTED_STORAGE_KEYS = new Set([
+  "sigep_logged_in_user",
+  "sigep_user",
+  "sigep_active_instituicao_id",
+  "sigep_auth_token",
+  "sigep_theme",
+  "sigep_language",
+  "language",
+  "i18nextLng",
+  "theme",
+]);
+
+/**
+ * Liberta espaço de caches efêmeros ou fragmentos de documentos antigos quando o LocalStorage atinge o limite
+ */
+function freeLocalStorageSpace(neededForCollection?: string) {
+  try {
+    const docKeys: string[] = [];
+    const localCollectionKeys: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || PROTECTED_STORAGE_KEYS.has(k)) continue;
+
+      if (k.startsWith("sigep_doc_")) {
+        docKeys.push(k);
+      } else if (k.startsWith("sigep_local_") && k !== `sigep_local_${neededForCollection}`) {
+        localCollectionKeys.push(k);
+      }
+    }
+
+    // Primeiro remove chaves individuais de documentos (já mantidos em cache de memória e no Firestore)
+    for (const k of docKeys) {
+      try { localStorage.removeItem(k); } catch (_) {}
+    }
+
+    // Se ainda precisar de espaço, descarta caches de coleções antigas menos prioritárias
+    if (localCollectionKeys.length > 0) {
+      for (const k of localCollectionKeys.slice(0, Math.ceil(localCollectionKeys.length / 2))) {
+        try { localStorage.removeItem(k); } catch (_) {}
+      }
+    }
+  } catch (_) {
+    // Ignora silenciosamente se o browser restringir
+  }
+}
+
 export function subscribeToDocument<T>(
   collectionName: string,
   docId: string,
@@ -257,6 +309,7 @@ export function subscribeToDocument<T>(
         try {
           if (snapshot.exists()) {
             const docData = { ...snapshot.data(), id: snapshot.id } as T;
+            memoryDocCache.set(`${collectionName}_${docId}`, docData);
             callback(docData);
             try {
               const serialized = safeJSONStringify(docData);
@@ -264,15 +317,21 @@ export function subscribeToDocument<T>(
             } catch (e: any) {
               if (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014) {
                 try {
+                  freeLocalStorageSpace();
                   const shrunk = shrinkDataForLocalStorage([docData])[0];
                   localStorage.setItem(`sigep_doc_${collectionName}_${docId}`, safeJSONStringify(shrunk));
                 } catch (_) {}
               }
             }
           } else {
-            const localItems = getLocalData(collectionName);
-            const found = localItems.find((it: any) => it.id === docId);
-            callback(found ? (found as T) : null);
+            const memDoc = memoryDocCache.get(`${collectionName}_${docId}`);
+            if (memDoc) {
+              callback(memDoc as T);
+            } else {
+              const localItems = getLocalData(collectionName);
+              const found = localItems.find((it: any) => it.id === docId);
+              callback(found ? (found as T) : null);
+            }
           }
         } catch (procErr) {
           console.warn(`Aviso no processamento do documento ${collectionName}/${docId}:`, procErr);
@@ -288,7 +347,7 @@ export function subscribeToDocument<T>(
           errStr.includes("free daily read units");
 
         if (isQuota) {
-          localStorage.setItem("sigep_quota_exceeded", "true");
+          try { localStorage.setItem("sigep_quota_exceeded", "true"); } catch (_) {}
           console.warn(
             `⚠️ Quota do Firestore atingida na subscrição do documento ${collectionName}/${docId}. Ativando fallback para armazenamento local.`,
           );
@@ -300,6 +359,11 @@ export function subscribeToDocument<T>(
         }
 
         try {
+          const memDoc = memoryDocCache.get(`${collectionName}_${docId}`);
+          if (memDoc) {
+            callback(memDoc as T);
+            return;
+          }
           const directKey = `sigep_doc_${collectionName}_${docId}`;
           const directItem = localStorage.getItem(directKey);
           if (directItem) {
@@ -325,6 +389,11 @@ export function subscribeToDocument<T>(
   } catch (err) {
     console.warn(`Falha na inicialização do onSnapshot para ${collectionName}/${docId}:`, err);
     try {
+      const memDoc = memoryDocCache.get(`${collectionName}_${docId}`);
+      if (memDoc) {
+        callback(memDoc as T);
+        return () => {};
+      }
       const directKey = `sigep_doc_${collectionName}_${docId}`;
       const directItem = localStorage.getItem(directKey);
       if (directItem) {
@@ -342,7 +411,11 @@ export function subscribeToDocument<T>(
 }
 
 export function isLocalStorageFallbackActive(): boolean {
-  return localStorage.getItem("sigep_quota_exceeded") === "true";
+  try {
+    return localStorage.getItem("sigep_quota_exceeded") === "true";
+  } catch (_) {
+    return false;
+  }
 }
 
 export function isLegacyDemoActivity(item: any): boolean {
@@ -364,6 +437,15 @@ export function isLegacyDemoActivity(item: any): boolean {
 export const DEFAULT_SEED_ACTIVITIES: any[] = [];
 
 function getLocalData(collectionName: string): any[] {
+  // 1. Consulta em memória primeiro (ultra rápido e sem limitações de cota)
+  if (memoryCollectionCache.has(collectionName)) {
+    const inMem = memoryCollectionCache.get(collectionName);
+    if (Array.isArray(inMem)) {
+      return inMem.filter((item: any) => !isLegacyDemoActivity(item));
+    }
+  }
+
+  // 2. Consulta no LocalStorage
   try {
     const key = `sigep_local_${collectionName}`;
     const data = localStorage.getItem(key);
@@ -371,9 +453,7 @@ function getLocalData(collectionName: string): any[] {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed)) {
         const filtered = parsed.filter((item: any) => !isLegacyDemoActivity(item));
-        if (filtered.length !== parsed.length) {
-          localStorage.setItem(key, safeJSONStringify(filtered));
-        }
+        memoryCollectionCache.set(collectionName, filtered);
         return filtered;
       }
     }
@@ -387,13 +467,14 @@ function shrinkDataForLocalStorage(data: any[]): any[] {
   return data.map((item) => {
     if (!item || typeof item !== "object") return item;
     const newItem = { ...item };
-    const largeFields = ["logo", "photo", "foto", "imagem", "avatar", "content", "fileData", "base64", "ownerPhoto", "systemLogo"];
+    const largeFields = [
+      "logo", "photo", "foto", "imagem", "avatar", "content",
+      "fileData", "base64", "ownerPhoto", "systemLogo", "anexos", "documentos"
+    ];
     
-    let changed = false;
     largeFields.forEach((field) => {
-      if (newItem[field] && typeof newItem[field] === "string" && newItem[field].length > 5000) {
-        newItem[field] = null; // Remove o campo pesado para economizar espaço
-        changed = true;
+      if (newItem[field] && typeof newItem[field] === "string" && newItem[field].length > 1000) {
+        newItem[field] = null;
       }
     });
     return newItem;
@@ -401,36 +482,48 @@ function shrinkDataForLocalStorage(data: any[]): any[] {
 }
 
 function saveLocalData(collectionName: string, data: any[]) {
+  if (!Array.isArray(data)) return;
+
+  // 1. Armazena sempre na memória primeiro garantindo integridade e zero perda de dados
+  const sanitized = data.filter((item: any) => !isLegacyDemoActivity(item));
+  memoryCollectionCache.set(collectionName, sanitized);
+
+  // Indexa documentos individuais no cache de memória
+  sanitized.forEach((item) => {
+    if (item && item.id) {
+      memoryDocCache.set(`${collectionName}_${item.id}`, item);
+    }
+  });
+
+  // 2. Gravação defensiva no LocalStorage com proteção anti-QuotaExceeded
+  const key = `sigep_local_${collectionName}`;
   try {
-    const key = `sigep_local_${collectionName}`;
-    const serialized = safeJSONStringify(data);
+    const serialized = safeJSONStringify(sanitized);
     localStorage.setItem(key, serialized);
   } catch (e: any) {
     if (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014) {
-      console.warn(`⚠️ Quota do LocalStorage excedida para ${collectionName}. Tentando salvar versão reduzida sem imagens pesadas...`);
       try {
-        const key = `sigep_local_${collectionName}`;
-        const shrunkData = shrinkDataForLocalStorage(data);
+        // Liberta espaço de fragmentos efêmeros
+        freeLocalStorageSpace(collectionName);
+
+        // Tenta salvar versão reduzida sem dados pesados
+        const shrunkData = shrinkDataForLocalStorage(sanitized);
         localStorage.setItem(key, safeJSONStringify(shrunkData));
-        console.log(`✅ Versão reduzida de ${collectionName} salva com sucesso.`);
       } catch (innerErr) {
-        console.error(`❌ Falha crítica ao salvar dados locais de ${collectionName} mesmo em versão reduzida:`, innerErr);
-        // Se ainda falhar, tenta limpar caches antigos de outras coleções para abrir espaço
         try {
-           const keysToRemove = [];
-           for (let i = 0; i < localStorage.length; i++) {
-             const k = localStorage.key(i);
-             if (k && k.startsWith("sigep_local_") && k !== `sigep_local_${collectionName}`) {
-               keysToRemove.push(k);
-             }
-           }
-           // Remove metade das outras coleções para abrir espaço (estratégia de emergência)
-           keysToRemove.slice(0, Math.ceil(keysToRemove.length / 2)).forEach(k => localStorage.removeItem(k));
-           localStorage.setItem(`sigep_local_${collectionName}`, safeJSONStringify(shrinkDataForLocalStorage(data)));
-        } catch (_) {}
+          // Se ainda exceder quota do navegador (limite fixo de ~5MB do browser),
+          // preserva no LocalStorage prioritariamente os itens pendentes de sincronização + mais recentes
+          const pendingItems = sanitized.filter((it: any) => it?.pending_sync || String(it?.id || "").startsWith("local_"));
+          const recentItems = sanitized.slice(0, 30);
+          const compact = Array.from(new Set([...pendingItems, ...recentItems]));
+          const compactShrunk = shrinkDataForLocalStorage(compact);
+          localStorage.setItem(key, safeJSONStringify(compactShrunk));
+        } catch (_) {
+          // Fallback silencioso: os dados completos continuam 100% preservados no Firestore e no memoryCollectionCache
+        }
       }
     } else {
-      console.error("Erro ao salvar local storage:", e);
+      console.warn(`[SIGEP Storage] Aviso ao persistir dados locais para ${collectionName}:`, e?.message || e);
     }
   }
 }
@@ -1472,6 +1565,18 @@ export const firestoreService = {
   resequenceActivitiesAfterDelete,
   syncAllLocalData,
   ensureCloudDataInitialized,
+  cleanupSystemLogo: async () => {
+    try {
+      await firestoreService.config.set("main_config", { systemLogo: null });
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("systemLogo");
+      }
+      return { success: true };
+    } catch (error) {
+      console.error("Erro ao limpar logotipo do sistema:", error);
+      return { success: false, error };
+    }
+  },
   setSystemLogoUrl: async (url: string) => {
     try {
       await firestoreService.config.set("main_config", { systemLogo: url });
@@ -1492,12 +1597,12 @@ export const firestoreService = {
         return config.systemLogo;
       }
       if (typeof window !== "undefined") {
-        return localStorage.getItem("systemLogo") || "/image.png";
+        return localStorage.getItem("systemLogo") || "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
       }
-      return "/image.png";
+      return "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
     } catch (error) {
       console.error("Erro ao obter URL do logotipo do Firestore:", error);
-      return "/image.png";
+      return "/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png";
     }
   },
   lembretes_sistema: createCollectionService<SystemReminder>("lembretes_sistema"),
