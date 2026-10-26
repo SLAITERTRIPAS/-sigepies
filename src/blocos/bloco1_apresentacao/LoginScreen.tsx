@@ -53,6 +53,13 @@ import {
 import { firestoreService } from "../../lib/firestoreService";
 import { getSystemLogo } from "../../lib/logoService";
 import { SigepLogo } from "../../components/SigepLogo";
+import SessionConflictModal from "../../components/modals/SessionConflictModal";
+import {
+  getActiveRemoteSession,
+  terminateAllOtherSessions,
+  createOrUpdateUserSession,
+  SessionItem,
+} from "../../lib/sessionService";
 
 // Pre-process baseline for O(1) lookups
 const EFETIVO_MAP = new Map();
@@ -275,6 +282,9 @@ export default function LoginScreen({
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [requestReset, setRequestReset] = useState(false);
   const [showPasswordRecoveryModal, setShowPasswordRecoveryModal] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [activeRemoteSession, setActiveRemoteSession] = useState<SessionItem | null>(null);
+  const [pendingUserData, setPendingUserData] = useState<any>(null);
 
   const handleRequestReset = async () => {
     if (!identifier) {
@@ -292,6 +302,40 @@ export default function LoginScreen({
       setRequestReset(false);
     } catch (e) {
       setError("Erro ao enviar pedido.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmReplaceSession = async () => {
+    if (!pendingUserData) return;
+    const targetUserId = pendingUserData.id || pendingUserData.uid || pendingUserData.email;
+
+    try {
+      setLoading(true);
+      // CA-03 & CA-05: Encerra a sessão anterior autorizada expressamente pelo utilizador
+      await terminateAllOtherSessions(targetUserId);
+      await createOrUpdateUserSession(targetUserId);
+
+      setShowConflictModal(false);
+
+      setSuccess(`Bem-vindo à SIGEP`);
+      setTimeout(() => {
+        onLogin({
+          ...pendingUserData,
+          idioma: loginLanguage,
+          userArea: {
+            unidade: pendingUserData.unidade,
+            direcao: pendingUserData.direcao,
+            departamento: pendingUserData.departamento,
+            reparticao: pendingUserData.reparticao,
+            setor: pendingUserData.setor,
+          },
+        });
+      }, 500);
+    } catch (e) {
+      console.error("Erro ao substituir sessão:", e);
+      setError("Erro ao autorizar substituição de sessão.");
     } finally {
       setLoading(false);
     }
@@ -1167,38 +1211,53 @@ export default function LoginScreen({
         }
 
         // Gerar token de sessão único para este dispositivo
-        const sessionToken = "sigep_sess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 12);
-        localStorage.setItem("sigep_session_token", sessionToken);
-        user.currentSessionToken = sessionToken;
+        const targetUserId = user.id || user.uid || user.email;
 
-        if (matchedDoc && !isQuotaError) {
-          updateDoc(doc(db, "users", matchedDoc.id), {
-            mustChangePassword: false,
-            isFirstAccess: false,
-            currentSessionToken: sessionToken,
-            lastLoginAt: new Date().toISOString(),
-            lastSeenAt: new Date().toISOString(),
-            isOnline: true,
-          }).catch(console.warn);
+        const completeLoginProcess = async (u: any) => {
+          await createOrUpdateUserSession(targetUserId);
+
+          if (matchedDoc && !isQuotaError) {
+            updateDoc(doc(db, "users", matchedDoc.id), {
+              mustChangePassword: false,
+              isFirstAccess: false,
+              lastLoginAt: new Date().toISOString(),
+              lastSeenAt: new Date().toISOString(),
+              isOnline: true,
+            }).catch(console.warn);
+          }
+
+          saveUserToCache({ ...u, password: password || u.password });
+
+          setSuccess(`Bem-vindo à SIGEP`);
+          setTimeout(() => {
+            onLogin({
+              ...u,
+              idioma: loginLanguage,
+              userArea: {
+                unidade: u.unidade,
+                direcao: u.direcao,
+                departamento: u.departamento,
+                reparticao: u.reparticao,
+                setor: u.setor,
+              },
+            });
+          }, 500);
+        };
+
+        // REGRA SIGEP (CA-01 & CA-02): Verificar se já existe uma sessão ativa noutro dispositivo
+        const remoteSession = await getActiveRemoteSession(targetUserId);
+
+        if (remoteSession) {
+          // CA-01 & CA-02: Bloqueia acesso inicial e exibe o modal com os detalhes da sessão ativa
+          setActiveRemoteSession(remoteSession);
+          setPendingUserData(user);
+          setShowConflictModal(true);
+          setLoading(false);
+          return;
         }
 
-        // Guardar utilizador no cache local
-        saveUserToCache({ ...user, password: password || user.password, currentSessionToken: sessionToken });
-
-        setSuccess(`Bem-vindo à SIGEP`);
-        setTimeout(() => {
-          onLogin({
-            ...user,
-            idioma: loginLanguage,
-            userArea: {
-              unidade: user.unidade,
-              direcao: user.direcao,
-              departamento: user.departamento,
-              reparticao: user.reparticao,
-              setor: user.setor,
-            },
-          });
-        }, 500);
+        // Sem conflito: Conclui o login
+        await completeLoginProcess(user);
 
     } catch (err: any) {
       console.error(err);
@@ -2186,6 +2245,17 @@ export default function LoginScreen({
           onSuccess={() => setShowPasswordRecoveryModal(false)}
         />
       )}
+
+      <SessionConflictModal
+        isOpen={showConflictModal}
+        activeSession={activeRemoteSession}
+        user={pendingUserData}
+        onConfirmReplace={handleConfirmReplaceSession}
+        onCancel={() => {
+          setShowConflictModal(false);
+          setLoading(false);
+        }}
+      />
     </div>
   );
 }

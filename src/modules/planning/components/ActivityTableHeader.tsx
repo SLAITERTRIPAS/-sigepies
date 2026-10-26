@@ -68,7 +68,7 @@ export const ActivityTableHeader = React.memo(function ActivityTableHeader({
         </th>
         <th
           className="p-1 border-2 border-slate-950 font-black tracking-widest text-[10.5px]"
-          colSpan={6}
+          colSpan={7}
         >
           VII. RUBRICAS E NECESSIDADES
         </th>
@@ -134,6 +134,9 @@ export const ActivityTableHeader = React.memo(function ActivityTableHeader({
         </th>
         <th className="p-1 border-2 border-slate-950 text-[9px] font-black w-20 text-center" rowSpan={1}>
           Necessidade
+        </th>
+        <th className="p-1 border-2 border-slate-950 text-[8px] font-black w-16 text-center whitespace-normal leading-tight bg-slate-100" rowSpan={1} title="Dias de Ajudas de Custo (D/AJC)">
+          Dias de Ajudas de Custo (D/AJC)
         </th>
         <th className="p-1 border-2 border-slate-950 text-[9px] font-black w-12 text-center" rowSpan={1}>
           Qtd.

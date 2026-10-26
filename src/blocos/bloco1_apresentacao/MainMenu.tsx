@@ -100,7 +100,7 @@ export default function MainMenu({
   const userSector = user?.departamento || user?.reparticao || user?.setor || user?.direcao || "";
 
   useEffect(() => {
-    if (!userSector) return;
+    if (!userSector || userSector.toLowerCase() === "nulo") return;
     const instId = user?.instituicaoId || activeInstId || "default";
     const docId = `${instId}_${userSector.trim().replace(/\s+/g, "_")}`;
 

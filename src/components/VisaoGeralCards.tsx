@@ -1,6 +1,7 @@
 import React from "react";
 import { Users, FileText, BarChart3, DollarSign, GraduationCap, FolderOpen, FileCheck, Box, Folder, Cpu } from "lucide-react";
 import { isSuperBossUser, isHRBossUser, isDirecaoGabineteDG } from "../lib/auth";
+import { useTranslation } from "../lib/i18n";
 
 interface CardItem {
   title: string;
@@ -20,6 +21,7 @@ export default function VisaoGeralCards({
   user: any;
   title: string;
 }) {
+  const { t, lang: currentLang, getTranslation, translateMenu: translateMenuTitle } = useTranslation();
   const isUGEA =
     title === "Unidade Gestora e Executora de Aquisições" ||
     title.toUpperCase().includes("UGEA") ||
@@ -44,7 +46,7 @@ export default function VisaoGeralCards({
     if (upper.includes("PRODUTOS") || upper.includes("PREÇOS")) {
       return {
         title: cardTitle,
-        sub: "Catálogo de Produtos, Preços e Materiais da UGEA",
+        sub: currentLang === "en" ? "Catalog of Products, Prices and Materials" : "Catálogo de Produtos, Preços e Materiais da UGEA",
         icon: Box,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#1e3a8a] hover:border-blue-800",
         badgeColor: "bg-blue-100 text-blue-900 border border-blue-200/60",
@@ -54,7 +56,7 @@ export default function VisaoGeralCards({
     if (upper.includes("FORNECEDORES") || upper.includes("FORNECEDOR")) {
       return {
         title: cardTitle,
-        sub: "Registo e Gestão Oficial de Fornecedores",
+        sub: currentLang === "en" ? "Official Registration & Management of Suppliers" : "Registo e Gestão Oficial de Fornecedores",
         icon: Users,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#0f172a] hover:border-slate-800",
         badgeColor: "bg-slate-200 text-slate-900 border border-slate-300/60",
@@ -64,7 +66,7 @@ export default function VisaoGeralCards({
     if (upper.includes("AQUISIÇÃO") || upper.includes("AQUISICAO")) {
       return {
         title: cardTitle,
-        sub: "Planificação e Controlo de Aquisições",
+        sub: currentLang === "en" ? "Procurement Planning & Control" : "Planificação e Controlo de Aquisições",
         icon: FileText,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#064e3b] hover:border-emerald-800",
         badgeColor: "bg-emerald-100 text-emerald-900 border border-emerald-200/60",
@@ -74,7 +76,7 @@ export default function VisaoGeralCards({
     if (upper.includes("CONTRATAÇÃO") || upper.includes("CONTRATACAO")) {
       return {
         title: cardTitle,
-        sub: "Planificação e Contratação de Serviços",
+        sub: currentLang === "en" ? "Service Contracting & Planning" : "Planificação e Contratação de Serviços",
         icon: FileText,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#581c87] hover:border-purple-800",
         badgeColor: "bg-purple-100 text-purple-900 border border-purple-200/60",
@@ -84,7 +86,7 @@ export default function VisaoGeralCards({
     if (upper.includes("EFETIVO")) {
       return {
         title: cardTitle,
-        sub: "Consulta e Gestão de Pessoal e Efetivo",
+        sub: currentLang === "en" ? "Consultation & Staff Management" : "Consulta e Gestão de Pessoal e Efetivo",
         icon: Users,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#0f172a] hover:border-blue-900",
         badgeColor: "bg-blue-100 text-blue-950 border border-blue-200/60",
@@ -94,7 +96,7 @@ export default function VisaoGeralCards({
     if (upper.includes("PLANO")) {
       return {
         title: cardTitle,
-        sub: "Planificação e Acompanhamento de Actividades",
+        sub: currentLang === "en" ? "Activity Planning & Monitoring" : "Planificação e Acompanhamento de Actividades",
         icon: FileText,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#134e4a] hover:border-teal-800",
         badgeColor: "bg-teal-100 text-teal-900 border border-teal-200/60",
@@ -104,7 +106,7 @@ export default function VisaoGeralCards({
     if (upper.includes("RELATÓRIO") || upper.includes("RELATORIO")) {
       return {
         title: cardTitle,
-        sub: "Relatórios de Desempenho e Indicadores",
+        sub: currentLang === "en" ? "Performance Reports & Key Indicators" : "Relatórios de Desempenho e Indicadores",
         icon: BarChart3,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#78350f] hover:border-amber-800",
         badgeColor: "bg-amber-100 text-amber-900 border border-amber-200/60",
@@ -114,7 +116,7 @@ export default function VisaoGeralCards({
     if (upper.includes("RECURSOS") || upper.includes("BALANÇO") || upper.includes("BALANCO")) {
       return {
         title: cardTitle,
-        sub: "Orçamento, Balanço e Gestão Financeira",
+        sub: currentLang === "en" ? "Budget, Balance & Financial Management" : "Orçamento, Balanço e Gestão Financeira",
         icon: DollarSign,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#581c87] hover:border-purple-800",
         badgeColor: "bg-purple-100 text-purple-900 border border-purple-200/60",
@@ -124,7 +126,7 @@ export default function VisaoGeralCards({
     if (upper.includes("DISCENTE") || upper.includes("ESTUDANTE")) {
       return {
         title: cardTitle,
-        sub: "Estudantes, Cursos e Matrículas",
+        sub: currentLang === "en" ? "Students, Courses & Enrolments" : "Estudantes, Cursos e Matrículas",
         icon: GraduationCap,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#1e1b4b] hover:border-indigo-800",
         badgeColor: "bg-indigo-100 text-indigo-900 border border-indigo-200/60",
@@ -134,7 +136,7 @@ export default function VisaoGeralCards({
     if (upper.includes("EXPEDIENTE")) {
       return {
         title: cardTitle,
-        sub: "Correspondência, Documentos e Expedientes",
+        sub: currentLang === "en" ? "Correspondence, Documents & Dispatch" : "Correspondência, Documentos e Expedientes",
         icon: Folder,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#881337] hover:border-rose-800",
         badgeColor: "bg-rose-100 text-rose-900 border border-rose-200/60",
@@ -144,7 +146,7 @@ export default function VisaoGeralCards({
     if (upper.includes("ASSINATURA")) {
       return {
         title: cardTitle,
-        sub: "Validação e Assinatura de Documentos",
+        sub: currentLang === "en" ? "Document Validation & Digital Signature" : "Validação e Assinatura de Documentos",
         icon: FileCheck,
         color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#134e4a] hover:border-teal-800",
         badgeColor: "bg-teal-100 text-teal-900 border border-teal-200/60",
@@ -153,7 +155,7 @@ export default function VisaoGeralCards({
     }
     return {
       title: cardTitle,
-      sub: "Gestão e Acompanhamento",
+      sub: currentLang === "en" ? "Management & Tracking" : "Gestão e Acompanhamento",
       icon: FileText,
       color: "border-slate-900 bg-slate-50/50 shadow-[4px_4px_0px_0px_#334155] hover:border-slate-800",
       badgeColor: "bg-slate-100 text-slate-900 border border-slate-200",
@@ -190,11 +192,11 @@ export default function VisaoGeralCards({
         <div className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-900 text-cyan-300 border border-cyan-500/20 text-[11px] font-bold">
           <div className="flex items-center gap-2">
             <Cpu className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-            <span>Módulos Estratégicos Monitorizados por IA Quântica</span>
+            <span>{currentLang === "en" ? "Strategic Modules Monitored by Quantum AI" : "Módulos Estratégicos Monitorizados por IA Quântica"}</span>
           </div>
           <div className="flex items-center gap-3 text-[10px] font-mono">
-            <span className="text-emerald-400">Coerência: 99.8%</span>
-            <span className="text-slate-400 hidden sm:inline">• Sincronismo Atômico Firestore</span>
+            <span className="text-emerald-400">{currentLang === "en" ? "Coherence: 99.8%" : "Coerência: 99.8%"}</span>
+            <span className="text-slate-400 hidden sm:inline">• {currentLang === "en" ? "Firestore Atomic Synchronization" : "Sincronismo Atômico Firestore"}</span>
           </div>
         </div>
       )}
@@ -213,12 +215,12 @@ export default function VisaoGeralCards({
                 <span
                   className={`text-[9px] font-black px-2 py-0.5 rounded tracking-wider shadow-sm ${card.badgeColor}`}
                 >
-                  Aceder
+                  {getTranslation(currentLang, "access")}
                 </span>
               </div>
               <div className="mt-3">
                 <h3 className="font-sans font-black text-slate-900 text-xs tracking-tight leading-snug">
-                  {card.title}
+                  {translateMenuTitle(card.title, currentLang)}
                 </h3>
                 <p className="text-[11px] text-slate-600 font-medium mt-1 leading-snug">
                   {card.sub}
@@ -231,3 +233,4 @@ export default function VisaoGeralCards({
     </div>
   );
 }
+

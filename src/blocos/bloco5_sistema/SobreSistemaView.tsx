@@ -23,7 +23,7 @@ import {
 import { cn } from "../../lib/utils";
 import SigepLogo from "../../components/SigepLogo";
 import { firestoreService } from "../../lib/firestoreService";
-import { optimizeImageForFirestore } from "../../lib/imageUtils";
+import { optimizeImageForFirestore } from "../../lib/imageService";
 
 export interface SobreSistemaViewProps {
   currentLogo?: string | null;
@@ -372,7 +372,7 @@ export default function SobreSistemaView({
     try {
       setIsProcessingImage(true);
       setStatusMessage(null);
-      const optimizedBase64 = await optimizeImageForFirestore(file, 320, 320, 180 * 1024);
+      const optimizedBase64 = await optimizeImageForFirestore(file, { maxWidth: 320, maxHeight: 320, maxSizeBytes: 180 * 1024 });
       if (!optimizedBase64) {
         setStatusMessage({ text: "Ficheiro demasiado grande ou formato não suportado. Tente outra imagem.", type: "error" });
         return;
@@ -393,7 +393,7 @@ export default function SobreSistemaView({
     }
     try {
       setIsProcessingImage(true);
-      const optimized = await optimizeImageForFirestore(urlInput.trim(), 320, 320, 180 * 1024);
+      const optimized = await optimizeImageForFirestore(urlInput.trim(), { maxWidth: 320, maxHeight: 320, maxSizeBytes: 180 * 1024 });
       setPreviewLogo(optimized || urlInput.trim());
       setStatusMessage(null);
     } catch (_) {
@@ -412,7 +412,7 @@ export default function SobreSistemaView({
       // Garantir otimização prévia antes de enviar ao Firestore
       if (typeof targetLogo === "string" && (targetLogo.startsWith("data:image/") || targetLogo.length > 80000)) {
         try {
-          targetLogo = await optimizeImageForFirestore(targetLogo, 300, 300, 100 * 1024);
+          targetLogo = await optimizeImageForFirestore(targetLogo, { maxWidth: 300, maxHeight: 300, maxSizeBytes: 100 * 1024 });
         } catch (compErr) {
           console.warn("Aviso ao otimizar imagem no cliente:", compErr);
         }

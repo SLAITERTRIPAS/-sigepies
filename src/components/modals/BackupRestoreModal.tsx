@@ -44,6 +44,8 @@ import {
   SystemBackupRecord,
 } from "../../lib/backupService";
 
+import { useTranslation } from "../../lib/i18n";
+
 interface BackupRestoreModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -60,6 +62,7 @@ export default function BackupRestoreModal({
   isOpen,
   onClose,
 }: BackupRestoreModalProps) {
+  const { t } = useTranslation();
   const modalRef = useModalAccessibility<HTMLDivElement>({
     isOpen,
     onClose,
@@ -535,15 +538,15 @@ export default function BackupRestoreModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black tracking-wider">
-                  Centro de Backup e Proteção de Dados por Órgãos
+                  {t("backupCenterTitle")}
                 </h3>
                 <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                   <ShieldCheck size={12} />
-                  <span>Ativo</span>
+                  <span>{t("activeStatus")}</span>
                 </span>
               </div>
               <p className="text-xs text-white/80">
-                Preservação automática e transparente de todas as informações dos 4 Órgãos do SIGEP
+                {t("backupCenterSubtitle")}
               </p>
             </div>
           </div>
@@ -566,7 +569,7 @@ export default function BackupRestoreModal({
             }`}
           >
             <Building2 size={16} />
-            <span>4 Órgãos & Operações</span>
+            <span>{t("fourOrgansAndOperations")}</span>
           </button>
           <button
             onClick={() => setActiveTab("historico")}
@@ -577,7 +580,7 @@ export default function BackupRestoreModal({
             }`}
           >
             <HardDrive size={16} />
-            <span>Backups Automáticos no Sistema</span>
+            <span>{t("automaticBackupsInSystem")}</span>
             {storedBackups.length > 0 && (
               <span className="bg-[#121c60] text-white px-2 py-0.5 rounded-full text-[10px] font-black">
                 {storedBackups.length}
@@ -596,10 +599,10 @@ export default function BackupRestoreModal({
               </div>
               <div>
                 <h4 className="font-black text-[#121c60] text-sm">
-                  Proteção Automática de Dados Garantida
+                  {t("autoProtectionGuaranteed")}
                 </h4>
                 <p className="text-gray-600 text-[11px] leading-relaxed mt-0.5">
-                  Os backups são efetuados <strong>automaticamente a cada 12 horas</strong> e resguardam integralmente todos os registos nos 4 Órgãos do Instituto Superior Politécnico de Songo.
+                  {t("autoProtectionSubtitle")}
                 </p>
               </div>
             </div>
@@ -609,7 +612,7 @@ export default function BackupRestoreModal({
               className="shrink-0 bg-[#121c60] hover:bg-[#1b2a80] text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
             >
               <Sparkles size={14} className="text-[#FFB800]" />
-              <span>Executar Backup Agora</span>
+              <span>{t("runBackupNow")}</span>
             </button>
           </div>
 
@@ -620,10 +623,10 @@ export default function BackupRestoreModal({
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-black text-[#121c60] text-xs tracking-wider flex items-center gap-2">
                     <Building2 size={16} className="text-[#FFB800]" />
-                    <span>Os 4 Órgãos Cobertos pelo Sistema de Backup:</span>
+                    <span>{t("fourOrgansCovered")}</span>
                   </h4>
                   <span className="text-[11px] text-gray-500 font-semibold">
-                    44 coleções ativas no Firestore
+                    {t("activeCollectionsFirestore")}
                   </span>
                 </div>
 
@@ -683,7 +686,7 @@ export default function BackupRestoreModal({
                             title="Descarregar backup exclusivo deste órgão e seus respetivos setores"
                           >
                             <Download size={13} />
-                            <span>Backup do Órgão</span>
+                            <span>{t("organBackupBtn")}</span>
                           </button>
 
                           <label
@@ -691,7 +694,7 @@ export default function BackupRestoreModal({
                             title="Restaurar dados exclusivamente para este órgão"
                           >
                             <Upload size={13} />
-                            <span>Restaurar</span>
+                            <span>{t("restoreBtn")}</span>
                             <input
                               type="file"
                               accept=".json"
@@ -711,10 +714,10 @@ export default function BackupRestoreModal({
               <div className="space-y-4 pt-2">
                 <div className="border-b border-gray-200 pb-2">
                   <h4 className="font-black text-[#121c60] text-sm tracking-wider">
-                    Operações Independentes de Backup e Restauração
+                    {t("independentOperationsTitle")}
                   </h4>
                   <p className="text-xs text-gray-500">
-                    O sistema mantém os backups de Dados e de Sistema completamente separados e independentes.
+                    {t("independentOpsSubtitle")}
                   </p>
                 </div>
 
@@ -726,10 +729,10 @@ export default function BackupRestoreModal({
                         <Database size={20} />
                       </div>
                       <h4 className="font-black text-[#121c60] text-base mb-1">
-                        Backup e Restauração de Dados
+                        {t("dataBackupTitle")}
                       </h4>
                       <p className="text-xs text-gray-600 mb-4 leading-relaxed">
-                        Exclusivo para registos institucionais, colaboradores, actividades, estudantes, finanças e inventário dos 4 Órgãos.
+                        {t("dataBackupSubtitle")}
                       </p>
                     </div>
 
@@ -740,12 +743,12 @@ export default function BackupRestoreModal({
                         className="w-full bg-[#121c60] hover:bg-[#1a2b70] text-white font-black py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 text-xs"
                       >
                         {loading ? <RefreshCw className="animate-spin" size={15} /> : <Download size={15} />}
-                        <span>Descarregar Backup de Dados (JSON)</span>
+                        <span>{t("downloadDataBackupBtn")}</span>
                       </button>
 
                       <label className="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-black py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer text-xs">
                         {loading ? <RefreshCw className="animate-spin" size={15} /> : <Upload size={15} />}
-                        <span>Restaurar Backup de Dados</span>
+                        <span>{t("restoreDataBackupBtn")}</span>
                         <input
                           type="file"
                           accept=".json"
@@ -764,10 +767,10 @@ export default function BackupRestoreModal({
                         <Server size={20} />
                       </div>
                       <h4 className="font-black text-amber-900 text-base mb-1">
-                        Backup e Restauração do Sistema
+                        {t("systemBackupTitle")}
                       </h4>
                       <p className="text-xs text-gray-600 mb-4 leading-relaxed">
-                        Exclusivo para contas de utilizadores, configurações gerais, documentos normativos, notas, calendário e mensagens.
+                        {t("systemBackupSubtitle")}
                       </p>
                     </div>
 
@@ -778,12 +781,12 @@ export default function BackupRestoreModal({
                         className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50 text-xs"
                       >
                         {loading ? <RefreshCw className="animate-spin" size={15} /> : <Download size={15} />}
-                        <span>Descarregar Backup do Sistema (JSON)</span>
+                        <span>{t("downloadSystemBackupBtn")}</span>
                       </button>
 
                       <label className="w-full bg-amber-700 hover:bg-amber-800 text-white font-black py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer text-xs">
                         {loading ? <RefreshCw className="animate-spin" size={15} /> : <Upload size={15} />}
-                        <span>Restaurar Backup do Sistema</span>
+                        <span>{t("restoreSystemBackupBtn")}</span>
                         <input
                           type="file"
                           accept=".json"
@@ -805,10 +808,10 @@ export default function BackupRestoreModal({
                 <div>
                   <h4 className="font-black text-[#121c60] text-sm flex items-center gap-2">
                     <HardDrive size={18} className="text-[#FFB800]" />
-                    <span>Cópia de Segurança Guardada na Nuvem / Sistema</span>
+                    <span>{t("savedCloudBackupsTitle")}</span>
                   </h4>
                   <p className="text-xs text-gray-500">
-                    O Administrador pode descarregar, restaurar ou limpar backups guardados
+                    {t("savedCloudSubtitle")}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -819,7 +822,7 @@ export default function BackupRestoreModal({
                     title="Excluir permanentemente todas as versões anteriores e backups passados"
                   >
                     <Trash2 size={14} />
-                    <span>Excluir Todas as Versões</span>
+                    <span>{t("deleteAllVersionsBtn")}</span>
                   </button>
                   <button
                     onClick={handleRunAutoBackupNow}
@@ -827,7 +830,7 @@ export default function BackupRestoreModal({
                     className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
                   >
                     <Play size={14} />
-                    <span>Novo Backup Automático</span>
+                    <span>{t("newAutoBackupBtn")}</span>
                   </button>
                 </div>
               </div>
@@ -835,9 +838,9 @@ export default function BackupRestoreModal({
               {storedBackups.length === 0 ? (
                 <div className="p-8 text-center bg-gray-50 border border-dashed border-gray-300 rounded-2xl text-gray-500 space-y-2">
                   <Clock size={32} className="mx-auto text-gray-400" />
-                  <p className="font-bold text-sm">Nenhum backup registado ainda</p>
+                  <p className="font-bold text-sm">{t("noBackupsYetTitle")}</p>
                   <p className="text-xs">
-                    O sistema executa backups automaticamente de 12 em 12 horas ou ao clicar no botão acima.
+                    {t("noBackupsYetDesc")}
                   </p>
                 </div>
               ) : (
@@ -927,7 +930,7 @@ export default function BackupRestoreModal({
                                         title="Descarregar ficheiro JSON deste backup"
                                       >
                                         <Download size={13} />
-                                        <span>Baixar JSON</span>
+                                        <span>{t("downloadJsonBtn")}</span>
                                       </button>
                                       <button
                                         onClick={() => handleRestoreFromStored(b)}
@@ -936,7 +939,7 @@ export default function BackupRestoreModal({
                                         title="Restaurar a base de dados a partir deste backup"
                                       >
                                         <FileCheck size={13} />
-                                        <span>Restaurar</span>
+                                        <span>{t("restoreBtn")}</span>
                                       </button>
                                       <button
                                         onClick={() => handleDeleteStoredBackup(b)}
@@ -945,7 +948,7 @@ export default function BackupRestoreModal({
                                         title="Excluir permanentemente este backup"
                                       >
                                         <Trash2 size={13} />
-                                        <span>Excluir</span>
+                                        <span>{t("deleteBtn")}</span>
                                       </button>
                                     </div>
                                   </div>

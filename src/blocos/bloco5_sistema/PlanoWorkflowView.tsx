@@ -100,6 +100,7 @@ import {
   isValidActivity,
   ActivitySelectionContext,
   getParentRubrica,
+  getDiasAjudaCusto,
 } from "./plano/PlanoHelpers";
 import { ActivityTableHeader } from "./plano/ActivityTableHeader";
 import { ActivityTableRow } from "./plano/ActivityTableRow";
@@ -3641,6 +3642,7 @@ export default function PlanoWorkflowView({
         "",
         "",
         "",
+        "",
         ""
       ];
 
@@ -3659,6 +3661,7 @@ export default function PlanoWorkflowView({
         "Rúbrica",
         "Necessidade",
         "nome do produto",
+        "Dias de Ajudas de Custo (D/AJC)",
         "QUANT",
         "Unitário (MT)",
         "VALOR TOTAL GERAL (MZN)"
@@ -3673,7 +3676,7 @@ export default function PlanoWorkflowView({
         { s: { r: 0, c: 5 }, e: { r: 0, c: 7 } }, // II. ATIVIDADE
         { s: { r: 0, c: 8 }, e: { r: 0, c: 9 } }, // V. TEMPO E DURAÇÃO
         { s: { r: 0, c: 10 }, e: { r: 1, c: 10 } }, // VI. TRANS
-        { s: { r: 0, c: 11 }, e: { r: 0, c: 16 } } // VII. RUBRICAS E NECESSIDADES
+        { s: { r: 0, c: 11 }, e: { r: 0, c: 17 } } // VII. RUBRICAS E NECESSIDADES
       ];
 
       let currentRow = 2; // Começa após as duas linhas de cabeçalho
@@ -3705,6 +3708,7 @@ export default function PlanoWorkflowView({
             act.rubrica || "", // Rúbrica
             act.necessidade || "", // Necessidade
             act.nomeProduto || act.produto || act.item || act.nomeItem || "", // nome do produto
+            getDiasAjudaCusto(act), // Dias de Ajudas de Custo (D/AJC)
             act.numPessoasEnvolvidas || act.quant || 1, // QUANT
             act.unitario || 0, // Unitário (MT)
             act.valorTotal || act.valor_total || act.total || 0 // VALOR TOTAL GERAL (MZN)
@@ -8937,6 +8941,7 @@ export default function PlanoWorkflowView({
                                 <th className="px-4 py-4 border-r border-slate-700  tracking-widest font-black bg-slate-900 w-40">Localização</th>
                                 <th className="px-4 py-4 border-r border-slate-700  tracking-widest font-black bg-slate-900 w-32">Rubrica</th>
                                 <th className="px-4 py-4 border-r border-slate-700  tracking-widest font-black bg-slate-900 w-56">Necessidade (Produto)</th>
+                                <th className="px-2 py-4 border-r border-slate-700  tracking-widest font-black bg-slate-900 w-24 text-center text-[10px]">Dias de Ajudas de Custo (D/AJC)</th>
                                 <th className="px-4 py-4 border-r border-slate-700  tracking-widest font-black bg-slate-900 w-16 text-center">Qtd</th>
                                 <th className="px-4 py-4 border-r border-slate-700  tracking-widest font-black bg-slate-900 w-28 text-right">Unitário</th>
                                 <th className="px-4 py-4  tracking-widest font-black bg-slate-900 w-32 text-right">Total</th>
@@ -8989,6 +8994,9 @@ export default function PlanoWorkflowView({
                                     </td>
                                     <td className="px-4 py-3 border-r border-slate-50 text-slate-600 font-bold">
                                       {rub.necessidade || rub.especificacoes || "-"}
+                                    </td>
+                                    <td className="px-2 py-3 border-r border-slate-50 text-slate-800 font-bold text-center bg-slate-50/40">
+                                      {getDiasAjudaCusto(rub, act)}
                                     </td>
                                     <td className="px-4 py-3 border-r border-slate-50 text-slate-900 font-black text-center bg-slate-50/20">
                                       {rub.quantidade || 0}

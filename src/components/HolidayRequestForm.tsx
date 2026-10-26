@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { FileText, Printer, Save, CheckCircle, Calendar, User, Building, MapPin } from "lucide-react";
-import { getActiveInstitutionLogo, getActiveInstitutionName, getActiveProvinceName } from "../lib/documentLogoUtils";
+import { getActiveInstitutionLogo, getActiveInstitutionName, getActiveProvinceName } from "../lib/logoService";
 
 interface HolidayRequestFormProps {
   currentUser?: any;

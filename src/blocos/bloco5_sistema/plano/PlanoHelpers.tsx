@@ -724,3 +724,55 @@ export function getParentRubrica(rubricaRaw?: string): string {
   }
   return "Outras Despesas de Funcionamento";
 }
+
+/**
+ * Verifica se uma rubrica / necessidade refere-se a Ajudas de Custo
+ */
+export function isRubricaAjudaCusto(r?: any, act?: any): boolean {
+  if (!r && !act) return false;
+  const rubText = `${r?.rubrica || ""} ${r?.necessidade || ""} ${r?.nomeProduto || ""} ${r?.produto || ""} ${r?.item || ""} ${r?.especificacao || ""} ${act?.rubrica || ""} ${act?.necessidade || ""}`.toLowerCase();
+  
+  return (
+    rubText.includes("ajuda de custo") ||
+    rubText.includes("ajudas de custo") ||
+    rubText.includes("ajuda de custos") ||
+    rubText.includes("ajudas de custos") ||
+    rubText.includes("112101") ||
+    rubText.includes("112102") ||
+    ((rubText.includes("112") || rubText.includes("pessoal")) && (rubText.includes("ajuda") || rubText.includes("diári") || rubText.includes("diari")))
+  );
+}
+
+/**
+ * Retorna o número de dias de ajudas de custo (D/AJC).
+ * Se a rubrica for Ajudas de Custo, retorna o valor numérico de dias.
+ * Para todas as restantes rubricas, retorna traço "-" (vazio).
+ */
+export function getDiasAjudaCusto(r?: any, act?: any): string {
+  if (!isRubricaAjudaCusto(r, act)) {
+    return "-";
+  }
+
+  const dias =
+    r?.diasAjudaCusto ??
+    r?.diasTrabalho ??
+    r?.diasAJC ??
+    r?.dias ??
+    act?.diasAjudaCusto ??
+    act?.diasTrabalho ??
+    act?.totalDias;
+
+  if (dias !== undefined && dias !== null && dias !== "" && !isNaN(Number(dias)) && Number(dias) > 0) {
+    return String(Number(dias));
+  }
+
+  const nec = `${r?.necessidade || ""} ${r?.detalhes || ""} ${r?.especificacao || ""}`.toLowerCase();
+  if (nec.includes("ida e volta")) return "2";
+  const matchDias = nec.match(/(\d+)\s*(dia|dias|d\b)/i);
+  if (matchDias && matchDias[1]) {
+    return matchDias[1];
+  }
+
+  return "-";
+}
+

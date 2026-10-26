@@ -25,8 +25,13 @@ import { AlertModal } from "./components/ui/AlertModal";
 import BackupRestoreModal from "./components/modals/BackupRestoreModal";
 import FooterInfoModal from "./components/modals/FooterInfoModal";
 import { ViewRenderer } from "./components/ViewRenderer";
-import { useCurrentLanguage, getTranslation, setLanguagePreference } from "./lib/i18n";
-import { resolveInitialLanguage } from "./i18n";
+import { 
+  useCurrentLanguage, 
+  useTranslation, 
+  getTranslation, 
+  setLanguagePreference,
+  resolveInitialLanguage 
+} from "./lib/i18n";
 import { EFETIVO_GERAL_DATA } from "./constants/colaboradoresList";
 import { runAutomaticBackupIfNeeded, autoRestoreOnStartup } from "./lib/backupService";
 import {
@@ -85,6 +90,11 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { auth, db } from "./lib/firebase";
+import {
+  createOrUpdateUserSession,
+  monitorCurrentSession,
+  touchSessionHeartbeat,
+} from "./lib/sessionService";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { getSetoresByDepartamento } from "./constants/formOptions";
@@ -106,6 +116,7 @@ import { ActiveAlertsDisplay } from "./components/ActiveAlertsDisplay";
 import { ReminderNotificationManager } from "./components/ReminderNotificationManager";
 
 export default function App() {
+  const { t } = useTranslation();
   // 1. Estados de Base (Dados)
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -196,6 +207,16 @@ export default function App() {
       }
     });
     return unsubscribe;
+  }, []);
+
+  // Deteção e aplicação automática do idioma do navegador no carregamento inicial se não houver preferência guardada no localStorage
+  useEffect(() => {
+    const savedLang = localStorage.getItem("idioma") || localStorage.getItem("sigep_language");
+    if (!savedLang && typeof navigator !== "undefined" && navigator.language) {
+      const browserCode = navigator.language.split("-")[0].toLowerCase();
+      const targetLang = (browserCode === "en") ? "en" : "pt";
+      setLanguagePreference(targetLang);
+    }
   }, []);
 
   const [rawColaboradores, setRawColaboradores] = useState<any[]>([]);
@@ -708,126 +729,59 @@ export default function App() {
     return () => authUnsub();
   }, []);
 
-  // Controlo de Sessão Única em Tempo Real (Apenas 1 dispositivo por utilizador):
-  // Se o mesmo utilizador iniciar sessão num segundo dispositivo, o primeiro dispositivo é terminado automaticamente.
+  // Gestão de Multi-Sessões Concorrentes e Monitorização em Tempo Real (SIGEP)
+  // Permite múltiplos logins simultâneos em computadores/dispositivos diferentes.
+  // Notifica e encerra APENAS se esta sessão específica for terminada remotamente ou se o TTL expirar.
   useEffect(() => {
     if (!currentUser) return;
 
-    let targetDocId = currentUser.id && !String(currentUser.id).startsWith("local_") ? currentUser.id : null;
-    let unsubSnapshot: (() => void) | null = null;
-    let isTerminating = false;
+    const userId = currentUser.id || currentUser.uid || currentUser.email;
+    if (!userId) return;
 
-    const terminateDeviceSession = (remoteToken: string, localToken: string) => {
-      if (isTerminating) return;
-      isTerminating = true;
+    // Regista a sessão ativa para este dispositivo
+    createOrUpdateUserSession(userId).catch((e) => {
+      console.warn("Aviso ao registar sessão ativa:", e);
+    });
 
-      console.warn(`[SIGEP] Sessão encerrada: utilizador autenticado noutro dispositivo (remoto: ${remoteToken}, local: ${localToken})`);
+    if (!sessionStorage.getItem("sigep_session_start_time")) {
+      sessionStorage.setItem("sigep_session_start_time", new Date().toISOString());
+    }
 
-      // Limpar todos os dados de autenticação locais deste dispositivo
+    // Monitoriza especificamente a sessão DESTE dispositivo
+    const unsubMonitor = monitorCurrentSession(userId, (reason) => {
+      console.warn(`[SIGEP Multi-Sessão] ${reason}`);
+
+      // Limpar estado local
       localStorage.removeItem("sigep_logged_in_user");
       localStorage.removeItem("sigep_user");
       localStorage.removeItem("sigep_current_view");
-      localStorage.removeItem("sigep_session_token");
-      sessionStorage.removeItem("session_start");
+      sessionStorage.removeItem("sigep_session_start_time");
 
       setCurrentUser(null);
       setView("login");
-      setSessionTerminatedNotice(
-        "A sua conta foi acedida através de outro dispositivo ou navegador. Por motivos de segurança institucional do SIGEP, apenas é permitida uma sessão ativa em simultâneo. A sessão neste dispositivo foi encerrada automaticamente."
-      );
-    };
+      setSessionTerminatedNotice(reason);
+    });
 
-    const verifyToken = (remoteToken?: string) => {
-      if (!remoteToken) return;
-      const localToken = localStorage.getItem("sigep_session_token");
-      if (localToken && remoteToken !== localToken) {
-        terminateDeviceSession(remoteToken, localToken);
-      }
-    };
-
-    const setupListener = async () => {
-      try {
-        let docIdToListen = targetDocId;
-        if (!docIdToListen && (currentUser.email || currentUser.nuit)) {
-          const usersRef = collection(db, "users");
-          const q = currentUser.email
-            ? query(usersRef, where("email", "==", String(currentUser.email).toLowerCase().trim()))
-            : query(usersRef, where("nuit", "==", String(currentUser.nuit).trim()));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            docIdToListen = snap.docs[0].id;
-          }
-        }
-
-        if (docIdToListen) {
-          const userDocRef = doc(db, "users", docIdToListen);
-          unsubSnapshot = onSnapshot(
-            userDocRef,
-            (docSnap) => {
-              if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data?.currentSessionToken) {
-                  verifyToken(data.currentSessionToken);
-                }
-              }
-            },
-            (err) => {
-              console.warn("Aviso na escuta de sessão única:", err);
-            }
-          );
-        }
-      } catch (e) {
-        console.warn("Erro ao configurar verificação de sessão única:", e);
-      }
-    };
-
-    setupListener();
-
-    // Verificação adicional no foco da janela ou retorno do segundo plano
-    const checkActiveSession = async () => {
-      if (document.visibilityState === "visible") {
-        try {
-          const localToken = localStorage.getItem("sigep_session_token");
-          if (!localToken) return;
-
-          let docId = targetDocId;
-          if (!docId && (currentUser.email || currentUser.nuit)) {
-            const usersRef = collection(db, "users");
-            const q = currentUser.email
-              ? query(usersRef, where("email", "==", String(currentUser.email).toLowerCase().trim()))
-              : query(usersRef, where("nuit", "==", String(currentUser.nuit).trim()));
-            const snap = await getDocs(q);
-            if (!snap.empty) docId = snap.docs[0].id;
-          }
-
-          if (docId) {
-            const snap = await getDoc(doc(db, "users", docId));
-            if (snap.exists()) {
-              const remoteToken = snap.data()?.currentSessionToken;
-              if (remoteToken && remoteToken !== localToken) {
-                terminateDeviceSession(remoteToken, localToken);
-              }
-            }
-          }
-        } catch (e) {}
-      }
-    };
-
-    window.addEventListener("focus", checkActiveSession);
-    document.addEventListener("visibilitychange", checkActiveSession);
+    // Heartbeat periódico da sessão ativa
+    const heartbeatInterval = setInterval(() => {
+      touchSessionHeartbeat(userId);
+    }, 5 * 60 * 1000); // Cada 5 minutos
 
     return () => {
-      if (unsubSnapshot) unsubSnapshot();
-      window.removeEventListener("focus", checkActiveSession);
-      document.removeEventListener("visibilitychange", checkActiveSession);
+      unsubMonitor();
+      clearInterval(heartbeatInterval);
     };
-  }, [currentUser?.id, currentUser?.email, currentUser?.nuit]);
+  }, [currentUser?.id, currentUser?.uid, currentUser?.email]);
 
   // Garantir que os dados do Administrador estejam na base de dados de forma assíncrona em segundo plano
   useEffect(() => {
     const timer = setTimeout(() => {
       const seedData = async () => {
         try {
+          // Bloqueio: Apenas utilizadores autenticados (não anónimos) devem processar sementes de sistema.
+          // Isto evita erros de permissão para utilizadores que ainda não fizeram login real.
+          if (!auth.currentUser || auth.currentUser.isAnonymous) return;
+
           const usersRef = collection(db, "users");
 
           const adminData = {
@@ -955,12 +909,18 @@ export default function App() {
 
     const updateStatus = async (isOnline: boolean) => {
       try {
+        // Bloqueio rigoroso: Impedir actualizações automáticas se o utilizador for anónimo ou se o UID não coincidir.
+        // Isto evita o erro "Missing or insufficient permissions" causado pelo ensuroFirebaseAuth anónimo.
+        if (!auth.currentUser || auth.currentUser.isAnonymous || auth.currentUser.uid !== currentUser.id) {
+          return;
+        }
+
         await firestoreService.users.update(currentUser.id, {
           lastSeenAt: new Date().toISOString(),
           isOnline: isOnline,
         });
       } catch (e) {
-        console.warn("Session tracking error:", e);
+        console.warn("Session tracking error (silenced):", e);
       }
     };
 
@@ -2126,17 +2086,17 @@ export default function App() {
               }}
             >
               <div className="flex items-center gap-2">
-                <span className="font-bold tracking-wide">SIGEP • Sistema Integrado de Gestão e Planificação</span>
+                <span className="font-bold tracking-wide">{t("footerTitle")}</span>
                 <span className="text-white/40">•</span>
-                <span className="text-[11px] text-amber-300 font-semibold">República de Moçambique</span>
+                <span className="text-[11px] text-amber-300 font-semibold">{t("repMozambique")}</span>
               </div>
               <div className="flex items-center gap-4 mt-1 sm:mt-0 text-[11px]">
-                <span className="text-white/80">Direitos Reservados © {new Date().getFullYear()}</span>
+                <span className="text-white/80">{t("rightsReserved")} {new Date().getFullYear()}</span>
                 <button 
                   onClick={() => setShowFooterInfoModal(true)}
                   className="text-amber-300 hover:text-amber-200 font-bold underline transition-colors cursor-pointer"
                 >
-                  Informações Legais & Suporte
+                  {t("legalInfoAndSupport")}
                 </button>
               </div>
             </footer>

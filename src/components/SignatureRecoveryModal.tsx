@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { Shield, Key, Mail, CheckCircle2, AlertCircle, X, Lock } from "lucide-react";
 import { authRecoveryService } from "../lib/authRecoveryService";
 import { signatureService } from "../lib/signatureService";
+import { useTranslation } from "../lib/i18n";
 
 interface SignatureRecoveryModalProps {
   currentUser: any;
@@ -22,6 +23,7 @@ export const SignatureRecoveryModal: React.FC<SignatureRecoveryModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState<"login_validation" | "otp_validation" | "new_password">(
     "login_validation"
   );

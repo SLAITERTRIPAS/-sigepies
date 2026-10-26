@@ -35,6 +35,11 @@ import {
   mergeColaboradores,
   toTitleCase as tc,
 } from "../../lib/utils";
+import {
+  useCurrentLanguage,
+  getTranslation,
+  translateInstitutionalText,
+} from "../../lib/i18n";
 
 const COLORS = [
   "#0088FE",
@@ -75,6 +80,7 @@ const getStudentLevels = (homens: number, mulheres: number) => {
 };
 
 export default function BoardOverview({ boardName, onNavigate }: { boardName: string; onNavigate?: (item: string) => void }) {
+  const currentLang = useCurrentLanguage();
   const [viewState, setViewState] = useState<
     | "overview"
     | "colaboradores"
@@ -1111,40 +1117,40 @@ export default function BoardOverview({ boardName, onNavigate }: { boardName: st
   return (
     <div className="w-[95%] mx-auto space-y-4 pb-4">
       <h2 className="text-2xl font-bold text-blue-900 border-b pb-2 mb-6 tracking-wider">
-        Visão Geral: {boardName}
+        {getTranslation(currentLang, "visaoGeral")}: {translateInstitutionalText(boardName, currentLang)}
       </h2>
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 mx-auto">
         <CardKPI
-          label="Efetivo Geral"
+          label={getTranslation(currentLang, "efetivoGeral")}
           onClick={() => {
             if (onNavigate) onNavigate("Repartição de Pessoal");
             else setViewState("colaboradores");
           }}
         />
         <CardKPI
-          label="Planos de Atividades"
+          label={getTranslation(currentLang, "planosAtividades")}
           onClick={() => {
             if (onNavigate) onNavigate("Plano de Atividades");
             else setViewState("atividades");
           }}
         />
         <CardKPI
-          label="Relatórios"
+          label={getTranslation(currentLang, "relatoriosDirecao")}
           onClick={() => {
             if (onNavigate) onNavigate("Relatórios");
             else setViewState("relatorios");
           }}
         />
         <CardKPI
-          label="Recursos Financeiros"
+          label={getTranslation(currentLang, "recursosFinanceiros")}
           onClick={() => {
             if (onNavigate) onNavigate("Balanço");
             else setViewState("recursos_financeiros");
           }}
         />
         <CardKPI
-          label="Corpo Discente"
+          label={getTranslation(currentLang, "corpoDiscente")}
           onClick={() => {
             if (onNavigate) onNavigate("Estatística");
             else setViewState("estudantes");

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { firestoreService } from "../lib/firestoreService";
 import { getSectorSidebarItems, SectorSidebarItem } from "../lib/sectorMenuUtils";
+import { useTranslation } from "../lib/i18n";
 
 export interface SectorMenuConfigModalProps {
   sectorName: string;
@@ -28,6 +29,7 @@ export default function SectorMenuConfigModal({
   currentUser,
   onClose
 }: SectorMenuConfigModalProps) {
+  const { t } = useTranslation();
   const [disabledMenus, setDisabledMenus] = useState<string[]>([]);
   const [disabledSubItems, setDisabledSubItems] = useState<string[]>([]);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);

@@ -126,7 +126,7 @@ import {
 import RHStatView from "../bloco7_relatorios/RHStatisticsWorkflowView";
 import BolsasEstudosView from "../bloco4_servicos_centrais/BolsasEstudosView";
 import GestaoEstudantilView from "../bloco3_unidades_organicas/GestaoEstudantilView";
-import { useCurrentLanguage, translateMenuTitle, translateInstitutionalText, getTranslation } from "../../lib/i18n";
+import { useTranslation } from "../../lib/i18n";
 
 export default function DirectorDashboard({
   title = "Painel de Gestão",
@@ -201,7 +201,14 @@ export default function DirectorDashboard({
   setDashboardTitle: (title: string) => void;
   initialActiveItem?: string;
 }) {
-  const currentLang = useCurrentLanguage();
+  const {
+    t,
+    lang: currentLang,
+    getTranslation,
+    translateMenu: translateMenuTitle,
+    translateInstName: translateInstitutionName,
+    translateInstitutionalText,
+  } = useTranslation();
   const safeTitle = typeof title === "string" ? title : String(title || "Painel de Gestão");
   const upperTitle = safeTitle.toUpperCase();
 

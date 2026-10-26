@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { firestoreService } from "../lib/firestoreService";
 import { getSectorSidebarItems, SectorSidebarItem } from "../lib/sectorMenuUtils";
+import { useTranslation } from "../lib/i18n";
 
 export interface EditSectorModalProps {
   sector: {
@@ -47,6 +48,7 @@ export default function EditSectorModal({
   onClose,
   onSaveSuccess
 }: EditSectorModalProps) {
+  const { t } = useTranslation();
   const modalRef = useModalAccessibility<HTMLDivElement>({
     isOpen: true,
     onClose,

@@ -162,7 +162,7 @@ import {
 } from "./utils";
 import { EFETIVO_GERAL_DATA } from "../constants/colaboradoresList";
 import { databaseMaintenance } from "./databaseMaintenance";
-import { optimizeImageForFirestore } from "./imageUtils";
+import { optimizeImageForFirestore } from "./imageService";
 
 /**
  * Obtém os dados completos do utilizador autenticado exclusivamente pelo seu UID.
@@ -1472,7 +1472,8 @@ export const ensureCloudDataInitialized = async () => {
     
     // 1. Garantir Administrador do Sistema (Conta Geral) na coleção 'users'
     try {
-      await firestoreService.initializeAdmin({
+      if (auth.currentUser && !auth.currentUser.isAnonymous) {
+        await firestoreService.initializeAdmin({
         id: "ST849547771",
         uid: "ST849547771",
         email: "slaitertripas@gmail.com",
@@ -1494,8 +1495,8 @@ export const ensureCloudDataInitialized = async () => {
         efetivo: false,
         mustChangePassword: false,
         isProgrammer: true,
-        isOwner: true,
-      });
+        });
+      }
     } catch (adminErr) {
       console.warn("Aviso ao inicializar administrador padrão:", adminErr);
     }
@@ -2669,7 +2670,7 @@ export const firestoreService = {
 
       if (safeData.systemLogo && typeof safeData.systemLogo === "string" && safeData.systemLogo.length > 100000) {
         try {
-          safeData.systemLogo = await optimizeImageForFirestore(safeData.systemLogo, 300, 300, 120 * 1024);
+          safeData.systemLogo = await optimizeImageForFirestore(safeData.systemLogo, { maxWidth: 300, maxHeight: 300, maxSizeBytes: 120 * 1024 });
         } catch (e) {
           console.warn("Aviso ao otimizar logotipo antes de salvar no Firestore:", e);
         }
@@ -2677,7 +2678,7 @@ export const firestoreService = {
 
       if (safeData.proprietarioPhoto && typeof safeData.proprietarioPhoto === "string" && safeData.proprietarioPhoto.length > 80000) {
         try {
-          safeData.proprietarioPhoto = await optimizeImageForFirestore(safeData.proprietarioPhoto, 250, 250, 80 * 1024);
+          safeData.proprietarioPhoto = await optimizeImageForFirestore(safeData.proprietarioPhoto, { maxWidth: 250, maxHeight: 250, maxSizeBytes: 80 * 1024 });
         } catch (e) {
           console.warn("Aviso ao otimizar foto do proprietário antes de salvar no Firestore:", e);
         }
@@ -2703,10 +2704,10 @@ export const firestoreService = {
         if (err?.message?.includes("exceeds the maximum allowed size")) {
           try {
             if (safeData.systemLogo) {
-              safeData.systemLogo = await optimizeImageForFirestore(safeData.systemLogo, 180, 180, 50 * 1024);
+              safeData.systemLogo = await optimizeImageForFirestore(safeData.systemLogo, { maxWidth: 180, maxHeight: 180, maxSizeBytes: 50 * 1024 });
             }
             if (safeData.proprietarioPhoto) {
-              safeData.proprietarioPhoto = await optimizeImageForFirestore(safeData.proprietarioPhoto, 180, 180, 40 * 1024);
+              safeData.proprietarioPhoto = await optimizeImageForFirestore(safeData.proprietarioPhoto, { maxWidth: 180, maxHeight: 180, maxSizeBytes: 40 * 1024 });
             }
             await setDoc(
               docRef,

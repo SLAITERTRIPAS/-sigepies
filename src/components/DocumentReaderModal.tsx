@@ -26,6 +26,7 @@ import {
 import { Expediente } from "../types";
 import AssinaturaDigitalPad from "./AssinaturaDigitalPad";
 import FluxogramaTramitacaoExpediente from "./FluxogramaTramitacaoExpediente";
+import { useTranslation } from "../lib/i18n";
 
 interface DocumentReaderModalProps {
   documento?: any;
@@ -44,6 +45,7 @@ export default function DocumentReaderModal({
   user,
   onActionSuccess,
 }: DocumentReaderModalProps) {
+  const { t } = useTranslation();
   const doc = expediente || documento;
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(true);

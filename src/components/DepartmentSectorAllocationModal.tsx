@@ -19,6 +19,7 @@ import {
 import { firestoreService } from "../lib/firestoreService";
 import { getSetoresByDepartamento } from "../constants/formOptions";
 import { isTechnicianUser, isSuperBossUser } from "../lib/auth";
+import { useTranslation } from "../lib/i18n";
 
 export interface DepartmentSectorAllocationModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ export default function DepartmentSectorAllocationModal({
   instituicaoId,
   onAllocationUpdated,
 }: DepartmentSectorAllocationModalProps) {
+  const { t } = useTranslation();
   const [colaboradores, setColaboradores] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [availableSectors, setAvailableSectors] = useState<string[]>([]);

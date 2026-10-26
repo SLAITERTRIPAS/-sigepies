@@ -23,6 +23,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { OrgaoModel, DirecaoModel, DepartamentoModel } from "../lib/instituicaoEstruturaService";
+import { useTranslation } from "../lib/i18n";
 
 export type OrganogramaType = "instituicao" | "colaboradores";
 
@@ -62,6 +63,7 @@ export default function OrganogramaModal({
   users,
   initialType = "instituicao",
 }: OrganogramaModalProps) {
+  const { t } = useTranslation();
   const [activeType, setActiveType] = useState<OrganogramaType>(initialType);
   const [searchQuery, setSearchQuery] = useState("");
   const [zoomLevel, setZoomLevel] = useState<number>(1);

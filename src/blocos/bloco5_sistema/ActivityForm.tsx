@@ -671,6 +671,8 @@ export default function ActivityForm({
                 necessidade: r.necessidade || r.especificacao || "",
                 especificacao: r.especificacao || r.necessidade || "",
                 nomeProduto: r.nomeProduto || r.produto || r.item || r.nomeItem || "",
+                diasAjudaCusto: r.diasAjudaCusto ?? r.diasTrabalho ?? r.dias ?? (initialData.diasTrabalho || 0),
+                diasTrabalho: r.diasTrabalho ?? r.diasAjudaCusto ?? r.dias ?? (initialData.diasTrabalho || 0),
                 quantidade: Number(r.quantidade ?? r.quant ?? 0),
                 precoUnitario: Number(r.precoUnitario ?? r.unitario ?? 0),
                 valorTotal: Number(r.valorTotal ?? r.total ?? (Number(r.quantidade || 0) * Number(r.precoUnitario || 0))),
@@ -685,7 +687,9 @@ export default function ActivityForm({
                   detalhes: "",
                   pessoas: 1,
                   quantidade: initialData.quantidade || 0,
-                  dias: 0,
+                  dias: initialData.dias || 0,
+                  diasTrabalho: initialData.diasTrabalho || initialData.diasAjudaCusto || 0,
+                  diasAjudaCusto: initialData.diasAjudaCusto || initialData.diasTrabalho || 0,
                   precoUnitario: initialData.valor || initialData.precoUnitario || 0,
                   valorTotal: initialData.valor || initialData.valorTotal || 0,
                   pessoa: "",
@@ -1401,6 +1405,71 @@ export default function ActivityForm({
     }
   }, [formData.mesesRealizacao, formData.dataInicio, formData.frequencia]);
 
+  // Sincronizar automaticamente os dias de ajudas de custo com o total de dias de trabalho (Passo 5)
+  useEffect(() => {
+    if (!formData.rubricas || formData.rubricas.length === 0) return;
+    const currentDias = formData.totalDias || 1;
+    let changed = false;
+    const newRubricas = formData.rubricas.map((rubrica) => {
+      const rubStr = (rubrica.rubrica || "").toLowerCase();
+      const necStr = (rubrica.necessidade || "").toLowerCase();
+      const isAjudaCusto =
+        (rubStr.includes("pessoal") || rubrica.rubrica?.includes("112")) &&
+        necStr.includes("ajuda") &&
+        necStr.includes("custo");
+
+      if (isAjudaCusto) {
+        const isDiretor =
+          necStr.includes("diretor") ||
+          necStr.includes("direto ger") ||
+          necStr.includes("(dg)");
+        const isMotorista = necStr.includes("motorista");
+        const isIdaVoltaGeral =
+          rubrica.necessidade ===
+          "Ajuda de custo dentro do país para pessoal civil (IDA E VOLTA GERAL)";
+        const isMotoristaIdaVoltaManual =
+          rubrica.necessidade === "Ajudas de custo para Motorista (ida e volta)" ||
+          rubrica.necessidade ===
+            "Ajuda de custo dentro do país para pessoal civil (MOTORISTA)";
+
+        if (
+          rubrica.diasAjudaCusto !== currentDias ||
+          rubrica.diasTrabalho !== currentDias ||
+          rubrica.dias !== currentDias
+        ) {
+          changed = true;
+          const qtd = rubrica.quantidade || 1;
+          const realValorDiario = isMotorista || isIdaVoltaGeral || isMotoristaIdaVoltaManual
+            ? 1800
+            : isDiretor
+              ? 9000
+              : 6000;
+          const valorTotal = isIdaVoltaGeral
+            ? qtd * 1800
+            : isMotoristaIdaVoltaManual
+              ? 3600
+              : qtd * currentDias * realValorDiario * 1.3;
+
+          return {
+            ...rubrica,
+            diasAjudaCusto: currentDias,
+            diasTrabalho: currentDias,
+            dias: currentDias,
+            valorTotal,
+          };
+        }
+      }
+      return rubrica;
+    });
+
+    if (changed) {
+      setFormData((prev) => ({
+        ...prev,
+        rubricas: newRubricas,
+      }));
+    }
+  }, [formData.totalDias]);
+
   // Auto-preencher campos de data com o primeiro dia do mês de execução selecionado
   useEffect(() => {
     if (!formData.mesesRealizacao || formData.mesesRealizacao.length === 0)
@@ -1533,6 +1602,7 @@ export default function ActivityForm({
       "",
       "",
       "",
+      "",
       ""
     ];
 
@@ -1551,28 +1621,14 @@ export default function ActivityForm({
       "Rúbrica",
       "Necessidade",
       "nome do produto",
+      "Dias de Ajudas de Custo (D/AJC)",
       "QUANT",
       "Unitário (MT)",
       "VALOR TOTAL GERAL (MZN)"
     ];
 
-    // Dados de exemplo baseados na imagem (1 actividade com 3 rubricas)
-    const sampleRows = [
-      [
-        "4", "4", "ODG", "GDG", "UGEA", "G/UGEA/004/P", "Plano de procuriment", 
-        "garantir o localizacao dar lojas fisicas; especulacao de precos", 
-        "1º, 2º, 3º, 4º (Mensal)", "Janeiro, Agosto", "Sim",
-        "Bens - 121", "121001- Combustíveis e lubrificantes", "198", "125", "24750"
-      ],
-      [
-        "", "", "", "", "", "", "", "", "", "", "",
-        "Demais despesas com o pessoal - 112", "112101- Ajuda de custo dentro do país para pessoal civil (TECNICOS)", "4", "6000", "127200"
-      ],
-      [
-        "", "", "", "", "", "", "", "", "", "", "",
-        "Demais despesas com o pessoal - 112", "112101- Ajuda de custo dentro do país para pessoal civil (IDA E VOLTA)", "4", "1800", "7200"
-      ]
-    ];
+    // Dados de exemplo removidos por solicitação do usuário
+    const sampleRows: any[] = [];
 
     // Criar a planilha
     const ws = XLSX.utils.aoa_to_sheet([headerRow1, headerRow2, ...sampleRows]);
@@ -1586,7 +1642,7 @@ export default function ActivityForm({
       { s: { r: 0, c: 5 }, e: { r: 0, c: 7 } }, // II. ATIVIDADE
       { s: { r: 0, c: 8 }, e: { r: 0, c: 9 } }, // V. TEMPO E DURAÇÃO
       { s: { r: 0, c: 10 }, e: { r: 1, c: 10 } }, // VI. TRANS
-      { s: { r: 0, c: 11 }, e: { r: 0, c: 16 } }, // VII. RUBRICAS E NECESSIDADES
+      { s: { r: 0, c: 11 }, e: { r: 0, c: 17 } }, // VII. RUBRICAS E NECESSIDADES
 
       // Corpo (Mesclagem vertical para a mesma actividade - Linhas 3 a 5 da planilha)
       { s: { r: 2, c: 0 }, e: { r: 4, c: 0 } }, // N/O
@@ -3472,6 +3528,8 @@ export default function ActivityForm({
           valorTotal: 0,
           pessoa: "",
           dias: 0,
+          diasTrabalho: 0,
+          diasAjudaCusto: 0,
           valorDiario: 6000,
           temMeioDia: false,
           meioDia30: 0,
@@ -3482,25 +3540,31 @@ export default function ActivityForm({
 
   const updateRubricaNecessidade = (index: number, necessidade: string) => {
     const newRubricas = [...formData.rubricas];
-    // Reset product and related fields when necessity changes
-    const rubrica = { 
-      ...newRubricas[index], 
-      nomeProduto: "", 
-      precoUnitario: 0, 
-      valorTotal: 0, 
-      detalhes: "", 
-      especificacao: "" 
-    };
-
-    const rubStr = (rubrica.rubrica || "").toLowerCase();
+    const rubStr = (newRubricas[index].rubrica || "").toLowerCase();
     const necStr = (necessidade || "").toLowerCase();
 
     // Verificação robusta para Ajuda de Custo
     const isAjudaCusto =
       (rubStr.includes("pessoal") ||
-        (rubrica.rubrica || "").includes("112")) &&
+        (newRubricas[index].rubrica || "").includes("112")) &&
       necStr.includes("ajuda") &&
       necStr.includes("custo");
+
+    const cleanProductName = isAjudaCusto
+      ? "Ajudas de Custo"
+      : necessidade
+        ? necessidade.replace(/^\d+[\s\-\–\—]+\s*/, "").trim()
+        : "";
+
+    // Reset product and related fields when necessity changes, but set nomeProduto to cleanProductName
+    const rubrica = { 
+      ...newRubricas[index], 
+      nomeProduto: cleanProductName, 
+      precoUnitario: 0, 
+      valorTotal: 0, 
+      detalhes: "", 
+      especificacao: "" 
+    };
 
     const isDiretor =
       necStr.includes("diretor") ||
@@ -3528,6 +3592,7 @@ export default function ActivityForm({
         newRubricas[index] = {
           ...rubrica,
           necessidade,
+          nomeProduto: "Ajudas de Custo",
           valorDiario: 1800,
           precoUnitario: 1800,
           quantidade: qtd,
@@ -3537,6 +3602,7 @@ export default function ActivityForm({
         newRubricas[index] = {
           ...rubrica,
           necessidade,
+          nomeProduto: "Ajudas de Custo",
           valorDiario: 1800,
           precoUnitario: 1800,
           quantidade: 1,
@@ -3551,21 +3617,12 @@ export default function ActivityForm({
         const pessoas = isMotorista ? 1 : rubrica.quantidade || 1;
         const dias = formData.totalDias || 1;
 
-        let valorTotal = 0;
-        if (isMotorista) {
-          valorTotal =
-            pessoas * dias * realValorDiario + 0.3 * realValorDiario * pessoas;
-        } else if (isFora) {
-          valorTotal =
-            pessoas * dias * realValorDiario + 0.3 * realValorDiario * pessoas;
-        } else {
-          valorTotal =
-            pessoas * dias * realValorDiario + 0.3 * realValorDiario * pessoas;
-        }
+        const valorTotal = pessoas * dias * realValorDiario * 1.3;
 
         newRubricas[index] = {
           ...rubrica,
           necessidade,
+          nomeProduto: "Ajudas de Custo",
           valorDiario: realValorDiario,
           precoUnitario: realValorDiario,
           quantidade: pessoas,
@@ -5644,10 +5701,14 @@ export default function ActivityForm({
                             onChange={(e) => {
                               const newRubricas = [...formData.rubricas];
                               const selectedRubrica = e.target.value;
+                              const isAjuda = selectedRubrica.toLowerCase().includes("ajuda") || selectedRubrica.toLowerCase().includes("ajc");
                               newRubricas[index] = {
                                 ...rubrica,
                                 rubrica: selectedRubrica,
                                 necessidade: "",
+                                diasAjudaCusto: isAjuda ? (rubrica.diasAjudaCusto || formData.totalDias || 1) : undefined,
+                                diasTrabalho: isAjuda ? (rubrica.diasTrabalho || formData.totalDias || 1) : undefined,
+                                dias: isAjuda ? (rubrica.dias || formData.totalDias || 1) : undefined,
                                 precoUnitario:
                                   selectedRubrica === "Bens"
                                     ? ("" as any)
@@ -5737,62 +5798,39 @@ export default function ActivityForm({
                       </div>
 
                       {isAjudaCusto ? (
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                           <div className="space-y-1">
                             <label className="block text-[11px] font-bold text-blue-800 tracking-tight leading-tight flex items-center justify-between">
-                              <span>Dias de Trabalho (Ajudas de Custo)</span>
-                              <span className="text-[9px] text-blue-500 font-extrabold bg-blue-100/70 px-1 rounded">D/T</span>
+                              <span>Dias de Ajudas de Custo (D/AJC)</span>
+                              <span className="text-[9px] text-blue-500 font-extrabold bg-blue-100/70 px-1 rounded">D/AJC</span>
                             </label>
-                            {isIdaVoltaGeral ? (
-                              <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
-                                1D de ida e volta
-                              </div>
-                            ) : isMotoristaIdaVoltaManual ? (
-                              <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
-                                2 dias
-                              </div>
+                            {isAjudaCusto ? (
+                              isIdaVoltaGeral ? (
+                                <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
+                                  1D de ida e volta
+                                </div>
+                              ) : isMotoristaIdaVoltaManual ? (
+                                <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
+                                  2 dias
+                                </div>
+                              ) : (
+                                <input
+                                  type="number"
+                                  readOnly
+                                  value={formData.totalDias || 1}
+                                  title="Dias de Ajudas de Custo transportados automaticamente do Passo 5"
+                                  className="w-full p-2.5 border-2 border-blue-900/40 rounded-xl text-[14px] font-black text-blue-900 outline-none transition-all text-center h-11 bg-[#dbe5f1] shadow-xs cursor-default"
+                                />
+                              )
                             ) : (
-                              <input
-                                type="number"
-                                min={1}
-                                value={rubrica.diasTrabalho !== undefined ? rubrica.diasTrabalho : (formData.totalDias || 1)}
-                                disabled={isBlocked}
-                                onChange={(e) => {
-                                  const newRubricas = [...formData.rubricas];
-                                  const diasT = Math.max(1, Number(e.target.value) || 1);
-                                  const qtd = isAjudaCustoMotoristaReal || isMotoristaIdaVoltaManual ? 1 : (rubrica.quantidade || 0);
-                                  const realValorDiario =
-                                    isAjudaCustoMotoristaReal
-                                      ? 1800
-                                      : isMotoristaIdaVoltaManual
-                                        ? rubrica.precoUnitario || 1800
-                                        : isFora
-                                          ? rubrica.precoUnitario || 0
-                                          : valorDiario;
-
-                                  const taxa30 = (isMotoristaIdaVoltaManual || isIdaVoltaGeral) ? 0 : 0.3 * realValorDiario * qtd;
-                                  const valorTotal = (qtd * diasT * realValorDiario) + taxa30;
-
-                                  newRubricas[index] = {
-                                    ...rubrica,
-                                    diasTrabalho: diasT,
-                                    precoUnitario: realValorDiario,
-                                    valorTotal: valorTotal,
-                                  };
-                                  setFormData({
-                                    ...formData,
-                                    rubricas: newRubricas,
-                                  });
-                                }}
-                                placeholder="D/T"
-                                title="Indique o número de dias de trabalho efetivos para o cálculo de ajudas de custo"
-                                className="w-full p-2.5 border-2 border-blue-900/40 rounded-xl text-[14px] font-black text-blue-900 outline-none focus:border-blue-900 transition-all text-center h-11 bg-white shadow-xs"
-                              />
+                              <div className="w-full p-2.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-[14px] font-bold text-blue-900 flex items-center justify-center h-11">
+                                -
+                              </div>
                             )}
                           </div>
                           <div className="space-y-1">
                             <label className="block text-[11px] font-bold text-blue-800 tracking-tight leading-tight">
-                              Total de Pessoas Envolvidas
+                              {isAjudaCusto ? "Quantidade de Pessoas Envolvidas" : "Quantidade"}
                             </label>
                             <input
                               type="number"
@@ -5833,6 +5871,8 @@ export default function ActivityForm({
                                   ...rubrica,
                                   quantidade: qtd,
                                   diasTrabalho: dias,
+                                  diasAjudaCusto: dias,
+                                  dias: dias,
                                   precoUnitario: realValorDiario,
                                   valorTotal: valorTotal,
                                 };
@@ -5865,6 +5905,8 @@ export default function ActivityForm({
                                     ...rubrica,
                                     precoUnitario: preco,
                                     diasTrabalho: dias,
+                                    diasAjudaCusto: dias,
+                                    dias: dias,
                                     valorTotal: valorTotal,
                                   };
                                   setFormData({
@@ -5888,7 +5930,7 @@ export default function ActivityForm({
                           </div>
                           <div className="space-y-1">
                             <label className="block text-[11px] font-bold text-blue-800 tracking-tight leading-tight">
-                              {"30% de Ajudas de Custos"}
+                              {"Ajudas de Custos"}
                             </label>
                             <div
                               className={`w-full p-2.5 border-2 rounded-xl text-[12px] font-extrabold flex items-center justify-center h-11 select-none ${isMotoristaIdaVoltaManual || isIdaVoltaGeral ? "bg-red-50 text-red-500 border-red-200" : "bg-gray-100 text-gray-400 border-gray-300"}`}
@@ -5909,15 +5951,12 @@ export default function ActivityForm({
                                 const total = 0.3 * realValorDiario * (rubrica.quantidade || 0);
                                 return (
                                   <div className="flex flex-col items-center text-[10px] w-full">
-                                    <span className="text-gray-500 text-[9px] mb-1">
-                                      Fórmula: 0.3 x {rubrica.quantidade || 0} x {realValorDiario.toLocaleString("pt-MZ")}
-                                    </span>
-                                    <div className="flex flex-col w-full px-1">
-                                        <label className="text-[8px] font-bold text-blue-700 uppercase">Valor Final Calculado</label>
-                                        <span className="font-extrabold text-[12px] p-1 bg-white border border-gray-200 rounded text-center">
-                                            {total.toLocaleString("pt-MZ")} MZN
-                                        </span>
-                                    </div>
+                                      <div className="flex flex-col w-full px-1">
+                                          <label className="text-[8px] font-bold text-blue-700 uppercase">Valor Final Calculado</label>
+                                          <span className="font-extrabold text-[12px] p-1 bg-white border border-gray-200 rounded text-center">
+                                              {total.toLocaleString("pt-MZ")} MZN
+                                          </span>
+                                      </div>
                                   </div>
                                 );
                               })()}

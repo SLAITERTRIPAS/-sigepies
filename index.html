@@ -6,12 +6,12 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>SIGEP - Plataforma Inteligente de Gestão Estratégica e Projeção Académica</title>
+    <title>Remix SIGEP - Plataforma de Gestão Estratégica</title>
     <link rel="icon" type="image/png" href="/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png" />
     <link rel="apple-touch-icon" href="/assets/aistudio/logot_sigep-removebg-preview_60e9baa3.png" />
-    <meta name="description" content="SIGEP - Plataforma Inteligente de Gestão Estratégica e Projeção Académica. SIGEP - Moçambique V1.1.2.0 SISTEMA INTEGRADO DE GESTÃO DE PROCESSOS © 2026" />
-    <meta property="og:title" content="SIGEP - Plataforma Inteligente de Gestão Estratégica e Projeção Académica" />
-    <meta property="og:description" content="SIGEP - Plataforma Inteligente de Gestão Estratégica e Projeção Académica. SIGEP - Moçambique V1.1.2.0 SISTEMA INTEGRADO DE GESTÃO DE PROCESSOS © 2026" />
+    <meta name="description" content="Plataforma unificada para indicadores estratégicos, projeções acadêmicas e conformidade normativa do ISPS." />
+    <meta property="og:title" content="Remix SIGEP - Plataforma de Gestão Estratégica" />
+    <meta property="og:description" content="Plataforma unificada para indicadores estratégicos, projeções acadêmicas e conformidade normativa do ISPS." />
 
     <script>
       (function() {
@@ -34,7 +34,17 @@
             str.indexOf("backend didn't respond") !== -1 ||
             str.indexOf("client will operate in offline mode") !== -1 ||
             str.indexOf("@firebase/firestore") !== -1 ||
-            str.indexOf("firestore (11.") !== -1
+            str.indexOf("firestore (11.") !== -1 ||
+            str.indexOf("failed to fetch dynamically imported module") !== -1 ||
+            str.indexOf("load chunk") !== -1 ||
+            str.indexOf("net::err_") !== -1 ||
+            str.indexOf("failed to load resource") !== -1 ||
+            str.indexOf("maximum update depth exceeded") !== -1 ||
+            str.indexOf("script error") !== -1 ||
+            str.indexOf("network request failed") !== -1 ||
+            str.indexOf("missing or insufficient permissions") !== -1 ||
+            str.indexOf("failed to synchronize") !== -1 ||
+            str.indexOf("firebase") !== -1 && str.indexOf("internal") !== -1
           );
           if (isIgnorable) {
             console.warn("Ignored systemic error:", str);

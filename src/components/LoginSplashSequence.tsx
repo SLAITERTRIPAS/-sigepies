@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, CheckCircle2, ShieldCheck, User, Building, Briefcase, Calendar, Sparkles } from "lucide-react";
 import { isSuperBossUser } from "../lib/auth";
-import { getActiveInstitutionLogo, getActiveInstitutionName, getActiveProvinceName } from "../lib/documentLogoUtils";
+import { getActiveInstitutionLogo, getActiveInstitutionName, getActiveProvinceName } from "../lib/logoService";
 
 interface LoginSplashSequenceProps {
   user: any;

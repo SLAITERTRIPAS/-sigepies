@@ -358,6 +358,55 @@ export async function createServer() {
     }
   });
 
+  // Rota de análise inteligente de relatórios
+  app.post("/api/report/analyze", async (req, res) => {
+    const { reportSections } = req.body;
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "API Key não configurada." });
+      }
+      const client = getGeminiClient();
+
+      const prompt = `Aja como um analista de dados institucional sénior para o SIGEP (Sistema Integrado de Gestão Estratégica e Planificação).
+      Analise as seguintes secções de dados brutos de um relatório institucional e, para cada secção, decida automaticamente a melhor forma de apresentar os dados de forma profissional, executiva e clara.
+      
+      Regras de decisão:
+      - Séries temporais ou tendências -> "line-chart"
+      - Comparações entre categorias, departamentos ou sexos -> "bar-chart"
+      - Distribuições percentuais ou partes de um todo -> "pie-chart"
+      - Dados numéricos brutos, listas extensas ou detalhamentos -> "table"
+      - Indicadores críticos isolados (metas, totais, percentagens de execução) -> "kpi"
+      - Contextualização, conclusões ou introduções -> "text"
+
+      Retorne o resultado estritamente em formato JSON seguindo este esquema:
+      {
+        "analyzedSections": [
+          {
+            "title": "string (título da secção)",
+            "elementType": "text" | "table" | "bar-chart" | "line-chart" | "pie-chart" | "kpi",
+            "data": object | array | string (os dados formatados para o componente específico)
+          }
+        ],
+        "summary": "Resumo executivo global do relatório (máx 3 frases)"
+      }
+      
+      Dados brutos das secções: ${JSON.stringify(reportSections)}`;
+
+      const response = await client.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+      const resultData = JSON.parse(response.text || "{}");
+      res.json(resultData);
+    } catch (error) {
+      console.error("Erro na análise do relatório:", error);
+      res.status(500).json({ error: "Falha ao processar relatório com IA." });
+    }
+  });
+
   // Rotas de Diagnóstico da API (sempre registradas primeiro)
   app.get("/api/ping", (req, res) => res.send("pong"));
 

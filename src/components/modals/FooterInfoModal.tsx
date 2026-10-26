@@ -3,6 +3,7 @@ import { X, ShieldCheck, Cpu, Code2, Award, CheckCircle2, Sparkles } from "lucid
 import SigepLogo from "../SigepLogo";
 import FirebaseStatusIndicator from "../FirebaseStatusIndicator";
 import { useModalAccessibility } from "../../hooks/useModalAccessibility";
+import { useTranslation } from "../../lib/i18n";
 
 interface FooterInfoModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface FooterInfoModalProps {
 }
 
 export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const modalRef = useModalAccessibility<HTMLDivElement>({
     isOpen,
     onClose,
@@ -36,14 +38,14 @@ export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClos
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-black tracking-wider text-white">
-                  SIGEP Institucional
+                  {t("sigepInstitutionalTitle")}
                 </h3>
                 <span className="bg-[#FFB800] text-[#121c60] text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Oficial
+                  {t("officialBadge")}
                 </span>
               </div>
               <p className="text-xs text-white/80 font-medium">
-                Detalhes da Versão e Direitos Autorais
+                {t("versionDetailsAndCopyright")}
               </p>
             </div>
           </div>
@@ -68,10 +70,10 @@ export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClos
                 </div>
                 <div>
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                    Versão do Software
+                    {t("softwareVersionLabel")}
                   </span>
                   <h4 className="text-base font-black text-slate-800 flex items-center gap-2">
-                    Versão 2026.9.1 Quântica
+                    {t("version")}
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                       <Sparkles size={11} /> Pro
                     </span>
@@ -83,13 +85,13 @@ export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClos
 
             <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-100">
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                <span className="text-[10px] font-bold text-slate-500 block">Arquitetura</span>
-                <span className="font-extrabold text-slate-700">Cloud Sync Híbrida</span>
+                <span className="text-[10px] font-bold text-slate-500 block">{t("architectureLabel")}</span>
+                <span className="font-extrabold text-slate-700">{t("hybridCloudSyncVal")}</span>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                <span className="text-[10px] font-bold text-slate-500 block">Segurança de Dados</span>
+                <span className="text-[10px] font-bold text-slate-500 block">{t("dataSecurityLabel")}</span>
                 <span className="font-extrabold text-emerald-700 flex items-center gap-1">
-                  <ShieldCheck size={13} /> Firestore Quântico
+                  <ShieldCheck size={13} /> {t("quantumFirestoreVal")}
                 </span>
               </div>
             </div>
@@ -103,10 +105,10 @@ export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClos
               </div>
               <div>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
-                  Propriedade Intelectual & Desenvolvimento
+                  {t("intellectualPropertyTitle")}
                 </span>
                 <h4 className="text-sm font-black text-[#121c60]">
-                  Desenvolvido por Franzíssi Tripalonga (Slaiter Tripas)
+                  {t("developedByFull")}
                 </h4>
               </div>
             </div>
@@ -114,10 +116,10 @@ export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClos
             <div className="space-y-2 text-xs text-slate-600 pt-1">
               <div className="flex items-center gap-2 font-bold text-slate-700">
                 <span className="w-1.5 h-1.5 bg-[#FFB800] rounded-full"></span>
-                <span>2025 - 2026 | @todos os direitos reservados</span>
+                <span>{t("copyrightReservedVal")}</span>
               </div>
               <p className="text-[11px] leading-relaxed text-slate-500 font-medium">
-                Desenvolvimento exclusivo do Sistema Integrado de Gestão de Processos (SIGEP), concebido para garantir a integridade, segurança, rastreabilidade e governança eletrónica de expedientes e recursos institucionais.
+                {t("intellectualPropertyDesc")}
               </p>
             </div>
           </div>
@@ -125,24 +127,24 @@ export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClos
           {/* Card de Recursos e Módulos Integrados */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
-              Módulos Centrais em Operação
+              {t("coreModulesOperatingTitle")}
             </span>
             <div className="grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                <span>Gestão de Processos</span>
+                <span>{t("processManagementVal")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                <span>UGEA & Fornecedores</span>
+                <span>{t("ugeaSuppliersVal")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                <span>Gestão de Efetivo & RH</span>
+                <span>{t("staffHRManagementVal")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                <span>Backup Automático em Nuvem</span>
+                <span>{t("autoCloudBackupVal")}</span>
               </div>
             </div>
           </div>
@@ -152,13 +154,13 @@ export const FooterInfoModal: React.FC<FooterInfoModalProps> = ({ isOpen, onClos
         <div className="p-4 bg-slate-100/80 border-t border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
             <Code2 size={14} className="text-[#121c60]" />
-            <span>SIGEP High-Performance Engine</span>
+            <span>{t("highPerformanceEngineVal")}</span>
           </div>
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-[#121c60] hover:bg-[#1a298a] text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-md border border-[#FFB800]/50 transition-all cursor-pointer active:scale-95"
           >
-            Fechar
+            {t("closeBtn")}
           </button>
         </div>
       </div>

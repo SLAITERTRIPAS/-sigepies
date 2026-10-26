@@ -4,7 +4,7 @@ import { EFETIVO_GERAL_DATA } from '../constants/colaboradoresList';
 import { getActiveInstituicao } from '../lib/instituicaoEstruturaService';
 import { getSystemLogo } from '../lib/logoService';
 import { useTranslation } from 'react-i18next';
-import i18n from '../i18n';
+import i18n from '../lib/i18n';
 import { LanguageSwitcher } from './ui/LanguageSwitcher';
 import { useCurrentLanguage, translateInstitutionName, translateInstitutionalText } from '../lib/i18n';
 

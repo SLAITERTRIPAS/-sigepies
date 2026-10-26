@@ -27,6 +27,11 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { openPrintDocumentWindow, printElementById } from "../lib/printUtils";
 import AssinaturaDigitalPad from "./AssinaturaDigitalPad";
+import { useTranslation } from "../lib/i18n";
+import { EditableSectionList, Section as ReportSection } from "./report/EditableSectionList";
+import { ReportVisualizer } from "./report/ReportVisualizer";
+
+export type { ReportSection };
 
 export interface ReportStudioModalProps {
   isOpen: boolean;
@@ -39,6 +44,7 @@ export interface ReportStudioModalProps {
   user?: any;
   department?: string;
   initialSignature?: string;
+  initialSections?: ReportSection[];
 }
 
 export const ReportStudioModal: React.FC<ReportStudioModalProps> = ({
@@ -52,7 +58,9 @@ export const ReportStudioModal: React.FC<ReportStudioModalProps> = ({
   user,
   department = "ISPSongo • Gestão Geral",
   initialSignature,
+  initialSections = [],
 }) => {
+  const { t } = useTranslation();
   // Estados de Personalização
   const [paperFormat, setPaperFormat] = useState<"A4_portrait" | "A4_landscape" | "A3_landscape">("A4_portrait");
   const [theme, setTheme] = useState<"songo_official" | "academic_gold" | "executive_dark">("songo_official");
@@ -61,6 +69,34 @@ export const ReportStudioModal: React.FC<ReportStudioModalProps> = ({
   const [zoom, setZoom] = useState<number>(100);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [paperTexture, setPaperTexture] = useState<boolean>(true);
+  
+  // Estado de Secções Editáveis e IA
+  const [sections, setSections] = useState<ReportSection[]>(initialSections);
+  const [isAnalyzing, setIsRefreshing] = useState(false);
+  const [aiSummary, setAiSummary] = useState("");
+  const [editMode, setEditMode] = useState(false);
+
+  const handleAnalyzeWithAI = async () => {
+    if (sections.length === 0) return;
+    setIsRefreshing(true);
+    try {
+      const response = await fetch("/api/report/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportSections: sections }),
+      });
+      const result = await response.json();
+      if (result.analyzedSections) {
+        setSections(result.analyzedSections);
+        setAiSummary(result.summary || "");
+      }
+    } catch (error) {
+      console.error("Erro ao analisar com IA:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   
   // Estado de Assinatura
   const [activeSignature, setActiveSignature] = useState<{
@@ -169,9 +205,61 @@ export const ReportStudioModal: React.FC<ReportStudioModalProps> = ({
           <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-slate-900">
             {/* PAINEL LATERAL DE FERRAMENTAS INTERATIVAS (Controlo em Tempo Real) */}
             <div className="w-full lg:w-80 bg-slate-950 border-r border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto shrink-0 select-none">
-              <div className="flex items-center gap-2 text-xs font-black text-slate-300 border-b border-slate-800 pb-2">
-                <Sliders size={16} className="text-amber-400" />
-                <span>Personalização e Formatação</span>
+              {/* Assistente de Inteligência Artificial */}
+              <div className="bg-gradient-to-br from-blue-900/40 to-slate-900 p-4 rounded-2xl border border-blue-500/30 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-blue-300 flex items-center gap-2">
+                    <Sparkles size={16} />
+                    <span>IA SIGEP Analytics</span>
+                  </span>
+                  <button
+                    onClick={handleAnalyzeWithAI}
+                    disabled={isAnalyzing || sections.length === 0}
+                    className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 transition-all"
+                    title="Analisar e Otimizar com IA"
+                  >
+                    <RefreshCw size={14} className={isAnalyzing ? "animate-spin" : ""} />
+                  </button>
+                </div>
+                {aiSummary ? (
+                  <p className="text-[10px] text-blue-100/70 leading-relaxed italic">
+                    "{aiSummary}"
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-slate-400">
+                    Clique no botão acima para que a IA analise os dados e selecione os melhores gráficos e tabelas automaticamente.
+                  </p>
+                )}
+              </div>
+
+              {/* Gestão de Secções do Relatório */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Estrutura de Secções
+                  </label>
+                  <button 
+                    onClick={() => setEditMode(!editMode)}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${editMode ? 'bg-amber-500 text-slate-900' : 'text-amber-400 border border-amber-500/30'}`}
+                  >
+                    {editMode ? "Ver Relatório" : "Editar Ordem"}
+                  </button>
+                </div>
+                
+                {editMode ? (
+                  <div className="bg-slate-900/50 p-2 rounded-xl border border-slate-800">
+                    <EditableSectionList sections={sections} onSectionsChange={setSections} />
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {sections.map((s, i) => (
+                      <div key={i} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <span className="text-[11px] text-slate-300 font-medium truncate">{s.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Formato de Papel e Orientação */}
@@ -215,6 +303,7 @@ export const ReportStudioModal: React.FC<ReportStudioModalProps> = ({
                   </button>
                 </div>
               </div>
+
 
               {/* Tema de Apresentação */}
               <div>
@@ -535,7 +624,9 @@ export const ReportStudioModal: React.FC<ReportStudioModalProps> = ({
 
                   {/* CONTEÚDO DINÂMICO DO RELATÓRIO OU FILTROS */}
                   <div className="relative z-10 text-xs text-slate-800 space-y-4 leading-relaxed font-serif">
-                    {contentHtml ? (
+                    {sections && sections.length > 0 ? (
+                      <ReportVisualizer sections={sections} />
+                    ) : contentHtml ? (
                       <div
                         dangerouslySetInnerHTML={{ __html: contentHtml }}
                         className="prose prose-slate max-w-none prose-table:w-full prose-table:border-collapse prose-td:border prose-td:border-slate-300 prose-td:p-2 prose-th:bg-slate-100 prose-th:p-2 prose-th:font-bold"
@@ -548,6 +639,7 @@ export const ReportStudioModal: React.FC<ReportStudioModalProps> = ({
                       )
                     )}
                   </div>
+
 
                   {/* BLOCO DE ASSINATURA & VALIDAÇÃO CRIPTOGRÁFICA NO RODAPÉ */}
                   <div className="relative z-10 mt-12 pt-6 border-t-2 border-slate-900 grid grid-cols-2 gap-8 items-end page-break-inside-avoid">

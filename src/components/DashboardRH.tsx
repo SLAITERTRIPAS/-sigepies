@@ -12,12 +12,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useTranslation } from "../lib/i18n";
 import { firestoreService } from "../lib/firestoreService";
 import { Colaborador } from "../types";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
 const DashboardRH: React.FC = () => {
+  const { t, lang } = useTranslation();
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
 
   useEffect(() => {

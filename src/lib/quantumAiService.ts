@@ -96,64 +96,6 @@ class QuantumAIService {
       ];
     }
 
-    if (activeLang === "fr") {
-      if (v.includes("matrix") || v.includes("poa") || v.includes("actividade") || v.includes("plano")) {
-        return [
-          {
-            id: "q-mat-1",
-            module: "Matrice POA & Activités",
-            title: "Superposition Heuristique des Calendriers",
-            description: "L'algorithme de recuit quantique a détecté 94,2% de probabilité d'atteinte des objectifs trimestriels sans goulot d'étranglement.",
-            impact: "strategic",
-            metric: "94.2% Convergence",
-            recommendation: "Maintenir la répartition séquentielle actuelle des activités entre les directions.",
-            confidenceScore: 98,
-          },
-        ];
-      }
-      return [
-        {
-          id: "q-gen-1",
-          module: "Noyau Intégré SIGEP",
-          title: "Cohérence Systémique Globale",
-          description: "Les 9 blocs opérationnels sont interconnectés avec synchronisation en temps réel sur Firestore.",
-          impact: "strategic",
-          metric: "99.8% Cohérence",
-          recommendation: "Le système fonctionne à un régime d'efficacité maximale.",
-          confidenceScore: 99,
-        },
-      ];
-    }
-
-    if (activeLang === "es") {
-      if (v.includes("matrix") || v.includes("poa") || v.includes("actividade") || v.includes("plano")) {
-        return [
-          {
-            id: "q-mat-1",
-            module: "Matriz POA y Actividades",
-            title: "Superposición Heurística de Cronogramas",
-            description: "El algoritmo cuántico detectó un 94.2% de probabilidad de cumplir metas trimestrales sin cuellos de botella.",
-            impact: "strategic",
-            metric: "94.2% Convergencia",
-            recommendation: "Mantener la distribución secuencial actual de actividades entre las Direcciones.",
-            confidenceScore: 98,
-          },
-        ];
-      }
-      return [
-        {
-          id: "q-gen-1",
-          module: "Núcleo Integrado SIGEP",
-          title: "Coherencia Sistémica Global",
-          description: "Los 9 bloques operativos están interconectados con sincronización en tiempo real en Firestore.",
-          impact: "strategic",
-          metric: "99.8% Coherencia",
-          recommendation: "El sistema opera en régimen de máxima eficiencia con latencia submilimétrica.",
-          confidenceScore: 99,
-        },
-      ];
-    }
-
     // Padrão em Português
     if (v.includes("matrix") || v.includes("poa") || v.includes("actividade") || v.includes("plano")) {
       return [
@@ -206,10 +148,6 @@ class QuantumAIService {
         let msg = `Otimização Quântica de ${moduleName} concluída com sucesso: coerência estabilizada a 99.9%, entropia reduzida em 14% e matriz de alocação recalculada.`;
         if (activeLang === "en") {
           msg = `Quantum Optimization of ${moduleName} successfully completed: coherence stabilized at 99.9%, entropy reduced by 14%, and allocation matrix recalculated.`;
-        } else if (activeLang === "fr") {
-          msg = `Optimisation Quantique de ${moduleName} terminée avec succès: cohérence stabilisée à 99,9%, entropie réduite de 14% et matrice d'allocation recalculée.`;
-        } else if (activeLang === "es") {
-          msg = `Optimización Cuántica de ${moduleName} completada con éxito: coherencia estabilizada en 99.9%, entropía reducida en 14% y matriz de asignación recalculada.`;
         }
 
         resolve({
@@ -233,20 +171,6 @@ class QuantumAIService {
         return "The Quantum AI engine evaluates the POA Matrix continuously. Ensure each activity has a direct supervisor, cost allocation, and quarterly milestones defined in Block 5.";
       }
       return `Quantum AI Core analysis for "${queryText}": System operating with high coherence (99.8%) in context "${contextView}". All workflows and data persistence are operational in real time.`;
-    }
-
-    if (activeLang === "fr") {
-      if (q.includes("sigep") || q.includes("copilote") || q.includes("ia") || q.includes("statut")) {
-        return "Le Copilote Intelligent d'IA Quantique SIGEP est 100% ACTIF avec 128 qubits virtuels et 99,84% de cohérence opérationnelle sur les 9 blocs.";
-      }
-      return `Analyse du Noyau IA Quantique pour "${queryText}": Le système affiche un niveau élevé de cohérence (99,8%) dans le contexte "${contextView}".`;
-    }
-
-    if (activeLang === "es") {
-      if (q.includes("sigep") || q.includes("copiloto") || q.includes("ia") || q.includes("estado")) {
-        return "El Copiloto Inteligente de IA Cuántica SIGEP está 100% ACTIVO y operativo con 128 qubits virtuales y 99.84% de coherencia operativa en los 9 bloques.";
-      }
-      return `Análisis del Núcleo de IA Cuántica para "${queryText}": El sistema se encuentra con estado de coherencia elevado (99.8%) en el contexto de "${contextView}".`;
     }
 
     // Padrão Português

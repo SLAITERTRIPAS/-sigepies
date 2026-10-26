@@ -12,7 +12,7 @@ import {
   Sliders,
   Sparkles,
 } from "lucide-react";
-import { removeSignatureBackground } from "../lib/imageProcessingUtils";
+import { removeSignatureBackground } from "../lib/imageService";
 
 interface AssinaturaDigitalPadProps {
   onSaveAssinatura: (data: {

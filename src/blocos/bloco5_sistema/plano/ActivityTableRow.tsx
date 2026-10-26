@@ -4,7 +4,8 @@ import {
   getActivityGroup, 
   ActivitySelectionContext, 
   isDuplicateActivity,
-  isValidActivity
+  isValidActivity,
+  getDiasAjudaCusto,
 } from "./PlanoHelpers";
 import { 
   getDirectionAbbreviation, 
@@ -671,6 +672,9 @@ export const ActivityTableRow = React.memo(function ActivityTableRow({
             </td>
             <td className="p-1.5 border-r border-slate-300 text-[10px] font-semibold text-slate-800 w-28 leading-tight break-words whitespace-normal">
               {rubricaItem.nomeProduto || rubricaItem.produto || rubricaItem.item || rubricaItem.nomeItem || "-"}
+            </td>
+            <td className="p-1 border-r border-slate-300 text-[10px] text-center font-bold text-slate-800 w-16 bg-slate-50/50">
+              {getDiasAjudaCusto(rubricaItem, activity)}
             </td>
             <td className="p-1 border-r border-slate-300 text-[10px] text-center font-black text-slate-700 w-10">
               {rubricaItem.quantidade || rubricaItem.numeroPessoas || "-"}

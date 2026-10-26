@@ -14,7 +14,7 @@ import {
   Loader2
 } from "lucide-react";
 import { firestoreService } from "../lib/firestoreService";
-import { optimizeImageForFirestore } from "../lib/imageUtils";
+import { optimizeImageForFirestore } from "../lib/imageService";
 
 interface BackgroundRemoverViewProps {
   user?: any;
@@ -151,7 +151,7 @@ export function BackgroundRemoverView({ user, onLogoApplied }: BackgroundRemover
     try {
       setIsProcessing(true);
       // Otimizar a imagem para não exceder limites do Firestore
-      const optimized = await optimizeImageForFirestore(processedImage, 240, 240);
+      const optimized = await optimizeImageForFirestore(processedImage, { maxWidth: 240, maxHeight: 240 });
       
       // Salvar no main_config do Firestore
       await firestoreService.config.set("main_config", {

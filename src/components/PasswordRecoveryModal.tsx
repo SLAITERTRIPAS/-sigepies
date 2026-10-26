@@ -15,6 +15,7 @@ import { authRecoveryService } from "../lib/authRecoveryService";
 import { EFETIVO_GERAL_DATA } from "../constants/colaboradoresList";
 import { normalize as n, safeJSONParse } from "../lib/utils";
 import { logAuditEvent } from "../lib/auditService";
+import { useTranslation } from "../lib/i18n";
 
 interface PasswordRecoveryModalProps {
   onClose: () => void;
@@ -25,6 +26,7 @@ export const PasswordRecoveryModal: React.FC<PasswordRecoveryModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState<"lookup" | "dynamic_questions" | "otp_verification" | "new_password">("lookup");
   
   const [userInput, setUserInput] = useState("");

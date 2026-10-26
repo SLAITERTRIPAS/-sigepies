@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useModalAccessibility } from "../../hooks/useModalAccessibility";
+import { useTranslation } from "../../lib/i18n";
 import {
   Share2,
   Power,
@@ -22,6 +23,7 @@ export default function ShareProcessoModal({
   onClose,
   userName,
 }: ShareProcessoModalProps) {
+  const { t } = useTranslation();
   const modalRef = useModalAccessibility<HTMLDivElement>({
     isOpen,
     onClose,

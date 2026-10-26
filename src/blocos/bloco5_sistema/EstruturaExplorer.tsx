@@ -34,7 +34,7 @@ import { firestoreService, fetchCollection } from "../../lib/firestoreService";
 import { isSuperBossUser, countInstitutionalAdmins } from "../../lib/auth";
 import { PROVINCIAS } from "../../constants/formOptions";
 import { extractDominantColorsFromImage, cn } from "../../lib/utils";
-import { removeImageBackground, optimizeImageForFirestore } from "../../lib/imageUtils";
+import { removeImageBackground, optimizeImageForFirestore } from "../../lib/imageService";
 import { 
   notifyEstruturaUpdated,
   MODELOS_ORGANOGRAMA,
@@ -1190,14 +1190,14 @@ export const EstruturaExplorer = ({
       let optimizedLogo = instLogo;
       if (optimizedLogo && optimizedLogo.length > 50000) {
         try {
-          optimizedLogo = await optimizeImageForFirestore(optimizedLogo, 300, 300, 100 * 1024);
+          optimizedLogo = await optimizeImageForFirestore(optimizedLogo, { maxWidth: 300, maxHeight: 300, maxSizeBytes: 100 * 1024 });
         } catch (_) {}
       }
 
       let optimizedBg = instBackgroundImage;
       if (optimizedBg && optimizedBg.length > 100000) {
         try {
-          optimizedBg = await optimizeImageForFirestore(optimizedBg, 800, 450, 150 * 1024);
+          optimizedBg = await optimizeImageForFirestore(optimizedBg, { maxWidth: 800, maxHeight: 450, maxSizeBytes: 150 * 1024 });
         } catch (_) {}
       }
 

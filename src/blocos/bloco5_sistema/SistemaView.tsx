@@ -74,7 +74,7 @@ import RegistarFuncionarioForm from "../bloco8_gerais/RegistarFuncionarioForm";
 import RegistarDisciplinaForm from "../bloco8_gerais/RegistarDisciplinaForm";
 import RegistarFornecedorForm from "../bloco8_gerais/RegistarFornecedorForm";
 import { firestoreService } from "../../lib/firestoreService";
-import { optimizeImageForFirestore } from "../../lib/imageUtils";
+import { optimizeImageForFirestore } from "../../lib/imageService";
 import { EFETIVO_GERAL_DATA } from "../../constants/colaboradoresList";
 import MainHeader from "../bloco1_apresentacao/MainHeader";
 import { isSuperBossUser, isInstitutionalAdminUser, isHRBossUser, countInstitutionalAdmins } from "../../lib/auth";
@@ -309,7 +309,7 @@ export default function SistemaView({
 
           if (savedPhoto) {
             if (savedPhoto.length > 80000) {
-              optimizeImageForFirestore(savedPhoto, 250, 250, 80 * 1024)
+              optimizeImageForFirestore(savedPhoto, { maxWidth: 250, maxHeight: 250, maxSizeBytes: 80 * 1024 })
                 .then((opt) => {
                   setOwnerPhoto(opt);
                   localStorage.setItem("proprietarioPhoto", opt);
@@ -322,7 +322,7 @@ export default function SistemaView({
 
           if (savedLogo) {
             if (savedLogo.length > 100000) {
-              optimizeImageForFirestore(savedLogo, 300, 300, 120 * 1024)
+              optimizeImageForFirestore(savedLogo, { maxWidth: 300, maxHeight: 300, maxSizeBytes: 120 * 1024 })
                 .then((opt) => {
                   setSystemLogo(opt);
                   localStorage.setItem("systemLogo", opt);
@@ -367,7 +367,7 @@ export default function SistemaView({
       let optimizedLogo = systemLogo;
       if (optimizedLogo && optimizedLogo.length > 100000) {
         try {
-          optimizedLogo = await optimizeImageForFirestore(optimizedLogo, 300, 300, 120 * 1024);
+          optimizedLogo = await optimizeImageForFirestore(optimizedLogo, { maxWidth: 300, maxHeight: 300, maxSizeBytes: 120 * 1024 });
           setSystemLogo(optimizedLogo);
           localStorage.setItem("systemLogo", optimizedLogo);
         } catch (e) {
@@ -378,7 +378,7 @@ export default function SistemaView({
       let optimizedPhoto = ownerPhoto;
       if (optimizedPhoto && optimizedPhoto.length > 80000) {
         try {
-          optimizedPhoto = await optimizeImageForFirestore(optimizedPhoto, 250, 250, 80 * 1024);
+          optimizedPhoto = await optimizeImageForFirestore(optimizedPhoto, { maxWidth: 250, maxHeight: 250, maxSizeBytes: 80 * 1024 });
           setOwnerPhoto(optimizedPhoto);
           localStorage.setItem("proprietarioPhoto", optimizedPhoto);
         } catch (e) {
@@ -672,7 +672,7 @@ export default function SistemaView({
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const optimized = await optimizeImageForFirestore(file, 280, 280, 100 * 1024);
+        const optimized = await optimizeImageForFirestore(file, { maxWidth: 280, maxHeight: 280, maxSizeBytes: 100 * 1024 });
         setOwnerPhoto(optimized);
       } catch (err) {
         console.error("Erro ao processar foto do proprietário:", err);
@@ -2203,7 +2203,7 @@ export default function SistemaView({
                               if (file) {
                                 try {
                                   showAlert("A otimizar logotipo...", "info");
-                                  const optimized = await optimizeImageForFirestore(file, 300, 300, 120 * 1024);
+                                  const optimized = await optimizeImageForFirestore(file, { maxWidth: 300, maxHeight: 300, maxSizeBytes: 120 * 1024 });
                                   if (optimized) {
                                     setSystemLogo(optimized);
                                     localStorage.setItem("systemLogo", optimized);

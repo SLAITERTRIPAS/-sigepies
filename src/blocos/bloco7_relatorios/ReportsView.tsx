@@ -44,6 +44,7 @@ import {
 } from "../../constants/formOptions";
 import { firestoreService } from "../../lib/firestoreService";
 import { ProcessingCircle } from "../../components/ui/ProcessingCircle";
+import { ReportPreview } from "../../components/report/ReportPreview";
 
 export interface ReportSectionData {
   title: string;
@@ -908,33 +909,9 @@ export default function ReportsView({
           />
         )}
         {mode === "view-report" && activeReport && (
-          <StandardReportModel
-            direction={activeReport.direction}
-            department={activeReport.department}
-            section={activeReport.section}
-            setor={activeReport.setor}
-            year={activeReport.year}
-            semester={activeReport.semester}
-            level={activeReport.level}
-            coverImage={activeReport.coverImage}
-            stats={activeReport.stats}
-            title={activeReport.title}
-            sections={activeReport.sections.map((s) => ({
-              title: s.title,
-              content: s.content,
-              setorOuUnidade: s.setorOuUnidade,
-              efetivoSetorial: s.efetivoSetorial,
-              activities: s.activities,
-              dificuldadesConstrangimentos: s.dificuldadesConstrangimentos,
-              img1: s.img1,
-              legenda1: s.legenda1,
-              img2: s.img2,
-              legenda2: s.legenda2,
-            }))}
-            technicalSheet={activeReport.technicalSheet}
-            abbreviations={activeReport.abbreviations}
+          <ReportPreview
+            report={activeReport}
             onBack={() => setMode("consult")}
-            user={user}
           />
         )}
       </AnimatePresence>

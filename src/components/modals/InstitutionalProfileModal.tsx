@@ -16,9 +16,10 @@ import {
   Briefcase
 } from "lucide-react";
 import { firestoreService } from "../../lib/firestoreService";
-import { optimizeImageForFirestore, removeImageBackground } from "../../lib/imageUtils";
+import { optimizeImageForFirestore, removeImageBackground } from "../../lib/imageService";
 import { PROVINCIAS_LIST } from "../../constants/formOptions";
 import { extractDominantColorsFromImage } from "../../lib/utils";
+import { useTranslation } from "../../lib/i18n";
 
 interface InstitutionalProfileModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const InstitutionalProfileModal: React.FC<InstitutionalProfileModalProps>
   instituicao,
   onUpdate
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     nome: "",
     abreviatura: "",
@@ -52,37 +54,54 @@ export const InstitutionalProfileModal: React.FC<InstitutionalProfileModalProps>
     headerColor: "",
     sidebarColor: "",
     footerColor: "",
-    logoPalette: [] as string[]
+    logoPalette: [] as string[],
+    id: ""
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [isProcessingLogo, setIsProcessingLogo] = useState(false);
 
   useEffect(() => {
-    if (instituicao) {
-      setFormData({
-        nome: instituicao.nome || "",
-        abreviatura: instituicao.abreviatura || instituicao.sigla || "",
-        sigla: instituicao.sigla || instituicao.abreviatura || "",
-        logo: instituicao.logo || "",
-        email: instituicao.email || "",
-        telefone: instituicao.telefone || "",
-        provincia: instituicao.provincia || "",
-        distrito: instituicao.distrito || "",
-        tipoInstituicao: instituicao.tipoInstituicao || "",
-        missao: instituicao.missao || "",
-        visao: instituicao.visao || "",
-        valores: instituicao.valores || "",
-        primaryColor: instituicao.primaryColor || "#050b38",
-        secondaryColor: instituicao.secondaryColor || "#0d1b54",
-        accentColor: instituicao.accentColor || "#FFB800",
-        headerColor: instituicao.headerColor || "",
-        sidebarColor: instituicao.sidebarColor || "",
-        footerColor: instituicao.footerColor || "",
-        logoPalette: instituicao.logoPalette || []
+    if (isOpen && instituicao && !isSaving) {
+      const safeInst = instituicao || {};
+      
+      // Verificação rigorosa para evitar loops infinitos
+      // Só atualizamos se o ID mudou ou se os dados básicos são visivelmente diferentes
+      setFormData(prev => {
+        const isSameId = prev.id === safeInst.id;
+        const hasData = prev.nome !== "";
+        
+        // Se já temos dados carregados para este ID, não forçamos o reset para evitar loops
+        // triggered por re-renders do componente pai (como o relógio do MainHeader)
+        if (isSameId && hasData) {
+          return prev;
+        }
+        
+        return {
+          id: safeInst.id || "",
+          nome: safeInst.nome || "",
+          abreviatura: safeInst.abreviatura || safeInst.sigla || "",
+          sigla: safeInst.sigla || safeInst.abreviatura || "",
+          logo: safeInst.logo || "",
+          email: safeInst.email || "",
+          telefone: safeInst.telefone || "",
+          provincia: safeInst.provincia || "",
+          distrito: safeInst.distrito || "",
+          tipoInstituicao: safeInst.tipoInstituicao || "",
+          missao: safeInst.missao || "",
+          visao: safeInst.visao || "",
+          valores: safeInst.valores || "",
+          primaryColor: safeInst.primaryColor || "#050b38",
+          secondaryColor: safeInst.secondaryColor || "#0d1b54",
+          accentColor: safeInst.accentColor || "#FFB800",
+          headerColor: safeInst.headerColor || "",
+          sidebarColor: safeInst.sidebarColor || "",
+          footerColor: safeInst.footerColor || "",
+          logoPalette: safeInst.logoPalette || []
+        } as any;
       });
     }
-  }, [instituicao, isOpen]);
+  }, [isOpen, instituicao?.id, isSaving]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,7 +116,7 @@ export const InstitutionalProfileModal: React.FC<InstitutionalProfileModalProps>
           const cleanLogo = await removeImageBackground(result);
           
           // 2. Otimizar para Firestore
-          const optimizedLogo = await optimizeImageForFirestore(cleanLogo, 300, 300, 100 * 1024);
+          const optimizedLogo = await optimizeImageForFirestore(cleanLogo, { maxWidth: 300, maxHeight: 300, maxSizeBytes: 100 * 1024 });
           
           // 3. Extrair cores dominantes
           const colors = await extractDominantColorsFromImage(optimizedLogo);

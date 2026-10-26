@@ -20,6 +20,7 @@ import {
 import { MatrixActivity, PeriodoPlanificacao } from '../types';
 import { isSuperBossUser } from '../lib/auth';
 import { subscribePeriodoPlanificacao, savePeriodoPlanificacao } from '../lib/planningPeriodService';
+import { useTranslation } from '../lib/i18n';
 
 interface DPEPDashboardProps {
   activities: MatrixActivity[];
@@ -40,6 +41,7 @@ export const DPEPDashboard: React.FC<DPEPDashboardProps> = ({
   isChefeDPEP,
   isPlanificacao
 }) => {
+  const { t, lang, translateText } = useTranslation();
   const [periodoPlanificacao, setPeriodoPlanificacao] = useState<PeriodoPlanificacao | null>(null);
   const [showConfigPrazosModal, setShowConfigPrazosModal] = useState(false);
   const [prazosForm, setPrazosForm] = useState({

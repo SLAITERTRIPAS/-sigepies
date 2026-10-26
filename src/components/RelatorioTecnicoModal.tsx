@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { firestoreService } from "../lib/firestoreService";
 import { countInstitutionalAdmins } from "../lib/auth";
+import { useTranslation } from "../lib/i18n";
 
 export interface RelatorioTecnicoModalProps {
   currentUser?: any;
@@ -26,6 +27,7 @@ export default function RelatorioTecnicoModal({
   currentUser,
   onClose
 }: RelatorioTecnicoModalProps) {
+  const { t } = useTranslation();
   const [instituicoes, setInstituicoes] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [direcoes, setDirecoes] = useState<any[]>([]);

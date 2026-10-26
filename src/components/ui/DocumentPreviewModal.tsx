@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { openPrintDocumentWindow } from "../../lib/printUtils";
 import { ReportStudioModal } from "../ReportStudioModal";
+import { useTranslation } from "../../lib/i18n";
 
 export interface DocumentFile {
   name: string;
@@ -50,6 +51,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   processNo,
   collaboratorName,
 }) => {
+  const { t } = useTranslation();
   const modalRef = useModalAccessibility<HTMLDivElement>({
     isOpen,
     onClose,

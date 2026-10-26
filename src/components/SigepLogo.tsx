@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { firestoreService } from "../lib/firestoreService";
-import { removeImageBackground } from "../lib/imageUtils";
+import { removeImageBackground } from "../lib/imageService";
 
 interface SigepLogoProps {
   className?: string;

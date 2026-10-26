@@ -29,11 +29,15 @@ import {
   Globe,
   UserCog,
   BoxIcon,
+  Laptop,
+  ShieldCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import NotificationCenter from "../bloco5_sistema/NotificationCenter";
 import ChangePasswordModal from "./ChangePasswordModal";
 import ShareProcessoModal from "../../components/modals/ShareProcessoModal";
+import SessionManagerModal from "../../components/modals/SessionManagerModal";
+import { subscribeToUserSessions, SessionItem } from "../../lib/sessionService";
 import { toTitleCase as tc, confirmWorkspaceExit } from "../../lib/utils";
 import { getRoles, isSuperBossUser, isInstitutionalAdminAccount } from "../../lib/auth";
 import { firestoreService } from "../../lib/firestoreService";
@@ -41,7 +45,7 @@ import { getActiveInstituicao } from "../../lib/instituicaoEstruturaService";
 import { getSystemLogo } from "../../lib/logoService";
 import InstitutionalProfileModal from "../../components/modals/InstitutionalProfileModal";
 import AtualizarDadosColaboradorModal from "../../components/modals/AtualizarDadosColaboradorModal";
-import { useCurrentLanguage, setLanguagePreference, getTranslation, translateInstitutionName, translateMenuTitle, translateInstitutionalText } from "../../lib/i18n";
+import { useTranslation, setLanguagePreference } from "../../lib/i18n";
 import WeatherWidget from "../../components/WeatherWidget";
 import LanguageDropdown from "../../components/ui/LanguageDropdown";
 
@@ -156,13 +160,34 @@ export default function MainHeader({
   const [copiedMsg, setCopiedMsg] = useState(false);
   const [showInstProfileModal, setShowInstProfileModal] = useState(false);
   const [showColabProfileModal, setShowColabProfileModal] = useState(false);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [activeSessions, setActiveSessions] = useState<SessionItem[]>([]);
+
+  const userId = user?.id || user?.uid || user?.email;
+
+  useEffect(() => {
+    if (!userId) return;
+    const unsub = subscribeToUserSessions(userId, (sessions) => {
+      setActiveSessions(sessions);
+    });
+    return () => unsub();
+  }, [userId]);
+
+  const otherSessionsCount = activeSessions.filter((s) => !s.isCurrent).length;
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const currentLang = useCurrentLanguage();
+  const {
+    t,
+    lang: currentLang,
+    getTranslation,
+    translateMenu: translateMenuTitle,
+    translateInstName: translateInstitutionName,
+    translateInstitutionalText,
+  } = useTranslation();
   const rawDayOfWeek = now.toLocaleDateString(currentLang === "en" ? "en-US" : "pt-PT", { weekday: "long" });
   const dayOfWeek = tc(rawDayOfWeek);
   const dateStr = now.toLocaleDateString(currentLang === "en" ? "en-US" : "pt-PT", {
@@ -522,6 +547,11 @@ export default function MainHeader({
           }
         }}
       />
+      <SessionManagerModal
+        isOpen={showSessionModal}
+        onClose={() => setShowSessionModal(false)}
+        user={user}
+      />
       <header
         className="w-full flex flex-col flex-none z-50 shadow-2xl relative transition-all duration-500"
         style={{ 
@@ -721,6 +751,20 @@ export default function MainHeader({
                           <UserCog size={14} className="text-emerald-400 shrink-0" /> {getTranslation(currentLang, "updateEmployeeData" as any) || "Atualizar Dados do Colaborador"}
                         </button>
                         <button 
+                          onClick={() => { setShowSessionModal(true); setShowMenu(false); }} 
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-bold text-blue-300 hover:bg-white/10 hover:text-white transition-all text-left cursor-pointer border-b border-white/5"
+                        >
+                          <div className="flex items-center gap-3">
+                            <ShieldCheck size={14} className="text-blue-400 shrink-0" />
+                            <span>Sessões Ativas / Dispositivos</span>
+                          </div>
+                          {otherSessionsCount > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-500 text-slate-950 font-black animate-pulse">
+                              +{otherSessionsCount}
+                            </span>
+                          )}
+                        </button>
+                        <button 
                           onClick={() => { setShowPasswordModal(true); setShowMenu(false); }} 
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-white/70 hover:bg-white/5 hover:text-white transition-all text-left cursor-pointer"
                         >
@@ -739,7 +783,34 @@ export default function MainHeader({
               </div>
             ) : null}
 
-
+            {/* Indicador Visual de Sessões Concorrentes em Outros Dispositivos */}
+            {user && (
+              <button
+                onClick={() => setShowSessionModal(true)}
+                title={
+                  otherSessionsCount > 0
+                    ? `Atenção: A sua conta possui ${otherSessionsCount} outra(s) sessão(ões) ativa(s) noutros dispositivos.`
+                    : "Sessão Segura SIGEP (1 Dispositivo Conectado)"
+                }
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all text-xs font-black cursor-pointer shadow-sm ${
+                  otherSessionsCount > 0
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30 animate-pulse"
+                    : "bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
+                }`}
+              >
+                <Laptop size={15} />
+                <span className="hidden xl:inline">
+                  {otherSessionsCount > 0
+                    ? `${otherSessionsCount + 1} Dispositivos (${otherSessionsCount} Remotos)`
+                    : "1 Dispositivo"}
+                </span>
+                {otherSessionsCount > 0 && (
+                  <span className="xl:hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
+                    +{otherSessionsCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* System Actions */}
             <div className="flex items-center gap-2 bg-black/20 p-1.5 rounded-xl border border-white/5">

@@ -223,6 +223,30 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
     const processosPendentesUgea = Math.max(0, processosUgea - processosConcluidosUgea);
     const totalFornecedores = suppliers.length;
 
+    const totalCTA = colaboradores.filter(
+      (c) =>
+        (c.tipo && c.tipo.toUpperCase().includes("CTA")) ||
+        (c.carreira && c.carreira.toUpperCase().includes("CTA")) ||
+        (c.cargo && c.cargo.toUpperCase().includes("CTA")) ||
+        (c.carreira && c.carreira.toLowerCase().includes("técnico")) ||
+        (c.carreira && c.carreira.toLowerCase().includes("tecnico"))
+    ).length;
+
+    let cursoMaisProcurado = "-";
+    const cursoCounts: Record<string, number> = {};
+    estudantes.forEach((e) => {
+      if (e.curso) {
+        cursoCounts[e.curso] = (cursoCounts[e.curso] || 0) + 1;
+      }
+    });
+    let maxCount = 0;
+    Object.entries(cursoCounts).forEach(([curso, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        cursoMaisProcurado = curso;
+      }
+    });
+
     return {
       totalUsers: colaboradores.length,
       totalDocentes: colaboradores.filter(
@@ -231,6 +255,8 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
           (c.carreira && c.carreira.toLowerCase().includes("docente")) ||
           (c.cargo && c.cargo.toLowerCase().includes("docente"))
       ).length,
+      totalCTA,
+      cursoMaisProcurado,
       totalEstudantes: estudantes.length,
       totalCursos: cursosMap.size,
       listaCursos: Array.from(cursosMap),
@@ -331,11 +357,11 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
 
           {/* Métricas Chave do Administrador Geral */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            <CardButton title="Total Utilizadores" value={stats.totalUsers} detail="+12% este semestre" color="slate" onClick={() => onNavigate("Utilizadores")} />
+            <CardButton title="Total Utilizadores" value={stats.totalUsers} detail={stats.totalUsers > 0 ? `${stats.totalUsers} registados` : "-"} color="slate" onClick={() => onNavigate("Utilizadores")} />
             <CardButton title="Total Estudantes" value={stats.totalEstudantes} color="indigo" onClick={() => onNavigate("Estudantes")} />
             <CardButton title="Total Docentes" value={stats.totalDocentes} color="blue" onClick={() => onNavigate("Colaboradores")} />
             <CardButton title="Total de Cursos" value={stats.totalCursos} color="purple" onClick={() => onNavigate("Cursos")} />
-            <CardButton title="Candidaturas" value="540" color="amber" onClick={() => onNavigate("Candidaturas")} />
+            <CardButton title="Candidaturas" value="-" color="amber" onClick={() => onNavigate("Candidaturas")} />
           </div>
 
           {/* Widgets Específicos: Administrador Geral */}
@@ -346,13 +372,13 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                 <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
                   <Users size={18} />
                 </div>
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md">
-                  Online Agora
+                <span className="bg-slate-100 text-slate-800 text-[10px] font-black px-2 py-0.5 rounded-md">
+                  Controlo
                 </span>
               </div>
               <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider">Utilizadores Ativos</h4>
               <p className="text-2xl font-black text-slate-900">
-                {Math.round(stats.totalUsers * 0.4)} <span className="text-xs text-slate-500 font-bold">sessões ativas</span>
+                {stats.totalUsers > 0 ? stats.totalUsers : "-"} <span className="text-xs text-slate-500 font-bold">registados</span>
               </p>
               <div className="text-[10px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
                 Monitorização contínua de acessos e logins com certificação.
@@ -365,13 +391,13 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                 <div className="p-2 bg-indigo-100 text-indigo-900 rounded-xl">
                   <TrendingUp size={18} />
                 </div>
-                <span className="bg-indigo-100 text-indigo-800 text-[10px] font-black px-2 py-0.5 rounded-md">
-                  +18.4%
+                <span className="bg-slate-100 text-slate-800 text-[10px] font-black px-2 py-0.5 rounded-md">
+                  -
                 </span>
               </div>
               <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider">Crescimento de Inscrições</h4>
               <p className="text-2xl font-black text-indigo-950">
-                {stats.totalEstudantes} <span className="text-xs text-slate-500 font-bold">matriculados</span>
+                {stats.totalEstudantes > 0 ? stats.totalEstudantes : "-"} <span className="text-xs text-slate-500 font-bold">matriculados</span>
               </p>
               <div className="text-[10px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
                 Aumento sustentado nas faculdades e departamentos centrais.
@@ -384,13 +410,13 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                 <div className="p-2 bg-amber-100 text-amber-900 rounded-xl">
                   <FileText size={18} />
                 </div>
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-md">
-                  100% Auditados
+                <span className="bg-slate-100 text-slate-800 text-[10px] font-black px-2 py-0.5 rounded-md">
+                  -
                 </span>
               </div>
               <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider">Relatórios Institucionais</h4>
               <p className="text-2xl font-black text-amber-950">
-                {stats.concluidas} <span className="text-xs text-slate-500 font-bold">submetidos</span>
+                {stats.concluidas > 0 ? stats.concluidas : "-"} <span className="text-xs text-slate-500 font-bold">submetidos</span>
               </p>
               <div className="text-[10px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
                 Relatórios semestrais e anuais consolidados no DPEP.
@@ -404,12 +430,12 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                   <Cpu size={18} />
                 </div>
                 <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md">
-                  Excelente
+                  Operacional
                 </span>
               </div>
               <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider">Desempenho da Plataforma</h4>
               <p className="text-2xl font-black text-emerald-950">
-                99.9% <span className="text-xs text-slate-500 font-bold">disponibilidade</span>
+                - <span className="text-xs text-slate-500 font-bold">disponibilidade</span>
               </p>
               <div className="text-[10px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
                 Conectividade Firestore e Cache-First ativos e saudáveis.
@@ -441,10 +467,10 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
 
           {/* Métricas Chave do Diretor */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <CardButton title="Estudantes Matriculados" value={stats.totalEstudantes} color="blue" onClick={() => onNavigate("Estudantes")} />
-            <CardButton title="Taxa de Aprovação" value={`${stats.taxaAprovacao}%`} detail="+2.1% face ao ano anterior" color="emerald" onClick={() => onNavigate("Resultados Acadêmicos")} />
-            <CardButton title="Taxa de Abandono" value={`${stats.taxaAbandono}%`} detail="Dentro da meta institucional" color="amber" onClick={() => onNavigate("Abandono Discente")} />
-            <CardButton title="Cursos Mais Procurados" value="Eng. Elétrica & Hidráulica" detail="Maior rácio candidato/vaga" color="purple" onClick={() => onNavigate("Cursos")} />
+            <CardButton title="Estudantes Matriculados" value={stats.totalEstudantes > 0 ? stats.totalEstudantes : "-"} color="blue" onClick={() => onNavigate("Estudantes")} />
+            <CardButton title="Taxa de Aprovação" value="-" detail="-" color="emerald" onClick={() => onNavigate("Resultados Acadêmicos")} />
+            <CardButton title="Taxa de Abandono" value="-" detail="-" color="amber" onClick={() => onNavigate("Abandono Discente")} />
+            <CardButton title="Cursos Mais Procurados" value={stats.cursoMaisProcurado} detail={stats.cursoMaisProcurado !== "-" ? "Maior procura de vagas" : "-"} color="purple" onClick={() => onNavigate("Cursos")} />
           </div>
 
           {/* Gráficos Institucionais & Indicadores de Desempenho */}
@@ -459,12 +485,12 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-slate-800">
                       <span>{curso}</span>
-                      <span className="text-emerald-700">8{5 + idx}% aprovação</span>
+                      <span className="text-slate-500">-</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                       <div
                         className="bg-indigo-600 h-full rounded-full"
-                        style={{ width: `${80 + idx * 3}%` }}
+                        style={{ width: "0%" }}
                       ></div>
                     </div>
                   </div>
@@ -536,29 +562,29 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Estudantes do Curso</span>
               <span className="text-2xl font-black text-slate-900">
-                {selectedCurso === "todos" ? stats.totalEstudantes : Math.round(stats.totalEstudantes / stats.totalCursos)}
+                {selectedCurso === "todos" ? (stats.totalEstudantes > 0 ? stats.totalEstudantes : "-") : (stats.totalCursos > 0 ? Math.round(stats.totalEstudantes / stats.totalCursos) : "-")}
               </span>
               <span className="text-[10px] font-bold text-teal-600 block mt-1">Inscritos este ano</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Matrículas 1º Sem</span>
-              <span className="text-2xl font-black text-indigo-900">100%</span>
+              <span className="text-2xl font-black text-indigo-900">-</span>
               <span className="text-[10px] font-bold text-indigo-600 block mt-1">Validadas pela DRA</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Aproveitamento</span>
-              <span className="text-2xl font-black text-emerald-700">13.8 / 20</span>
+              <span className="text-2xl font-black text-emerald-700">-</span>
               <span className="text-[10px] font-bold text-emerald-600 block mt-1">Média do curso</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Disciplinas em Atraso</span>
-              <span className="text-2xl font-black text-red-600">8</span>
+              <span className="text-2xl font-black text-red-600">-</span>
               <span className="text-[10px] font-bold text-red-700 block mt-1">Casos para recuperação</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Docentes Atribuídos</span>
               <span className="text-2xl font-black text-blue-900">
-                {Math.round(stats.totalDocentes / stats.totalCursos) || 8}
+                {stats.totalDocentes > 0 ? (stats.totalCursos > 0 ? Math.round(stats.totalDocentes / stats.totalCursos) : stats.totalDocentes) : "-"}
               </span>
               <span className="text-[10px] font-bold text-blue-600 block mt-1">Cargas horárias ativas</span>
             </div>
@@ -568,33 +594,33 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-indigo-700 block">Widget 1</span>
-              <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Docentes & CTA (Engenharia)</h4>
+              <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Docentes & CTA</h4>
               <div className="text-xs font-bold text-slate-700 space-y-1 mt-2">
-                <p>Docentes: {Math.round(stats.totalDocentes * 0.4)}</p>
-                <p>Técnicos (CTA): {Math.round(stats.totalUsers * 0.15)}</p>
+                <p>Docentes: {stats.totalDocentes > 0 ? stats.totalDocentes : "-"}</p>
+                <p>Técnicos (CTA): {stats.totalCTA > 0 ? stats.totalCTA : "-"}</p>
               </div>
-              <p className="text-[10px] text-slate-500 font-semibold mt-2">Corpo afeto à Divisão de Engenharia.</p>
+              <p className="text-[10px] text-slate-500 font-semibold mt-2">Corpo afeto à Divisão Académica.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-indigo-700 block">Widget 2</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Média Geral do Curso</h4>
-              <p className="text-2xl font-black text-indigo-950">14.2 V</p>
-              <p className="text-[10px] text-slate-500 font-semibold">Desempenho satisfatório nas avaliações contínuas.</p>
+              <p className="text-2xl font-black text-indigo-950">-</p>
+              <p className="text-[10px] text-slate-500 font-semibold">Desempenho apurado após fecho das pautas.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-amber-700 block">Widget 3</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Desistentes</h4>
-              <p className="text-2xl font-black text-amber-600">2 <span className="text-xs text-slate-500">estudantes</span></p>
-              <p className="text-[10px] text-slate-500 font-semibold">Motivos de transferência de localidade de trabalho.</p>
+              <p className="text-2xl font-black text-amber-600">-</p>
+              <p className="text-[10px] text-slate-500 font-semibold">Casos formalizados perante a secretaria.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-emerald-700 block">Widget 4</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Taxa de Conclusão</h4>
-              <p className="text-2xl font-black text-emerald-700">91.4%</p>
-              <p className="text-[10px] text-slate-500 font-semibold">Previsão de conclusão dentro do tempo padrão curricular.</p>
+              <p className="text-2xl font-black text-emerald-700">-</p>
+              <p className="text-[10px] text-slate-500 font-semibold">Previsão curricular atualizada no fim do ano letivo.</p>
             </div>
           </div>
         </div>
@@ -623,22 +649,22 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Matrículas Realizadas</span>
-              <span className="text-3xl font-black text-purple-950">{stats.totalEstudantes}</span>
+              <span className="text-3xl font-black text-purple-950">{stats.totalEstudantes > 0 ? stats.totalEstudantes : "-"}</span>
               <span className="text-[10px] font-bold text-emerald-600 block mt-1">Ano letivo corrente</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Processos Pendentes</span>
-              <span className="text-3xl font-black text-amber-600">14</span>
+              <span className="text-3xl font-black text-amber-600">-</span>
               <span className="text-[10px] font-bold text-amber-700 block mt-1">Validação documental</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Emissão de Documentos</span>
-              <span className="text-3xl font-black text-indigo-900">182</span>
+              <span className="text-3xl font-black text-indigo-900">-</span>
               <span className="text-[10px] font-bold text-indigo-600 block mt-1">Certificados e notas</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Pedidos em Análise</span>
-              <span className="text-3xl font-black text-blue-900">9</span>
+              <span className="text-3xl font-black text-blue-900">-</span>
               <span className="text-[10px] font-bold text-blue-600 block mt-1">Guiché de atendimento</span>
             </div>
           </div>
@@ -651,7 +677,7 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                 <CheckCircle2 size={16} className="text-purple-600" />
               </div>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Certificados</h4>
-              <p className="text-2xl font-black text-purple-950">48 <span className="text-xs text-slate-500">emitidos</span></p>
+              <p className="text-2xl font-black text-purple-950">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Certificados de habilitações com assinatura digital.</p>
             </div>
 
@@ -661,7 +687,7 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                 <FileText size={16} className="text-indigo-600" />
               </div>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Declarações</h4>
-              <p className="text-2xl font-black text-indigo-950">134 <span className="text-xs text-slate-500">processadas</span></p>
+              <p className="text-2xl font-black text-indigo-950">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Declarações com ou sem notas para estágios e bolsas.</p>
             </div>
 
@@ -671,7 +697,7 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                 <BookOpen size={16} className="text-teal-600" />
               </div>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Histórico Académico</h4>
-              <p className="text-2xl font-black text-teal-950">100%</p>
+              <p className="text-2xl font-black text-teal-950">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Pautas de exames e frequências sincronizadas.</p>
             </div>
 
@@ -681,7 +707,7 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
                 <Users size={16} className="text-blue-600" />
               </div>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Atendimento ao Estudante</h4>
-              <p className="text-2xl font-black text-blue-950">9.8 min</p>
+              <p className="text-2xl font-black text-blue-950">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Tempo médio de resposta no balcão da secretaria.</p>
             </div>
           </div>
@@ -712,27 +738,27 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Receitas Totais</span>
               <span className="text-2xl font-black text-emerald-800">
-                {stats.receitasTotal.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}
+                {stats.receitasTotal > 0 ? stats.receitasTotal.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" }) : "-"}
               </span>
               <span className="text-[10px] font-bold text-emerald-600 block mt-1">Acumulado anual arrecadado</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Propinas Pagas</span>
               <span className="text-2xl font-black text-indigo-900">
-                {stats.propinasPagas.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}
+                {stats.propinasPagas > 0 ? stats.propinasPagas.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" }) : "-"}
               </span>
-              <span className="text-[10px] font-bold text-indigo-600 block mt-1">Taxa de liquidação: 84%</span>
+              <span className="text-[10px] font-bold text-indigo-600 block mt-1">Liquidação confirmada</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Propinas em Atraso</span>
               <span className="text-2xl font-black text-red-600">
-                {stats.propinasAtraso.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}
+                {stats.propinasAtraso > 0 ? stats.propinasAtraso.toLocaleString("pt-MZ", { style: "currency", currency: "MZN" }) : "-"}
               </span>
               <span className="text-[10px] font-bold text-red-700 block mt-1">Em aviso de regularização</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Relatório Financeiro</span>
-              <span className="text-xl font-black text-slate-900">Regular & Auditado</span>
+              <span className="text-xl font-black text-slate-900">Regular</span>
               <span className="text-[10px] font-bold text-teal-600 block mt-1">Balanço trimestral pronto</span>
             </div>
           </div>
@@ -742,28 +768,28 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-emerald-700 block">Widget 1</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Pagamentos Hoje</h4>
-              <p className="text-2xl font-black text-emerald-950">42.500,00 MT</p>
-              <p className="text-[10px] text-slate-500 font-semibold">18 recibos emitidos no sistema.</p>
+              <p className="text-2xl font-black text-emerald-950">-</p>
+              <p className="text-[10px] text-slate-500 font-semibold">Emissão em conformidade com o sistema.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-red-700 block">Widget 2</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Dívidas Pendentes</h4>
-              <p className="text-2xl font-black text-red-600">28 <span className="text-xs text-slate-500">estudantes</span></p>
+              <p className="text-2xl font-black text-red-600">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Notificações enviadas aos respetivos encarregados.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-blue-700 block">Widget 3</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Recebimentos Mensais</h4>
-              <p className="text-2xl font-black text-blue-950">310.200,00 MT</p>
-              <p className="text-[10px] text-slate-500 font-semibold">Projeção mensal cumprida em 102%.</p>
+              <p className="text-2xl font-black text-blue-950">-</p>
+              <p className="text-[10px] text-slate-500 font-semibold">Projeção mensal de arrecadação de receitas.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-purple-700 block">Widget 4</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Execução Orçamental</h4>
-              <p className="text-2xl font-black text-purple-950">78.4%</p>
+              <p className="text-2xl font-black text-purple-950">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Dotação orçamental em conformidade com o MEF.</p>
             </div>
           </div>
@@ -793,27 +819,27 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Indicadores Execução</span>
-              <span className="text-2xl font-black text-slate-900">76.8%</span>
+              <span className="text-2xl font-black text-slate-900">-</span>
               <span className="text-[10px] font-bold text-teal-600 block mt-1">Média institucional</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Planos Monitorados</span>
-              <span className="text-2xl font-black text-indigo-900">{stats.totalAtividades}</span>
+              <span className="text-2xl font-black text-indigo-900">{stats.totalAtividades > 0 ? stats.totalAtividades : "-"}</span>
               <span className="text-[10px] font-bold text-indigo-600 block mt-1">Setores integrados</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Metas Atingidas</span>
-              <span className="text-2xl font-black text-emerald-600">{stats.concluidas}</span>
-              <span className="text-[10px] font-bold text-emerald-700 block mt-1">Conformidade 100%</span>
+              <span className="text-2xl font-black text-emerald-600">{stats.concluidas > 0 ? stats.concluidas : "-"}</span>
+              <span className="text-[10px] font-bold text-emerald-700 block mt-1">Conformidade das metas</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Metas em Risco</span>
-              <span className="text-2xl font-black text-red-600">{stats.atrasadas}</span>
+              <span className="text-2xl font-black text-red-600">{stats.atrasadas > 0 ? stats.atrasadas : "-"}</span>
               <span className="text-[10px] font-bold text-red-700 block mt-1">Ação corretiva</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Relatórios Submetidos</span>
-              <span className="text-2xl font-black text-purple-900">100%</span>
+              <span className="text-2xl font-black text-purple-900">{stats.concluidas > 0 ? stats.concluidas : "-"}</span>
               <span className="text-[10px] font-bold text-purple-700 block mt-1">Semestrais validados</span>
             </div>
           </div>
@@ -824,7 +850,7 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-3">
               <span className="text-[10px] font-black uppercase text-indigo-600 block">KPI Institucionais</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Desempenho Geral</h4>
-              <p className="text-3xl font-black text-indigo-950">84.2%</p>
+              <p className="text-3xl font-black text-indigo-950">-</p>
               <div className="text-[10px] text-slate-500 font-semibold border-t border-slate-100 pt-2">
                 Conformidade perante o Plano Quinquenal da Instituição.
               </div>
@@ -863,9 +889,9 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-3">
               <span className="text-[10px] font-black uppercase text-teal-600 block">Execução Física</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Atividades em Terreno</h4>
-              <p className="text-3xl font-black text-teal-950">72.6%</p>
+              <p className="text-3xl font-black text-teal-950">-</p>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mt-2">
-                <div className="bg-teal-600 h-full rounded-full" style={{ width: "72.6%" }}></div>
+                <div className="bg-teal-600 h-full rounded-full" style={{ width: "0%" }}></div>
               </div>
               <p className="text-[10px] text-slate-500 font-semibold pt-1">
                 Cumprimento de marcos e entregáveis presenciais.
@@ -876,9 +902,9 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-3">
               <span className="text-[10px] font-black uppercase text-purple-600 block">Execução Financeira</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Orçamento Consumido</h4>
-              <p className="text-3xl font-black text-purple-950">68.4%</p>
+              <p className="text-3xl font-black text-purple-950">-</p>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mt-2">
-                <div className="bg-purple-600 h-full rounded-full" style={{ width: "68.4%" }}></div>
+                <div className="bg-purple-600 h-full rounded-full" style={{ width: "0%" }}></div>
               </div>
               <p className="text-[10px] text-slate-500 font-semibold pt-1">
                 Eficiência orçamental e sem desvios não autorizados.
@@ -913,24 +939,24 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Processos de Aquisição</span>
-              <span className="text-3xl font-black text-blue-950">{stats.processosUgea}</span>
+              <span className="text-3xl font-black text-blue-950">{stats.processosUgea > 0 ? stats.processosUgea : "-"}</span>
               <span className="text-[10px] font-bold text-slate-500 block mt-1">
-                {stats.processosConcluidosUgea} concluídos • {stats.processosPendentesUgea} pendentes
+                {stats.processosUgea > 0 ? `${stats.processosConcluidosUgea} concluídos • ${stats.processosPendentesUgea} pendentes` : "-"}
               </span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Execução do PGA</span>
-              <span className="text-3xl font-black text-emerald-700">74.2%</span>
+              <span className="text-3xl font-black text-emerald-700">-</span>
               <span className="text-[10px] font-bold text-emerald-600 block mt-1">Plano Geral de Aquisições</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Fornecedores Registados</span>
-              <span className="text-3xl font-black text-purple-900">{stats.totalFornecedores}</span>
+              <span className="text-3xl font-black text-purple-900">{stats.totalFornecedores > 0 ? stats.totalFornecedores : "-"}</span>
               <span className="text-[10px] font-bold text-purple-600 block mt-1">Certificados e com NUIT</span>
             </div>
             <div className="bg-white border-2 border-slate-900 rounded-2xl p-4 shadow-[3px_3px_0px_0px_#0f172a]">
               <span className="text-[10px] font-black uppercase text-slate-500 block">Requisições Recebidas</span>
-              <span className="text-3xl font-black text-amber-700">{stats.processosUgea}</span>
+              <span className="text-3xl font-black text-amber-700">{stats.processosUgea > 0 ? stats.processosUgea : "-"}</span>
               <span className="text-[10px] font-bold text-amber-600 block mt-1">Bens, serviços e obras</span>
             </div>
           </div>
@@ -940,28 +966,28 @@ export const PersonalizedOverview: React.FC<PersonalizedOverviewProps> = ({
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-blue-700 block">Widget 1</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Processos Ativos UGEA</h4>
-              <p className="text-2xl font-black text-blue-950">{stats.processosPendentesUgea} <span className="text-xs text-slate-500">em tramitação</span></p>
+              <p className="text-2xl font-black text-blue-950">{stats.processosPendentesUgea > 0 ? `${stats.processosPendentesUgea} em tramitação` : "-"}</p>
               <p className="text-[10px] text-slate-500 font-semibold">Avaliação de propostas e termo de referência.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-emerald-700 block">Widget 2</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Execução do PGA</h4>
-              <p className="text-2xl font-black text-emerald-700">1.480.000 MT</p>
+              <p className="text-2xl font-black text-emerald-700">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Contratos assinados e em fornecimento.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-purple-700 block">Widget 3</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Concursos em Andamento</h4>
-              <p className="text-2xl font-black text-purple-950">3 <span className="text-xs text-slate-500">concursos</span></p>
+              <p className="text-2xl font-black text-purple-950">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Cotações abertas para aquisição de material didático.</p>
             </div>
 
             <div className="bg-white border-2 border-slate-900 rounded-3xl p-5 shadow-[4px_4px_0px_0px_#0f172a] space-y-2">
               <span className="text-[10px] font-black uppercase text-amber-700 block">Widget 4</span>
               <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">Alertas de Contratos</h4>
-              <p className="text-2xl font-black text-amber-600">0 em incumprimento</p>
+              <p className="text-2xl font-black text-amber-600">-</p>
               <p className="text-[10px] text-slate-500 font-semibold">Todos os prazos com parecer técnico e visto prévio.</p>
             </div>
           </div>

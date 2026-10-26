@@ -29,12 +29,21 @@ export const ActiveAlertsDisplay: React.FC = () => {
       where("startDate", "<=", today)
     );
 
-    return onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as SystemAlert));
-      // Filtro adicional para endDate no lado do cliente (Firestore where complexo)
-      const valid = list.filter(a => !a.endDate || a.endDate >= today);
-      setActiveAlerts(valid);
-    });
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as SystemAlert));
+        // Filtro adicional para endDate no lado do cliente (Firestore where complexo)
+        const valid = list.filter(a => !a.endDate || a.endDate >= today);
+        setActiveAlerts(valid);
+      }, (error) => {
+        console.warn("🔥 [ActiveAlerts] Firestore Snapshot Error:", error);
+      });
+    } catch (err) {
+      console.error("🔥 [ActiveAlerts] Critical setup error:", err);
+    }
+
+    return () => unsubscribe();
   }, []);
 
   const handleDismiss = (id: string) => {

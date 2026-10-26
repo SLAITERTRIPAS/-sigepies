@@ -22,10 +22,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { firestoreService } from "../../lib/firestoreService";
-import { optimizeImageForFirestore } from "../../lib/imageUtils";
+import { optimizeImageForFirestore } from "../../lib/imageService";
 import { hasChefiaPosition, generateCollaboratorId, safeJSONParse } from "../../lib/utils";
 import { DEPARTAMENTOS, NIVEIS_ACADEMICOS } from "../../constants/formOptions";
 import { useInstituicaoEstrutura, registrarAuditoriaEstrutura, validarColaboradorVinculadoEstrutura, getActiveInstituicaoId } from "../../lib/instituicaoEstruturaService";
+import { useTranslation } from "../../lib/i18n";
 
 interface AtualizarDadosColaboradorModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
   processos = [],
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Localizar registo do colaborador correspondente
@@ -183,7 +185,7 @@ export const AtualizarDadosColaboradorModal: React.FC<AtualizarDadosColaboradorM
 
     try {
       // Otimização rigorosa para não ultrapassar 150KB no Firestore
-      const optimizedBase64 = await optimizeImageForFirestore(file, 400, 400, 180 * 1024);
+      const optimizedBase64 = await optimizeImageForFirestore(file, { maxWidth: 400, maxHeight: 400, maxSizeBytes: 180 * 1024 });
       setFormData((prev) => ({ ...prev, fotoUrl: optimizedBase64 }));
     } catch (err) {
       console.error("Erro ao processar fotografia:", err);

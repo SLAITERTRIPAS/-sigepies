@@ -1,6 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { useModalAccessibility } from "../../hooks/useModalAccessibility";
+import { useTranslation } from "../../lib/i18n";
 
 interface AlertModalProps {
   isOpen: boolean;
@@ -13,8 +14,9 @@ export const AlertModal = ({
   isOpen,
   onClose,
   message,
-  title = "Aviso",
+  title,
 }: AlertModalProps) => {
+  const { t } = useTranslation();
   const modalRef = useModalAccessibility<HTMLDivElement>({
     isOpen,
     onClose,
@@ -29,7 +31,7 @@ export const AlertModal = ({
     >
       <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-black text-[#121c60] uppercase tracking-tight">{title}</h3>
+          <h3 className="text-lg font-black text-[#121c60] uppercase tracking-tight">{title || t("notice")}</h3>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors p-1"
@@ -43,7 +45,7 @@ export const AlertModal = ({
             onClick={onClose}
             className="bg-[#121c60] text-white px-6 py-2 rounded-xl font-bold hover:bg-[#1a287a] transition-all active:scale-95 shadow-lg shadow-blue-900/10"
           >
-            Fechar
+            {t("closeBtn")}
           </button>
         </div>
       </div>

@@ -19,6 +19,7 @@ import {
   PieChart as PieChartIcon
 } from "lucide-react";
 import { firestoreService } from "../../lib/firestoreService";
+import { useCurrentLanguage, translateMenuTitle, translateInstitutionalText, getTranslation } from "../../lib/i18n";
 
 interface CentralOverviewProps {
   colaboradores?: any[];
@@ -39,6 +40,7 @@ export default function CentralOverview({
   onShowAlert,
   title,
 }: CentralOverviewProps) {
+  const currentLang = useCurrentLanguage();
   const [activeView, setActiveView] = useState<"overview" | "efetivo" | "estudantes" | "planos" | "relatorios" | "expediente">("overview");
   const [estudantesDb, setEstudantesDb] = useState<any[]>([]);
   const [selectedDeptRelatorio, setSelectedDeptRelatorio] = useState<string>("TODOS");
@@ -194,10 +196,6 @@ export default function CentralOverview({
     if (estudantesDb.length > 0) {
       estudantesDb.forEach((e) => {
         const cursoNome = e.curso || e.nomeCurso || "Outros Cursos";
-        // Se estivermos numa direção/departamento específico, filtrar por correspondência
-        if (isEngenharia && !cursoNome.toUpperCase().includes("ENGENHARIA") && !titleUpper.includes("GERAIS")) {
-          // opcional se quisermos filtrar rigorosamente
-        }
         if (!mapa[cursoNome]) {
           mapa[cursoNome] = { homens: 0, mulheres: 0, total: 0 };
         }
@@ -210,7 +208,6 @@ export default function CentralOverview({
       });
     }
 
-    // Filtrar especificamente se title corresponde a um curso ou departamento específico
     let filteredEntries = Object.entries(mapa);
     if (isEngenharia && !titleUpper.includes("ENGENHARIA")) {
       filteredEntries = filteredEntries.filter(([c]) => c.toUpperCase().includes(titleUpper) || titleUpper.includes(c.toUpperCase()));
@@ -238,7 +235,7 @@ export default function CentralOverview({
   }, [cursosEstudantes]);
 
   // -------------------------------------------------------------
-  // 3. PLANOS DE ATIVIDADES (Puxado do plano de actividade de cada setor)
+  // 3. PLANOS DE ATIVIDADES
   // -------------------------------------------------------------
   const actividadesUnidade = useMemo(() => {
     return matrixActivities.filter((a) => {
@@ -256,7 +253,6 @@ export default function CentralOverview({
       const ref = (a.referencia || "").toUpperCase();
 
       if (isDICOSAFA) {
-        // Apenas actividades explicitamente alocadas ou criadas por setores da DICOSAFA
         return (
           dep.includes("DICOSAFA") ||
           dep.includes("DIRETOR DA DICOSAFA") ||
@@ -334,32 +330,20 @@ export default function CentralOverview({
   const expedientesEmTramitacao = Math.round(totalExpediente * 0.35);
   const expedientesConcluidos = totalExpediente - expedientesEntrados - expedientesEmTramitacao;
 
-  // Colaboradores agrupados por área de afetação
-  const colaboradoresPorArea = useMemo(() => {
-    const map: { [key: string]: any[] } = {};
-    funcionariosUnidade.forEach((f) => {
-      const area = f.departamento || f.reparticao || f.unidade || f.cargo || "Geral / Outros";
-      if (!map[area]) map[area] = [];
-      map[area].push(f);
-    });
-    return map;
-  }, [funcionariosUnidade]);
-
   // Renderização das Visões Detalhadas ao Clicar
   if (activeView === "efetivo") {
     return (
       <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
         <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div>
-            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • Efetivo Geral</span>
-            <h2 className="text-xl font-black text-slate-900 font-serif">Efetivo Geral • Docente e CTA</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Pessoal afeto a esta direção/departamento discriminado por categoria e género (RH)</p>
+            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • {getTranslation(currentLang, "efetivoGeral")}</span>
+            <h2 className="text-xl font-black text-slate-900 font-serif">{getTranslation(currentLang, "efetivoGeral")} • {getTranslation(currentLang, "corpoDocente")} & CTA</h2>
           </div>
           <button
             onClick={() => setActiveView("overview")}
             className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
           >
-            <ArrowLeft size={16} /> Voltar para Visão Geral
+            <ArrowLeft size={16} /> {getTranslation(currentLang, "voltarVisaoGeral")}
           </button>
         </div>
 
@@ -368,20 +352,20 @@ export default function CentralOverview({
           {/* DOCENTE */}
           <div className="bg-gradient-to-br from-blue-900 to-indigo-950 text-white p-6 rounded-2xl shadow-lg border border-blue-800/50 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black tracking-wider text-blue-200">Docente</span>
+              <span className="text-xs font-black tracking-wider text-blue-200">{getTranslation(currentLang, "corpoDocente")}</span>
               <span className="px-2.5 py-1 bg-white/10 rounded-lg text-xs font-bold">Total: {realDocH + realDocM}</span>
             </div>
             <div className="grid grid-cols-3 gap-4 pt-2">
               <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm text-center">
-                <span className="text-[10px] text-blue-200 font-bold block">Homens (H)</span>
+                <span className="text-[10px] text-blue-200 font-bold block">{getTranslation(currentLang, "homens")}</span>
                 <span className="text-2xl font-black font-serif mt-1 block">{realDocH}</span>
               </div>
               <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm text-center">
-                <span className="text-[10px] text-pink-200 font-bold block">Mulheres (M)</span>
+                <span className="text-[10px] text-pink-200 font-bold block">{getTranslation(currentLang, "mulheres")}</span>
                 <span className="text-2xl font-black font-serif mt-1 block">{realDocM}</span>
               </div>
               <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center border border-white/20">
-                <span className="text-[10px] text-white font-bold block">Total</span>
+                <span className="text-[10px] text-white font-bold block">{getTranslation(currentLang, "total")}</span>
                 <span className="text-2xl font-black font-serif mt-1 block">{realDocH + realDocM}</span>
               </div>
             </div>
@@ -390,27 +374,25 @@ export default function CentralOverview({
           {/* CTA */}
           <div className="bg-gradient-to-br from-slate-900 to-zinc-950 text-white p-6 rounded-2xl shadow-lg border border-slate-800/50 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black tracking-wider text-slate-300">Corpo Técnico Administrativo (CTA)</span>
+              <span className="text-xs font-black tracking-wider text-slate-300">{getTranslation(currentLang, "corpoCTA")}</span>
               <span className="px-2.5 py-1 bg-white/10 rounded-lg text-xs font-bold">Total: {realCtaH + realCtaM}</span>
             </div>
             <div className="grid grid-cols-3 gap-4 pt-2">
               <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm text-center">
-                <span className="text-[10px] text-blue-200 font-bold block">Homens (H)</span>
+                <span className="text-[10px] text-blue-200 font-bold block">{getTranslation(currentLang, "homens")}</span>
                 <span className="text-2xl font-black font-serif mt-1 block">{realCtaH}</span>
               </div>
               <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm text-center">
-                <span className="text-[10px] text-pink-200 font-bold block">Mulheres (M)</span>
+                <span className="text-[10px] text-pink-200 font-bold block">{getTranslation(currentLang, "mulheres")}</span>
                 <span className="text-2xl font-black font-serif mt-1 block">{realCtaM}</span>
               </div>
               <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm text-center border border-white/20">
-                <span className="text-[10px] text-white font-bold block">Total</span>
+                <span className="text-[10px] text-white font-bold block">{getTranslation(currentLang, "total")}</span>
                 <span className="text-2xl font-black font-serif mt-1 block">{realCtaH + realCtaM}</span>
               </div>
             </div>
           </div>
         </div>
-
-
       </div>
     );
   }
@@ -420,15 +402,14 @@ export default function CentralOverview({
       <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
         <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div>
-            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • Gestão Discente</span>
-            <h2 className="text-xl font-black text-slate-900 font-serif">Estudantes por Curso e Género (Registo Académico)</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Estudantes alocados a este departamento e curso específico</p>
+            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • {getTranslation(currentLang, "gestaoEstudantil")}</span>
+            <h2 className="text-xl font-black text-slate-900 font-serif">{getTranslation(currentLang, "estudantesPorCursoGenero")}</h2>
           </div>
           <button
             onClick={() => setActiveView("overview")}
             className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
           >
-            <ArrowLeft size={16} /> Voltar para Visão Geral
+            <ArrowLeft size={16} /> {getTranslation(currentLang, "voltarVisaoGeral")}
           </button>
         </div>
 
@@ -437,10 +418,10 @@ export default function CentralOverview({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold tracking-wider">
-                  <th className="p-3">Curso / Licenciatura</th>
-                  <th className="p-3 text-center">Homens (H)</th>
-                  <th className="p-3 text-center">Mulheres (M)</th>
-                  <th className="p-3 text-center">Total Geral</th>
+                  <th className="p-3">{getTranslation(currentLang, "cursoLicenciatura")}</th>
+                  <th className="p-3 text-center">{getTranslation(currentLang, "homens")}</th>
+                  <th className="p-3 text-center">{getTranslation(currentLang, "mulheres")}</th>
+                  <th className="p-3 text-center">{getTranslation(currentLang, "totalGeral")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -465,15 +446,14 @@ export default function CentralOverview({
       <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
         <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div>
-            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • Planificação</span>
-            <h2 className="text-xl font-black text-slate-900 font-serif">Planos de Atividades e Orçamento Proposto</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Consolidação de atividades planificadas e orçamento proposto</p>
+            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • {getTranslation(currentLang, "planning")}</span>
+            <h2 className="text-xl font-black text-slate-900 font-serif">{getTranslation(currentLang, "planosAtividades")}</h2>
           </div>
           <button
             onClick={() => setActiveView("overview")}
             className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
           >
-            <ArrowLeft size={16} /> Voltar para Visão Geral
+            <ArrowLeft size={16} /> {getTranslation(currentLang, "voltarVisaoGeral")}
           </button>
         </div>
 
@@ -483,8 +463,8 @@ export default function CentralOverview({
               <FileText size={32} />
             </div>
             <div>
-              <span className="text-[10px] font-black tracking-wider text-slate-500">Total de Atividades Planificadas</span>
-              <div className="text-3xl font-black text-slate-900 mt-1 font-serif">{totalActividadesPlanificadas} Atividades</div>
+              <span className="text-[10px] font-black tracking-wider text-slate-500">{getTranslation(currentLang, "totalAtividadesPlanificadas")}</span>
+              <div className="text-3xl font-black text-slate-900 mt-1 font-serif">{totalActividadesPlanificadas}</div>
             </div>
           </div>
           <div className="bg-gradient-to-br from-emerald-900 to-teal-950 text-white p-6 rounded-2xl shadow-lg border border-emerald-800/50 flex items-center gap-5">
@@ -492,9 +472,9 @@ export default function CentralOverview({
               <DollarSign size={32} />
             </div>
             <div>
-              <span className="text-[10px] font-black tracking-wider text-emerald-200">Orçamento Total Proposto</span>
+              <span className="text-[10px] font-black tracking-wider text-emerald-200">{getTranslation(currentLang, "orcamentoTotalProposto")}</span>
               <div className="text-3xl font-black mt-1 font-serif">
-                {orcamentoTotalProposto.toLocaleString("pt-MZ", { minimumFractionDigits: 2 })} MZN
+                {orcamentoTotalProposto.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ", { minimumFractionDigits: 2 })} MZN
               </div>
             </div>
           </div>
@@ -508,15 +488,14 @@ export default function CentralOverview({
       <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
         <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div>
-            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • Relatórios</span>
-            <h2 className="text-xl font-black text-slate-900 font-serif">Relatórios da Direção</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Relatórios submetidos e aprovados por esta unidade orgânica</p>
+            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • {getTranslation(currentLang, "reports")}</span>
+            <h2 className="text-xl font-black text-slate-900 font-serif">{getTranslation(currentLang, "relatoriosDirecao")}</h2>
           </div>
           <button
             onClick={() => setActiveView("overview")}
             className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
           >
-            <ArrowLeft size={16} /> Voltar para Visão Geral
+            <ArrowLeft size={16} /> {getTranslation(currentLang, "voltarVisaoGeral")}
           </button>
         </div>
 
@@ -551,47 +530,45 @@ export default function CentralOverview({
       <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6 animate-fadeIn">
         <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div>
-            <span className="text-[10px] font-black tracking-widest text-blue-600">{title} • Secretaria</span>
-            <h2 className="text-xl font-black text-slate-900 font-serif">Gestão de Expediente</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Estatística geral de expedientes entrados e despachados</p>
+            <span className="text-[10px] font-black tracking-widest text-blue-600">{title}</span>
+            <h2 className="text-xl font-black text-slate-900 font-serif">{getTranslation(currentLang, "gestaoExpediente")}</h2>
           </div>
           <button
             onClick={() => setActiveView("overview")}
             className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
           >
-            <ArrowLeft size={16} /> Voltar para Visão Geral
+            <ArrowLeft size={16} /> {getTranslation(currentLang, "voltarVisaoGeral")}
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-md">
-            <span className="text-[10px] font-black tracking-wider text-slate-400">Total de Expediente</span>
+            <span className="text-[10px] font-black tracking-wider text-slate-400">Total</span>
             <div className="text-3xl font-black mt-1 font-serif">{totalExpediente}</div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">
-            <span className="text-[10px] font-black tracking-wider text-amber-600">Entrados / Pendentes</span>
+            <span className="text-[10px] font-black tracking-wider text-amber-600">{getTranslation(currentLang, "entradosPendentes")}</span>
             <div className="text-3xl font-black text-amber-950 mt-1 font-serif">{expedientesEntrados}</div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm">
-            <span className="text-[10px] font-black tracking-wider text-blue-600">Em Tramitação</span>
+            <span className="text-[10px] font-black tracking-wider text-blue-600">{getTranslation(currentLang, "emTramitacao")}</span>
             <div className="text-3xl font-black text-blue-950 mt-1 font-serif">{expedientesEmTramitacao}</div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm">
-            <span className="text-[10px] font-black tracking-wider text-emerald-600">Concluídos</span>
+            <span className="text-[10px] font-black tracking-wider text-emerald-600">{getTranslation(currentLang, "concluidos")}</span>
             <div className="text-3xl font-black text-emerald-950 mt-1 font-serif">{expedientesConcluidos}</div>
           </div>
         </div>
 
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 rounded-2xl flex items-center justify-between">
           <div>
-            <h4 className="text-sm font-black text-blue-950">Aceder ao Módulo Completo de Expediente</h4>
-            <p className="text-xs text-blue-800 mt-0.5">Visualize a listagem integral de documentos e despachos da direção.</p>
+            <h4 className="text-sm font-black text-blue-950">{getTranslation(currentLang, "gestaoExpediente")}</h4>
           </div>
           <button
             onClick={() => onNavigate?.("Gestão de Expediente")}
             className="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-2"
           >
-            Abrir Gestão <ChevronRight size={16} />
+            {getTranslation(currentLang, "aceder")} <ChevronRight size={16} />
           </button>
         </div>
       </div>
@@ -602,11 +579,11 @@ export default function CentralOverview({
   // TELA PRINCIPAL (Cards dinâmicos)
   // -------------------------------------------------------------
   const cardsList = [
-    { id: "efetivo", title: "Efetivo Geral", sub: `Docente (H:${realDocH} M:${realDocM}) | CTA (H:${realCtaH} M:${realCtaM})`, icon: Users, color: "border-blue-900 bg-blue-50/30 text-blue-950 hover:bg-blue-50" },
-    { id: "estudantes", title: "Estudantes por Curso e Género", sub: `${cursosEstudantes.length} Cursos • M: ${estudantesStats.homens} | F: ${estudantesStats.mulheres}`, icon: GraduationCap, color: "border-indigo-900 bg-indigo-50/30 text-indigo-950 hover:bg-indigo-50" },
-    { id: "planos", title: "Planos de Atividades", sub: `${totalActividadesPlanificadas} Atividades • ${orcamentoTotalProposto.toLocaleString("pt-MZ")} MZN`, icon: FileText, color: "border-emerald-900 bg-emerald-50/30 text-emerald-950 hover:bg-emerald-50" },
-    { id: "relatorios", title: "Relatórios", sub: "Relatórios por Departamentos e Unidades", icon: BarChart3, color: "border-amber-900 bg-amber-50/30 text-amber-950 hover:bg-amber-50" },
-    { id: "expediente", title: "Gestão de Expediente", sub: `Total de ${totalExpediente} Expedientes registados`, icon: FolderOpen, color: "border-purple-900 bg-purple-50/30 text-purple-950 hover:bg-purple-50" },
+    { id: "efetivo", title: getTranslation(currentLang, "efetivoGeral"), sub: `${getTranslation(currentLang, "corpoDocente")} (H:${realDocH} M:${realDocM}) | CTA (H:${realCtaH} M:${realCtaM})`, icon: Users, color: "border-blue-900 bg-blue-50/30 text-blue-950 hover:bg-blue-50" },
+    { id: "estudantes", title: getTranslation(currentLang, "estudantesPorCursoGenero"), sub: `${cursosEstudantes.length} ${getTranslation(currentLang, "availableCourses")} • M: ${estudantesStats.homens} | F: ${estudantesStats.mulheres}`, icon: GraduationCap, color: "border-indigo-900 bg-indigo-50/30 text-indigo-950 hover:bg-indigo-50" },
+    { id: "planos", title: getTranslation(currentLang, "planosAtividades"), sub: `${totalActividadesPlanificadas} Atividades • ${orcamentoTotalProposto.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ")} MZN`, icon: FileText, color: "border-emerald-900 bg-emerald-50/30 text-emerald-950 hover:bg-emerald-50" },
+    { id: "relatorios", title: getTranslation(currentLang, "reports"), sub: getTranslation(currentLang, "relatoriosDirecao"), icon: BarChart3, color: "border-amber-900 bg-amber-50/30 text-amber-950 hover:bg-amber-50" },
+    { id: "expediente", title: getTranslation(currentLang, "gestaoExpediente"), sub: `Total: ${totalExpediente}`, icon: FolderOpen, color: "border-purple-900 bg-purple-50/30 text-purple-950 hover:bg-purple-50" },
   ];
 
   return (
@@ -614,14 +591,11 @@ export default function CentralOverview({
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-black tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-            Direção / Divisão / Departamento
+            {translateInstitutionalText(title, currentLang)}
           </span>
           <h1 className="text-2xl font-black text-slate-900 font-serif mt-2">
-            Visão Geral • {title}
+            {getTranslation(currentLang, "visaoGeral")} • {translateInstitutionalText(title, currentLang)}
           </h1>
-          <p className="text-xs text-slate-500 font-medium mt-1">
-            Painel de supervisão e gestão integrada de efetivo, planos e expediente
-          </p>
         </div>
       </div>
 
@@ -648,7 +622,7 @@ export default function CentralOverview({
               <div className="flex items-center justify-between">
                 <IconComp className="w-6 h-6 shrink-0 text-slate-900 group-hover:scale-110 transition-transform" />
                 <span className="text-[9px] font-black px-2 py-0.5 bg-black/10 rounded">
-                  Aceder
+                  {getTranslation(currentLang, "access")}
                 </span>
               </div>
               <div className="mt-3">
@@ -666,3 +640,4 @@ export default function CentralOverview({
     </div>
   );
 }
+

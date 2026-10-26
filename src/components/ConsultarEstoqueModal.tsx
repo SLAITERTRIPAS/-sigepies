@@ -17,6 +17,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { firestoreService } from "../lib/firestoreService";
+import { useTranslation } from "../lib/i18n";
 
 interface ConsultarEstoqueModalProps {
   user?: any;
@@ -64,6 +65,7 @@ export default function ConsultarEstoqueModal({
   onSelectProductForRequisition,
   defaultSector,
 }: ConsultarEstoqueModalProps) {
+  const { t } = useTranslation();
   const [selectedSetor, setSelectedSetor] = useState<string>(
     defaultSector || user?.departamento || user?.direcao || "Todos os Setores",
   );

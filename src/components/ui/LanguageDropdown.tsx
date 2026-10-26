@@ -81,7 +81,7 @@ export const LanguageDropdown: React.FC<LanguageDropdownProps> = ({
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white transition-all duration-200 shadow-sm cursor-pointer select-none active:scale-95 group focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-        title="Alterar Idioma do Sistema (PT, EN, FR, ES, AUTO)"
+        title="Alterar Idioma do Sistema (PT, EN, AUTO)"
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
