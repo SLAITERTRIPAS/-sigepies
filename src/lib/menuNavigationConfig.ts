@@ -125,6 +125,10 @@ export const MENU_NAVIGATION_MAP: Record<string, MenuNavigationConfig> = {
   "plano do gabinete": { view: VIEW_IDS.PLANO_WORKFLOW, dashboardTitle: "Plano do Gabinete", dashboardActiveItem: "Gestão de Planos" },
   "matriz de atividades": { view: VIEW_IDS.PLANO_WORKFLOW, dashboardTitle: "Matriz de Atividades", dashboardActiveItem: "Gestão de Planos" },
   "matriz de actividades": { view: VIEW_IDS.PLANO_WORKFLOW, dashboardTitle: "Matriz de Actividades", dashboardActiveItem: "Gestão de Planos" },
+  "processo integrado de planificação": { view: "processo_integrado", dashboardTitle: "Processo Integrado de Planificação" },
+  "processo integrado": { view: "processo_integrado", dashboardTitle: "Processo Integrado de Planificação" },
+  "ciclo de planificação": { view: "processo_integrado", dashboardTitle: "Processo Integrado de Planificação" },
+
 
   // --- UGEA: PLANOS ESPECÍFICOS DE CONTRATAÇÃO PÚBLICA (IDs Únicos: plano_aquisicao e plano_contratacao) ---
   "plano de aquisição": { view: VIEW_IDS.PLANO_AQUISICAO, dashboardTitle: "Plano de Aquisição" },

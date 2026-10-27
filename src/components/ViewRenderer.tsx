@@ -55,10 +55,13 @@ const GestaoExpedienteHistoricoView = lazy(() => lazyRetry(() => import("../bloc
 const LibraryManagementView = lazy(() => lazyRetry(() => import("../blocos/bloco3_unidades_organicas/LibraryManagementView")));
 const ManualInstrucoesView = lazy(() => lazyRetry(() => import("../blocos/bloco8_gerais/ManualInstrucoesView")));
 const SobreSistemaView = lazy(() => lazyRetry(() => import("../blocos/bloco5_sistema/SobreSistemaView")));
+const InstitutionalOverview = lazy(() => lazyRetry(() => import("../blocos/bloco2_orgaos_gestao/InstitutionalOverview")));
 import { SectorSelectionView } from "../blocos/bloco1_apresentacao/SectorSelectionView";
 import { AdminRoleSelectorView } from "../blocos/bloco1_apresentacao/AdminRoleSelectorView";
+import { IntegratedPlanningWorkflowPanel } from "./IntegratedPlanningWorkflowPanel";
 import { VacationRequestForm } from "./VacationRequestForm";
 import { HolidayRequestForm } from "./HolidayRequestForm";
+
 
 const ViewLoading = () => (
   <div className="flex flex-col items-center justify-center h-full w-full bg-slate-50/50 backdrop-blur-sm">
@@ -452,6 +455,9 @@ const ViewRendererInner: React.FC<ViewRendererProps> = ({
 
     case "reposicao_teste":
       return <ReposicaoTesteView onBack={goBack} user={extendedUser || user} />;
+
+    case "institutional_overview":
+      return <InstitutionalOverview onBack={goBack} user={extendedUser || user} />;
 
     case "dashboard":
       if (dashboardTitle === "Reposição de Teste") {
@@ -887,6 +893,22 @@ const ViewRendererInner: React.FC<ViewRendererProps> = ({
         </div>
       );
 
+    case "processo_integrado":
+    case "plano_integrado":
+    case "ciclo_planificacao":
+    case "processo_integrado_planificacao":
+      return (
+        <div className="w-full h-full overflow-y-auto scrollbar bg-slate-50 p-3 md:p-6">
+          <IntegratedPlanningWorkflowPanel
+            user={extendedUser || user}
+            activities={matrixActivities}
+            onRefreshData={onGlobalSync}
+            onNavigateToModule={(mod) => onSetView && onSetView(mod)}
+            onShowAlert={onShowAlert}
+          />
+        </div>
+      );
+
     case "plano_workflow":
       return (
         <PlanoWorkflowView
@@ -911,6 +933,7 @@ const ViewRendererInner: React.FC<ViewRendererProps> = ({
           onBack={goBack}
         />
       );
+
 
     case "calendar":
       return (

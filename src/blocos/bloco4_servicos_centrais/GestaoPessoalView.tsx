@@ -97,7 +97,6 @@ const GestaoDocumentosView = lazy(() => import("../bloco4_servicos_centrais/Gest
 const CalendarView = lazy(() => import("../bloco5_sistema/CalendarView"));
 const AssinaturaDigitalView = lazy(() => lazyRetry(() => import("../bloco5_sistema/AssinaturaDigitalView")));
 import VisaoGeralLayout from "../bloco8_gerais/VisaoGeralLayout";
-import VisaoGeralCards from "../../components/VisaoGeralCards";
 import RemuneracoesRHView from "./RemuneracoesRHView";
 import PlanoFeriasRHView from "../../components/PlanoFeriasRHView";
 const MatrixView = lazy(() => lazyRetry(() => import("../bloco5_sistema/MatrixView")));
@@ -3218,24 +3217,6 @@ export default function GestaoPessoalView({
             </div>
 
             {isProcessing && <LoadingOverlay />}
-            <VisaoGeralCards
-              user={user}
-              title={title || "Repartição de Pessoal"}
-              onNavigate={(target) => {
-                if (target === "Gestão de Pessoal" || target === "Gestão Pessoal" || target === "Balanço") {
-                  setFiltro(null);
-                  pushView("lista");
-                } else if (target === "Plano" || target === "Plano de Férias") {
-                  pushView("plano_ferias_rh");
-                } else if (target === "Relatórios") {
-                  pushView("estatistica_reparticao");
-                } else if (target === "Remunerações") {
-                  pushView("remuneracoes");
-                } else {
-                  navigateTo(target);
-                }
-              }}
-            />
           </div>
         </div>
       );

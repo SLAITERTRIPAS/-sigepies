@@ -53,12 +53,28 @@ export async function wipeAllTestData() {
     "direcoes_organicas",
     "estrutura_adicionais",
     "orgaos_custom",
-    "direcoes_excluidas"
+    "direcoes_excluidas",
+    "notifications",
+    "auditLogs",
+    "systemReminders",
+    "holiday_requests",
+    "feedback"
   ];
 
   console.log("🔥 Iniciando purga total e absoluta de dados de teste...");
   let totalDeleted = 0;
   
+  // Auditar a acção antes de apagar
+  try {
+    const user = auth.currentUser;
+    await addDoc(collection(db, "auditLogs"), {
+      action: "WIPE_ALL_TEST_DATA",
+      user: user?.email || "unknown",
+      timestamp: serverTimestamp(),
+      message: "Executada Limpeza Geral Absoluta do Sistema"
+    });
+  } catch (_) {}
+
   for (const colName of collectionsToWipe) {
     try {
       const colRef = collection(db, colName);
@@ -67,11 +83,8 @@ export async function wipeAllTestData() {
       if (!snapshot.empty) {
         console.log(`🗑️ Eliminando ${snapshot.size} documentos de ${colName}...`);
         
-        // Proteção para não apagar o programador master se estiver na coleção de utilizadores
-        // (Nota: 'users' não está na lista acima por segurança, mas se estivesse, filtraríamos)
-        
         const docs = snapshot.docs;
-        // Apagar em lotes de 100 para evitar sobrecarga
+        // Apagar em lotes de 100 para evitar sobrecarga e timeouts
         for (let i = 0; i < docs.length; i += 100) {
           const batch = docs.slice(i, i + 100);
           await Promise.all(batch.map(d => deleteDoc(d.ref)));
@@ -102,7 +115,7 @@ export async function wipeAllTestData() {
   ];
   globalKeys.forEach(k => localStorage.removeItem(k));
 
-  console.log(`✅ Purga total concluída. ${totalDeleted} documentos eliminados de todos os blocos e menus.`);
+  console.log(`✅ Purga total concluída. ${totalDeleted} documentos eliminados.`);
   return { success: true, count: totalDeleted };
 }
 
@@ -222,10 +235,23 @@ export async function fetchCollection<T>(
   const userSetor = safeUser?.setor || safeUser?.departamento || safeUser?.reparticao;
 
   let q;
-  if (!isGlobal && instituicaoId && userSetor) {
-    q = orderField
-      ? query(colRef, where("instituicaoId", "==", instituicaoId), where("setor", "==", userSetor), orderBy(orderField, "desc"), limit(limitCount))
-      : query(colRef, where("instituicaoId", "==", instituicaoId), where("setor", "==", userSetor), limit(limitCount));
+  const privateCollections = ["notes", "messages", "drafts", "signatures", "notifications"];
+  const isPrivate = privateCollections.includes(collectionName);
+  const uid = auth.currentUser?.uid || safeUser?.uid || safeUser?.id;
+
+  if (!isGlobal) {
+    let constraints = [];
+    if (instituicaoId) constraints.push(where("instituicaoId", "==", instituicaoId));
+    
+    if (isPrivate && uid) {
+      constraints.push(where("userId", "==", uid));
+    } else if (userSetor && !isPrivate) {
+      constraints.push(where("setor", "==", userSetor));
+    }
+
+    if (orderField) constraints.push(orderBy(orderField, "desc"));
+    constraints.push(limit(limitCount));
+    q = query(colRef, ...constraints);
   } else if (instituicaoId) {
     q = orderField
       ? query(colRef, where("instituicaoId", "==", instituicaoId), orderBy(orderField, "desc"), limit(limitCount))
@@ -806,13 +832,24 @@ export async function getFromCollection<T>(
     const instituicaoId = getInstituicaoId();
     let q;
     
-    // Se não for Admin Global (Master), filtra por tenantId
     const isMaster = localStorage.getItem("sigep_logged_in_user")?.includes("slaitertripas@gmail.com") || false;
-    
+    const privateCollections = ["notes", "messages", "drafts", "signatures", "notifications"];
+    const isPrivate = privateCollections.includes(collectionName);
+    const currentUser = safeJSONParse(localStorage.getItem("sigep_logged_in_user"), null);
+    const uid = auth.currentUser?.uid || currentUser?.uid || currentUser?.id;
+
     if (!isMaster) {
-        q = orderField 
-            ? query(colRef, where("tenantId", "==", instituicaoId), orderBy(orderField, "desc")) 
-            : query(colRef, where("tenantId", "==", instituicaoId));
+        let constraints = [];
+        constraints.push(where("tenantId", "==", instituicaoId));
+        
+        if (isPrivate && uid) {
+          constraints.push(where("userId", "==", uid));
+        }
+
+        if (orderField) {
+          constraints.push(orderBy(orderField, "desc"));
+        }
+        q = query(colRef, ...constraints);
     } else {
         q = orderField ? query(colRef, orderBy(orderField, "desc")) : colRef;
     }
@@ -883,8 +920,33 @@ export function subscribeToCollection<T>(
   const setupSubscription = (useOrdering: boolean) => {
     try {
       const colRef = collection(db, collectionName);
-      let q = useOrdering && orderField ? query(colRef, orderBy(orderField, "desc")) : colRef;
-      if (limitCount && useOrdering && orderField) q = query(q, limit(limitCount));
+      const isMaster = localStorage.getItem("sigep_logged_in_user")?.includes("slaitertripas@gmail.com") || false;
+      const privateCollections = ["notes", "messages", "drafts", "signatures", "notifications"];
+      const isPrivate = privateCollections.includes(collectionName);
+      const currentUser = safeJSONParse(localStorage.getItem("sigep_logged_in_user"), null);
+      const uid = auth.currentUser?.uid || currentUser?.uid || currentUser?.id;
+      const instituicaoId = getInstituicaoId();
+
+      let q;
+      if (!isMaster) {
+        let constraints = [];
+        if (instituicaoId) {
+          constraints.push(where("instituicaoId", "==", instituicaoId));
+        }
+        if (isPrivate && uid) {
+          constraints.push(where("userId", "==", uid));
+        }
+        if (useOrdering && orderField) {
+          constraints.push(orderBy(orderField, "desc"));
+        }
+        if (limitCount) {
+          constraints.push(limit(limitCount));
+        }
+        q = query(colRef, ...constraints);
+      } else {
+        q = useOrdering && orderField ? query(colRef, orderBy(orderField, "desc")) : colRef;
+        if (limitCount && useOrdering && orderField) q = query(q, limit(limitCount));
+      }
 
       return onSnapshot(
         q,

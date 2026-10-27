@@ -51,6 +51,7 @@ import {
   terminate,
 } from "firebase/firestore";
 import { firestoreService } from "../../lib/firestoreService";
+import { isChefeUser, isInstitutionalAdminAccount, isSuperBossUser } from "../../lib/auth";
 import { getSystemLogo } from "../../lib/logoService";
 import { SigepLogo } from "../../components/SigepLogo";
 import SessionConflictModal from "../../components/modals/SessionConflictModal";
@@ -221,8 +222,17 @@ const findLocalUser = (lowerInput: string, inputPass?: string) => {
       direcao: (generalCol as any).direcao || "",
       departamento: (generalCol as any).departamento || "",
       reparticao: (generalCol as any).reparticao || "",
+      setor: (generalCol as any).setor || (generalCol as any).sector || "",
+      sector: (generalCol as any).sector || (generalCol as any).setor || "",
       cargo: generalCol.cargo || "",
-      status: generalCol.status || "Ativo",
+      cargoChefia: (generalCol as any).cargoChefia || "",
+      isChefia: Boolean((generalCol as any).cargoChefia && (generalCol as any).cargoChefia !== "-" && (generalCol as any).cargoChefia !== "Nenhum"),
+      atribuicao: (generalCol as any).atribuicao || generalCol.cargo || "",
+      funcao: (generalCol as any).funcao || "",
+      categoria: (generalCol as any).categoria || "",
+      setoresAtribuidos: (generalCol as any).setoresAtribuidos || [],
+      status: "Ativo",
+      estado: "Ativo",
       areaDeAfetacao: (generalCol as any).areaDeAfetacao || "",
       isFirstAccess: true,
     };
@@ -989,49 +999,7 @@ export default function LoginScreen({
           return;
         }
 
-        // Verifica se o colaborador está afeto a um setor, repartição, departamento ou direção
-        const cargoRole = (user.role || user.categoria || user.cargo || "").toLowerCase();
-        const isSuperUser = user.email === "slaitertripas@gmail.com";
-        
-        const dir = (user.direcao || "").trim();
-        const dep = (user.departamento || "").trim();
-        const rep = (user.reparticao || "").trim();
-        const sec = (user.sector || user.setor || "").trim();
-        const area = (user.areaDeAfetacao || "").trim();
-        const isUnassigned = !dir && !dep && !rep && !sec && !area;
-
-        if (!isSuperUser && isUnassigned) {
-          setError("Aguarde a sua afetação.");
-          setLoading(false);
-          return;
-        }
-
-
-        if (forceChange) {
-          setMatchedUser(user);
-          setView("create_password");
-          setLoading(false);
-          return;
-        }
-
-        // Login bem sucedido
-        user.mustChangePassword = false;
-
-        // Sincronizar dados do Firebase Auth se disponível, mas APENAS atualizar o doc correspondente,
-        // sem criar um registo espelhado com o UID
-        if (auth.currentUser && matchedDoc && !isQuotaError) {
-          try {
-            const userUpdateData = {
-              authUid: auth.currentUser.uid, // guardamos o UID no doc original em vez de usar como ID
-              updatedAt: serverTimestamp(),
-            };
-            await withTimeout(updateDoc(doc(db, "users", matchedDoc.id), userUpdateData), 4000);
-          } catch (err) {
-            console.warn("Aviso ao sincronizar UID:", err);
-          }
-        }
-
-        // Tentar obter dados atualizados do colaborador se sem quota error
+        // 1. Tentar obter dados atualizados do colaborador no Firestore para validação completa
         if (!isQuotaError) {
           try {
             if (user.role === "Estudante") {
@@ -1061,6 +1029,12 @@ export default function LoginScreen({
                   5000,
                 );
               }
+              if (snapCol.empty && user.email) {
+                snapCol = await withTimeout(
+                  getDocs(query(colRef, where("email", "==", String(user.email).toLowerCase().trim()))),
+                  5000,
+                );
+              }
 
               if (!snapCol.empty) {
                 const freshData = snapCol.docs[0].data();
@@ -1073,6 +1047,116 @@ export default function LoginScreen({
             }
           } catch (dataErr) {
             console.warn("Erro ao buscar dados atualizados:", dataErr);
+          }
+        }
+
+        // 2. Fallback de dados institucionais na baseline EFETIVO_MAP se ainda faltarem campos
+        if (!user.cargoChefia || user.cargoChefia === "-" || user.cargoChefia === "Nenhum") {
+          const matchedStatic = EFETIVO_MAP.get(n(user.email || "")) || (user.nuit ? EFETIVO_MAP.get(n(String(user.nuit))) : null);
+          if (matchedStatic) {
+            if (matchedStatic.cargoChefia) user.cargoChefia = matchedStatic.cargoChefia;
+            if (!user.direcao && matchedStatic.direcao) user.direcao = matchedStatic.direcao;
+            if (!user.departamento && matchedStatic.departamento) user.departamento = matchedStatic.departamento;
+            if (!user.reparticao && matchedStatic.reparticao) user.reparticao = matchedStatic.reparticao;
+            if (!user.setor && matchedStatic.setor) user.setor = matchedStatic.setor;
+            if (!user.cargo && matchedStatic.cargo) user.cargo = matchedStatic.cargo;
+          }
+        }
+
+        // 3. Verificação Rigorosa dos Requisitos Funcionais de Login do SIGEP:
+        // "Apenas poderão efetuar login os colaboradores que possuam uma afetação válida,
+        // uma atribuição devidamente definida e um cargo de chefia associado."
+        const isSuperUser =
+          user.email?.toLowerCase().trim() === "slaitertripas@gmail.com" ||
+          user.isProgrammer === true ||
+          user.isOwner === true ||
+          isSuperBossUser(user) ||
+          user.role === "Administrador Global do Sistema";
+
+        if (!isSuperUser) {
+          const isValidVal = (val?: any) => {
+            if (!val) return false;
+            const str = String(val).trim().toLowerCase();
+            return str !== "" && str !== "-" && str !== "--" && str !== "nenhum" && str !== "nulo" && str !== "n/a";
+          };
+
+          // A) Possuir uma afetação válida
+          const hasValidAfetacao =
+            isValidVal(user.areaDeAfetacao) ||
+            isValidVal(user.sector) ||
+            isValidVal(user.setor) ||
+            isValidVal(user.reparticao) ||
+            isValidVal(user.departamento) ||
+            isValidVal(user.direcao) ||
+            isValidVal(user.unidadeOrganica) ||
+            isValidVal(user.unidade);
+
+          if (!hasValidAfetacao) {
+            setError("Acesso recusado: O colaborador não possui uma afetação válida atribuída.");
+            setLoading(false);
+            return;
+          }
+
+          // B) Ter uma atribuição específica definida
+          const hasSetoresAtribuidos = Array.isArray(user.setoresAtribuidos) && user.setoresAtribuidos.length > 0;
+          const hasMenuAtribuido = Array.isArray(user.atribuicaoMenu) && user.atribuicaoMenu.length > 0;
+          const hasAlocacoes = Array.isArray(user.alocacoes) && user.alocacoes.length > 0;
+          const hasDisciplinas = Array.isArray(user.disciplinas) && user.disciplinas.length > 0;
+          const hasValidAtribuicao =
+            isValidVal(user.atribuicao) ||
+            isValidVal(user.funcao) ||
+            isValidVal(user.cargo) ||
+            isValidVal(user.categoria) ||
+            hasSetoresAtribuidos ||
+            hasMenuAtribuido ||
+            hasAlocacoes ||
+            hasDisciplinas;
+
+          if (!hasValidAtribuicao) {
+            setError("Acesso recusado: O colaborador não possui uma atribuição específica definida.");
+            setLoading(false);
+            return;
+          }
+
+          // C) Ocupar um cargo de chefia associado
+          const hasCargoChefia =
+            isValidVal(user.cargoChefia) ||
+            user.isChefia === true ||
+            isChefeUser(user) ||
+            isInstitutionalAdminAccount(user);
+
+          if (!hasCargoChefia) {
+            setError("Acesso recusado: O acesso ao sistema é restrito a colaboradores que ocupem um cargo de chefia associado.");
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Todos os colaboradores e chefias autorizados devem permanecer com estado Ativo
+        user.estado = "Ativo";
+        user.status = "Ativo";
+
+        if (forceChange) {
+          setMatchedUser(user);
+          setView("create_password");
+          setLoading(false);
+          return;
+        }
+
+        // Login bem sucedido
+        user.mustChangePassword = false;
+
+        // Sincronizar dados do Firebase Auth se disponível, mas APENAS atualizar o doc correspondente,
+        // sem criar um registo espelhado com o UID
+        if (auth.currentUser && matchedDoc && !isQuotaError) {
+          try {
+            const userUpdateData = {
+              authUid: auth.currentUser.uid, // guardamos o UID no doc original em vez de usar como ID
+              updatedAt: serverTimestamp(),
+            };
+            await withTimeout(updateDoc(doc(db, "users", matchedDoc.id), userUpdateData), 4000);
+          } catch (err) {
+            console.warn("Aviso ao sincronizar UID:", err);
           }
         }
 
@@ -1179,24 +1263,7 @@ export default function LoginScreen({
           }
         }
 
-        // Verificar alocação (Status 'Afetado' e areaDeAfetacao)
-        const isAfetado =
-          (user.status === "Afetado" && user.areaDeAfetacao) ||
-          Boolean(user.areaDeAfetacao) ||
-          Boolean(user.sector || user.setor || user.reparticao || user.departamento || user.direcao);
-        const isAdmin =
-          user.role === "Administrador" ||
-          user.role === "Administrador do Sistema" ||
-          user.role === "Administrador da Instituição" ||
-          String(user.role).toLowerCase().includes("admin") ||
-          String(user.cargoChefia || "").toLowerCase().includes("administrador");
-        const isProgrammer = user.email === "slaitertripas@gmail.com";
 
-        if (!isAfetado && !isAdmin && !isProgrammer) {
-          setError("Aguarde a sua afetação que será feita pelo RH.");
-          setLoading(false);
-          return;
-        }
 
         // Garantir que utilizadores autenticados nunca mais precisem de alterar a senha obrigatoriamente
         user.mustChangePassword = false;
@@ -1210,54 +1277,37 @@ export default function LoginScreen({
           }).catch(console.warn);
         }
 
-        // Gerar token de sessão único para este dispositivo
+        // REGRA FINAL DO SIGEP: Encerra automaticamente qualquer sessão ativa anterior deste mesmo utilizador e ativa a nova
         const targetUserId = user.id || user.uid || user.email;
+        await terminateAllOtherSessions(targetUserId);
+        await createOrUpdateUserSession(targetUserId);
 
-        const completeLoginProcess = async (u: any) => {
-          await createOrUpdateUserSession(targetUserId);
-
-          if (matchedDoc && !isQuotaError) {
-            updateDoc(doc(db, "users", matchedDoc.id), {
-              mustChangePassword: false,
-              isFirstAccess: false,
-              lastLoginAt: new Date().toISOString(),
-              lastSeenAt: new Date().toISOString(),
-              isOnline: true,
-            }).catch(console.warn);
-          }
-
-          saveUserToCache({ ...u, password: password || u.password });
-
-          setSuccess(`Bem-vindo à SIGEP`);
-          setTimeout(() => {
-            onLogin({
-              ...u,
-              idioma: loginLanguage,
-              userArea: {
-                unidade: u.unidade,
-                direcao: u.direcao,
-                departamento: u.departamento,
-                reparticao: u.reparticao,
-                setor: u.setor,
-              },
-            });
-          }, 500);
-        };
-
-        // REGRA SIGEP (CA-01 & CA-02): Verificar se já existe uma sessão ativa noutro dispositivo
-        const remoteSession = await getActiveRemoteSession(targetUserId);
-
-        if (remoteSession) {
-          // CA-01 & CA-02: Bloqueia acesso inicial e exibe o modal com os detalhes da sessão ativa
-          setActiveRemoteSession(remoteSession);
-          setPendingUserData(user);
-          setShowConflictModal(true);
-          setLoading(false);
-          return;
+        if (matchedDoc && !isQuotaError) {
+          updateDoc(doc(db, "users", matchedDoc.id), {
+            mustChangePassword: false,
+            isFirstAccess: false,
+            lastLoginAt: new Date().toISOString(),
+            lastSeenAt: new Date().toISOString(),
+            isOnline: true,
+          }).catch(console.warn);
         }
 
-        // Sem conflito: Conclui o login
-        await completeLoginProcess(user);
+        saveUserToCache({ ...user, password: password || user.password });
+
+        setSuccess(`Bem-vindo à SIGEP`);
+        setTimeout(() => {
+          onLogin({
+            ...user,
+            idioma: loginLanguage,
+            userArea: {
+              unidade: user.unidade,
+              direcao: user.direcao,
+              departamento: user.departamento,
+              reparticao: user.reparticao,
+              setor: user.setor,
+            },
+          });
+        }, 500);
 
     } catch (err: any) {
       console.error(err);
@@ -2245,17 +2295,6 @@ export default function LoginScreen({
           onSuccess={() => setShowPasswordRecoveryModal(false)}
         />
       )}
-
-      <SessionConflictModal
-        isOpen={showConflictModal}
-        activeSession={activeRemoteSession}
-        user={pendingUserData}
-        onConfirmReplace={handleConfirmReplaceSession}
-        onCancel={() => {
-          setShowConflictModal(false);
-          setLoading(false);
-        }}
-      />
     </div>
   );
 }

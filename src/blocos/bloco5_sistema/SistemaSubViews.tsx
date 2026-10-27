@@ -39,7 +39,7 @@ import {
 import { collection, getDocs, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { firestoreService } from "../../lib/firestoreService";
-import { isSuperBossUser } from "../../lib/auth";
+import { isSuperBossUser, isChefeUser, isInstitutionalAdminAccount } from "../../lib/auth";
 import { ProcessingCircle } from "../../components/ui/ProcessingCircle";
 import { InstitutionalHeader } from "../../components/InstitutionalHeader";
 import { HistoricoChefiasGraficos, parseRegiaoEProvincia } from "../../components/HistoricoChefiasGraficos";
@@ -647,6 +647,8 @@ export function UserManagementView({
   const [searchTerm, setSearchTerm] = useState("");
   const [isResetting, setIsResetting] = useState<string | null>(null);
   const [resetConfirmUser, setResetConfirmUser] = useState<{ id: string; name: string } | null>(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     const q = collection(db, "users");
@@ -685,7 +687,7 @@ export function UserManagementView({
       unsubscribe();
       clearInterval(interval);
     };
-  }, []);
+  }, [currentUser]);
 
   const isEffectivelyOnline = (u: any) => {
     if (u.isOnline) return true;
@@ -735,23 +737,69 @@ export function UserManagementView({
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
-    if (!isSuperBossUser(currentUser)) {
-      alert("Apenas o proprietário pode remover utilizadores.");
+  const canDeleteUser =
+    isSuperBossUser(currentUser) ||
+    currentUser?.isOwner === true ||
+    currentUser?.role === "Administrador" ||
+    String(currentUser?.role || "").toLowerCase().includes("admin") ||
+    isInstitutionalAdminAccount(currentUser) ||
+    currentUser?.cargoChefia?.toLowerCase().includes("administrador");
+
+  const handleInitiateDeleteUser = (u: any) => {
+    if (u.isOwner === true || u.email === "slaitertripas@gmail.com") {
+      alert("O Administrador Geral / Proprietário não pode ser excluído.");
       return;
     }
-    if (
-      confirm(
-        "Tem a certeza que deseja remover este utilizador permanentemente? Esta ação é irreversível e sem possibilidade de recuperação.",
-      )
-    ) {
+    if (u.email && currentUser?.email && u.email.toLowerCase() === currentUser.email.toLowerCase()) {
+      alert("Não é possível excluir a sua própria conta de utilizador.");
+      return;
+    }
+    setDeleteConfirmUser({
+      id: u.id,
+      name: u.name || u.nome || "Utilizador",
+      email: u.email || "",
+    });
+  };
+
+  const executeDeleteUser = async () => {
+    if (!deleteConfirmUser) return;
+    const { id, name, email } = deleteConfirmUser;
+    setIsDeleting(id);
+    try {
+      // 1. Elimina permanentemente os dados do utilizador no Firestore
+      await firestoreService.users.delete(id);
       try {
-        await firestoreService.users.delete(id);
-        setAllUsers((prev) => prev.filter((u) => u.id !== id));
-        alert("dados excluido com sucesso");
-      } catch (err) {
-        alert("Erro ao remover utilizador.");
-      }
+        await deleteDoc(doc(db, "users", id));
+      } catch (_) {}
+
+      // 2. Limpar dos caches locais
+      try {
+        const local = localStorage.getItem("sigep_local_users") || localStorage.getItem("sigep_users");
+        if (local) {
+          const parsed = JSON.parse(local);
+          const updated = parsed.filter((x: any) => x.id !== id && (!email || x.email !== email));
+          localStorage.setItem("sigep_local_users", JSON.stringify(updated));
+          localStorage.setItem("sigep_users", JSON.stringify(updated));
+        }
+      } catch (_) {}
+
+      try {
+        const cache = localStorage.getItem("sigep_users_cache");
+        if (cache) {
+          const parsed = JSON.parse(cache);
+          const updated = parsed.filter((x: any) => x.id !== id && (!email || x.email !== email));
+          localStorage.setItem("sigep_users_cache", JSON.stringify(updated));
+        }
+      } catch (_) {}
+
+      setAllUsers((prev) => prev.filter((u) => u.id !== id));
+      setDeleteConfirmUser(null);
+      alert(`Dados do utilizador ${name} eliminados com sucesso.`);
+    } catch (err: any) {
+      console.error("Erro ao excluir utilizador:", err);
+      alert("Erro ao excluir utilizador: " + (err?.message || String(err)));
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -941,34 +989,50 @@ export function UserManagementView({
                       )}
                     </td>
                     <td className="px-8 py-6">
-                      <div className="flex flex-col gap-1">
-                        <span
-                          className={`w-fit px-3 py-1 rounded-full text-[9px] font-black ${online ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}
-                        >
-                          {online ? "Conectado Agora" : "Desconectado"}
-                        </span>
-                        {u.isOwner && (
-                          <span className="w-fit px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black">
-                            Proprietário / Programador
-                          </span>
-                        )}
-                        {u.role === "Administrador" && !u.isOwner && (
-                          <span className="w-fit px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[9px] font-black">
-                            Admin
-                          </span>
-                        )}
-                        {u.mustChangePassword && (
-                          <span className="w-fit px-3 py-1 bg-red-50 text-red-600 rounded-full text-[8px] font-black border border-red-100">
-                            Senha Padrão
-                          </span>
-                        )}
-                      </div>
+                      {(() => {
+                        const isChefe = isChefeUser(u) || Boolean(u.cargoChefia && u.cargoChefia !== "-" && u.cargoChefia !== "Nenhum") || u.isChefia === true;
+                        return (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="w-fit px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                                Ativo
+                              </span>
+                              <span
+                                className={`w-fit px-2 py-0.5 rounded-full text-[9px] font-bold ${online ? "bg-green-100 text-green-700 border border-green-200" : "bg-gray-100 text-gray-500 border border-gray-200"}`}
+                              >
+                                {online ? "Conectado" : "Desconectado"}
+                              </span>
+                            </div>
+                            {isChefe && (
+                              <span className="w-fit px-2 py-0.5 bg-blue-50 text-blue-800 rounded-md text-[8px] font-black uppercase tracking-wider border border-blue-200 flex items-center gap-1">
+                                <ShieldCheck size={10} /> Cargo de Chefia (Ativo)
+                              </span>
+                            )}
+                            {u.isOwner && (
+                              <span className="w-fit px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[8px] font-black uppercase">
+                                Proprietário / Programador
+                              </span>
+                            )}
+                            {u.role === "Administrador" && !u.isOwner && (
+                              <span className="w-fit px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[8px] font-black uppercase">
+                                Admin
+                              </span>
+                            )}
+                            {u.mustChangePassword && (
+                              <span className="w-fit px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-[8px] font-black border border-red-100 uppercase">
+                                Senha Padrão
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
-                    <td className="px-8 py-6 text-right space-x-2">
+                    <td className="px-8 py-6 text-right space-x-2 whitespace-nowrap">
                       <button
                         disabled={isResetting === u.id}
                         onClick={() => handleResetPassword(u.id, u.name)}
-                        className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors inline-flex items-center justify-center"
+                        className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors inline-flex items-center justify-center align-middle"
                         title="Gerar Senha Padrão (1234)"
                       >
                         {isResetting === u.id ? (
@@ -978,16 +1042,22 @@ export function UserManagementView({
                         )}
                       </button>
 
-                      {isSuperBossUser(currentUser) &&
-                        u.email !== currentUser?.email && (
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Remover Utilizador"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
+                      {/* Botão Excluir: Elimina permanentemente os dados do utilizador selecionado */}
+                      {canDeleteUser && u.email !== currentUser?.email && !u.isOwner && (
+                        <button
+                          disabled={isDeleting === u.id}
+                          onClick={() => handleInitiateDeleteUser(u)}
+                          className="px-2.5 py-1.5 text-xs font-bold text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-xl transition-all inline-flex items-center gap-1.5 shadow-sm align-middle"
+                          title="Excluir utilizador selecionado permanentemente"
+                        >
+                          {isDeleting === u.id ? (
+                            <ProcessingCircle size={13} />
+                          ) : (
+                            <Trash2 size={13} />
+                          )}
+                          <span>Excluir</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1031,6 +1101,54 @@ export function UserManagementView({
                   className="px-6 py-2 text-xs font-black tracking-widest text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors shadow-lg shadow-amber-200"
                 >
                   Sim
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Modal de Exclusão Permanente de Utilizador */}
+        {deleteConfirmUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-red-100"
+            >
+              <div className="flex items-center gap-3 text-red-600 mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center shrink-0">
+                  <Trash2 size={22} className="text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 leading-tight">
+                    Excluir Utilizador Permanentemente
+                  </h3>
+                  <span className="text-xs text-red-500 font-semibold">Eliminação definitiva</span>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                Tem a certeza que deseja eliminar permanentemente os dados do utilizador <strong className="text-gray-950 font-bold">{deleteConfirmUser.name}</strong> ({deleteConfirmUser.email})? Esta ação removerá definitivamente o utilizador da base de dados sem possibilidade de recuperação.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmUser(null)}
+                  disabled={isDeleting !== null}
+                  className="px-4 py-2 text-xs font-black tracking-widest text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={executeDeleteUser}
+                  disabled={isDeleting !== null}
+                  className="px-5 py-2 text-xs font-black tracking-widest text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-lg shadow-red-200 flex items-center gap-2"
+                >
+                  {isDeleting ? <ProcessingCircle size={14} /> : <Trash2 size={14} />}
+                  <span>Sim, Excluir</span>
                 </button>
               </div>
             </motion.div>

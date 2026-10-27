@@ -29,7 +29,8 @@ export default function DiagnosticPanel({ onClose }: { onClose: () => void }) {
       const status: Record<string, string> = {};
       for (const mod of CRITICAL_MODULES) {
         try {
-          await import(`${mod.path}.tsx`);
+          await import(/* @vite-ignore */ `${mod.path}.tsx`);
+
           status[mod.name] = "ok";
         } catch (e) {
           status[mod.name] = "error";

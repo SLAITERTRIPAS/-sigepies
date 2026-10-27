@@ -1,4 +1,5 @@
 import React, { ErrorInfo, ReactNode, Key } from "react";
+import { logSystemError } from "../lib/errorLoggingService";
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
@@ -56,10 +57,20 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (isIgnorableSystemError(error)) {
       return;
     }
+
     console.error(
-      "ErrorBoundary apanhou um erro de renderização:",
+      "ErrorBoundary capturou falha de renderização:",
       error?.message || String(error),
-      errorInfo?.componentStack || String(errorInfo),
+      errorInfo?.componentStack || String(errorInfo)
+    );
+
+    // Registar log técnico no Firestore para auditoria (RE-05)
+    logSystemError(
+      {
+        message: error?.message || String(error),
+        stack: errorInfo?.componentStack || error?.stack || "",
+      },
+      "RenderizacaoComponente"
     );
 
     const isChunkLoadError =
@@ -67,12 +78,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       String(error?.message || "").toLowerCase().includes("failed to fetch") ||
       String(error?.message || "").toLowerCase().includes("loading chunk");
 
-    // Se for erro temporário de chunk/rede no carregamento dinâmico e for a primeira tentativa, recarrega suavemente
+    // Tentativa de recuperação automática (RE-04)
     if (isChunkLoadError && this.state.errorCount === 0) {
       this.setState((prev) => ({ errorCount: prev.errorCount + 1 }));
       this.resetTimeoutId = setTimeout(() => {
         window.location.reload();
-      }, 500);
+      }, 300);
     }
   }
 
@@ -115,43 +126,48 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (this.state.hasError) {
       return (
         <div className="min-h-screen w-full flex items-center justify-center p-6 bg-slate-950 text-slate-100 font-sans">
-          <div className="max-w-xl w-full bg-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-800 text-center">
-            <div className="w-16 h-16 bg-blue-950/80 border border-blue-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-[#FFB800] font-black text-2xl shadow-lg">
+          <div className="max-w-xl w-full bg-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-800 text-center space-y-4">
+            <div className="w-14 h-14 bg-indigo-950/80 border border-indigo-500/30 rounded-2xl flex items-center justify-center mx-auto text-amber-400 font-black text-2xl shadow-lg">
               !
             </div>
-            <h2 className="text-xl font-black mb-2 text-white tracking-tight">
-              Recuperação do Sistema SIGEP: Sistema Integrado de Gestão de Processo
-            </h2>
-            <p className="text-slate-400 text-xs mb-6 leading-relaxed">
-              Ocorreu uma instabilidade pontual na exibição do módulo atual. Pode tentar recarregar ou voltar ao ecrã inicial com segurança.
-            </p>
-            <div className="bg-black/50 text-slate-300 p-4 rounded-xl text-left mb-6 overflow-auto max-h-36 font-mono text-[11px] border border-slate-800/80">
+            <div>
+              <h2 className="text-xl font-black text-white tracking-tight">
+                Falha Crítica de Exibição
+              </h2>
+              <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+                O módulo selecionado sofreu uma interrupção de renderização. O erro técnico foi registado na base de dados para auditoria técnica.
+              </p>
+            </div>
+
+            <div className="bg-black/50 text-slate-300 p-4 rounded-xl text-left font-mono text-[11px] border border-slate-800/80 overflow-auto max-h-36">
               <code>
-                {this.state.error?.message || this.state.error?.toString() || "Erro desconhecido"}
+                {this.state.error?.message || this.state.error?.toString() || "Erro inesperado de renderização"}
               </code>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
                 onClick={this.handleTryAgain}
-                className="w-full bg-[#121c60] hover:bg-[#1b2880] text-white py-3 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer border border-[#FFB800]/30"
+                className="w-full bg-indigo-900 hover:bg-indigo-800 text-white py-3 rounded-xl font-bold text-xs transition cursor-pointer shadow-md border border-indigo-500/30"
               >
                 Tentar Novamente
               </button>
               <button
                 type="button"
                 onClick={this.handleGoToHome}
-                className="w-full bg-[#FFB800] hover:bg-[#ffc629] text-slate-950 py-3 rounded-xl font-black text-xs transition-all shadow-md cursor-pointer"
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3 rounded-xl font-black text-xs transition cursor-pointer shadow-md"
               >
                 Ir para o Início
               </button>
             </div>
+
             <button
               type="button"
               onClick={this.handleClearCacheAndReload}
-              className="mt-4 text-[11px] text-slate-500 hover:text-slate-300 underline transition-colors cursor-pointer block mx-auto"
+              className="text-[11px] text-slate-500 hover:text-slate-300 underline transition cursor-pointer block mx-auto pt-2"
             >
-              Limpar cache da sessão e reiniciar
+              Atualizar cache da sessão
             </button>
           </div>
         </div>
@@ -161,5 +177,3 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return this.props.children;
   }
 }
-
-

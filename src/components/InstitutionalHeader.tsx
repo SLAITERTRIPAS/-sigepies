@@ -3,10 +3,10 @@ import { toTitleCase as tc } from '../lib/utils';
 import { EFETIVO_GERAL_DATA } from '../constants/colaboradoresList';
 import { getActiveInstituicao } from '../lib/instituicaoEstruturaService';
 import { getSystemLogo } from '../lib/logoService';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, useCurrentLanguage, translateInstitutionName, translateInstitutionalText } from '../lib/i18n';
 import i18n from '../lib/i18n';
 import { LanguageSwitcher } from './ui/LanguageSwitcher';
-import { useCurrentLanguage, translateInstitutionName, translateInstitutionalText } from '../lib/i18n';
+
 
 // Remove valores inválidos como "Songo", "ISPS", traços ou valores vazios
 export function cleanHierarchyField(val?: string): string {
@@ -270,9 +270,10 @@ export const InstitutionalHeader = ({
     if (lowestLevelName) {
       displayTitle = isEn
         ? `Activity Plan of ${translateInstitutionalText(lowestLevelName, currentLang)}`
-        : t("Plano de Actividade de {{name}}", { name: lowestLevelName });
+        : `Plano de Actividade de ${lowestLevelName}`;
     }
   }
+
   const finalTitle = displayTitle;
 
   const translatedUnidade = translateInstitutionalText(displayUnidade, currentLang);

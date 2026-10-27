@@ -1383,6 +1383,8 @@ export function mergeColaboradores(firestoreData: any[]): any[] {
         fireCol.isChefia !== undefined
           ? fireCol.isChefia
           : existing?.isChefia || false,
+      estado: "Ativo",
+      status: "Ativo",
     };
 
     if (matchedKey) {
@@ -1396,8 +1398,13 @@ export function mergeColaboradores(firestoreData: any[]): any[] {
     }
   });
 
-  // 4. Convert back to array and filter out deleted/eliminated items as well as Owner/Programmer from Efetivo Geral
-  return Array.from(mergedMap.values()).filter((c) => {
+  // 4. Convert back to array, enforce Ativo state and filter out deleted/eliminated items as well as Owner/Programmer from Efetivo Geral
+  return Array.from(mergedMap.values()).map((c) => {
+    // Requisito Funcional: Todos os colaboradores registados e chefias devem estar com o estado Ativo
+    c.estado = "Ativo";
+    c.status = "Ativo";
+    return c;
+  }).filter((c) => {
     const isOwnerProgrammer =
       (c.email && c.email.toLowerCase().trim() === "slaitertripas@gmail.com") ||
       c.id === "ST849547771" ||

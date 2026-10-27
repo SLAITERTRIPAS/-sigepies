@@ -2,122 +2,124 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- PRIMITIVOS GLOBAIS ---
+    // --- 1. PRIMITIVOS GLOBAIS (Helpers) ---
     function isSignedIn() { return request.auth != null; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
-    // Verificação de Roles baseada na coleção de utilizadores
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-    
-    function isAdmin() {
+    // Verificação de Administrador Global (Slaiter Tripas)
+    function isGlobalAdmin() {
       return isSignedIn() && (
-        getUserData().role == "Administrador" || 
-        request.auth.token.email == "slaitertripas@gmail.com" ||
-        request.auth.token.email == "fttripas@gmail.com"
+        request.auth.token.email == 'slaitertripas@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == 'slaitertripas@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isOwner == true
       );
     }
 
-    // --- SEGURANÇA POR OMISSÃO ---
+    // Verificação de Administrador Institucional
+    function isInstAdmin() {
+      let user = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isSignedIn() && (user.role == 'Administrador' || user.cargoChefia.lower().contains('administrador'));
+    }
+
+    // --- 2. VALIDAÇÕES POR ENTIDADE (Blueprints) ---
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+             data.email is string && data.email.size() <= 256 &&
+             data.role in ['Administrador', 'Visualizador', 'Editor', 'Docente', 'CTA', 'Estudante', 'Administrador Global do Sistema'] &&
+             (!data.keys().contains('nuit') || (data.nuit is string && data.nuit.size() <= 20) || data.nuit is int);
+    }
+
+    function isValidColaborador(data) {
+      return data.keys().hasAll(['nome', 'status']) &&
+             data.nome is string && data.nome.size() <= 256 &&
+             data.status in ['Ativo', 'Inativo', 'Pendente'];
+    }
+
+    // --- 3. REGRAS DE ACESSO POR COLECÇÃO ---
+
+    // Segurança por Omissão: Negar Tudo
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- COLEÇÕES ---
-
+    // PERFIS DE UTILIZADORES
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-
-      match /sessions/{sessionId} {
-        allow read, write: if isSignedIn();
-      }
+      allow get: if isOwner(userId) || isGlobalAdmin() || isInstAdmin();
+      allow list: if isGlobalAdmin() || (isInstAdmin() && resource.data.instituicaoId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.instituicaoId);
+      
+      allow create: if isSignedIn() && isValidUser(incoming()) && (isOwner(userId) || isGlobalAdmin());
+      allow update: if (isOwner(userId) || isGlobalAdmin()) && isValidUser(incoming()) && (
+        // Impedir utilizadores comuns de mudarem o seu próprio papel ou privilégios críticos
+        isGlobalAdmin() || (
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'password', 'mustChangePassword', 'lastLoginAt', 'lastSeenAt', 'isOnline', 'idioma', 'userArea'])
+        )
+      );
+      allow delete: if isGlobalAdmin();
     }
 
+    // COLABORADORES (EFETIVO GERAL)
+    match /colaboradores/{colabId} {
+      allow get: if isSignedIn(); 
+      allow list: if isGlobalAdmin() || isInstAdmin();
+      
+      allow create, update: if isGlobalAdmin() || isInstAdmin();
+      allow delete: if isGlobalAdmin();
+    }
+
+    // INSTITUIÇÕES
     match /instituicoes/{instId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isGlobalAdmin();
     }
 
-    match /expedientes/{expId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isAdmin();
-    }
-
-    match /system_alerts/{alertId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
-    match /signatures/{sigId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && existing().userId == request.auth.uid;
-      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
-    }
-
+    // CONFIGURAÇÕES DO SISTEMA
     match /config_sistema/{docId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isGlobalAdmin();
     }
 
-    match /colaboradores/{colabId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn(); // HR Boss logic can be added later
-    }
-
-    match /processos_individuais/{procId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
-    }
-
+    // MATRIX ACTIVITIES (PLANOS)
     match /matrix_activities/{actId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && (isGlobalAdmin() || isInstAdmin() || resource.data.userId == request.auth.uid || resource.data.instituicaoId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.instituicaoId);
+      allow write: if isSignedIn() && (isGlobalAdmin() || isInstAdmin() || incoming().userId == request.auth.uid);
+    }
+
+    // EXPEDIENTES
+    match /expedientes/{expId} {
+      allow read: if isSignedIn() && (isGlobalAdmin() || resource.data.instituicaoId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.instituicaoId);
       allow write: if isSignedIn();
     }
 
-    match /actividades/{actId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+    // NOTAS PESSOAIS (Privadas)
+    match /notes/{noteId} {
+      allow read, write: if isSignedIn() && (resource.data.userId == request.auth.uid || incoming().userId == request.auth.uid || isGlobalAdmin());
     }
 
-    match /plano_actividades/{actId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+    // MENSAGENS (Privadas)
+    match /messages/{msgId} {
+      allow read, write: if isSignedIn() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid || incoming().senderId == request.auth.uid || incoming().receiverId == request.auth.uid || isGlobalAdmin());
     }
 
+    // AUDIT LOGS
     match /auditLogs/{logId} {
-      allow read: if isSignedIn();
+      allow read: if isGlobalAdmin() || isInstAdmin();
       allow create: if isSignedIn();
       allow update, delete: if false;
     }
     
-    match /messages/{msgId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (incoming().toUid == request.auth.uid || incoming().fromUid == request.auth.uid);
+    // SESSOES (Active Sessions)
+    match /sessions/{userId} {
+      allow read, write: if isOwner(userId) || isGlobalAdmin();
     }
-
-    match /sector_menu_configs/{configId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+    
+    // PASSWORD RESET REQUESTS
+    match /password_reset_requests/{requestId} {
+      allow create: if true; 
+      allow read, update, delete: if isGlobalAdmin() || isInstAdmin();
     }
-
-    // Compatibilidade com mapeamentos antigos
-    match /matrixActivities/{id} { allow read, write: if isSignedIn(); }
-    match /archive_documents/{id} { allow read, write: if isSignedIn(); }
-    match /library_books/{id} { allow read, write: if isSignedIn(); }
-    match /library_visits/{id} { allow read, write: if isSignedIn(); }
-    match /financial_data/{id} { allow read, write: if isSignedIn(); }
-    match /materiais_bens/{id} { allow read, write: if isSignedIn(); }
-    match /suppliers/{id} { allow read, write: if isSignedIn(); }
-    match /efetivo_escolar/{id} { allow read, write: if isSignedIn(); }
-    match /service_requests/{id} { allow read, write: if isSignedIn(); }
-    match /sector_menu_configs/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
   }
 }

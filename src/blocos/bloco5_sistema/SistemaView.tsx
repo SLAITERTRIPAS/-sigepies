@@ -1876,6 +1876,32 @@ export default function SistemaView({
             color: "bg-gray-800",
             protected: true,
           },
+          {
+            label: "LIMPEZA GERAL (WIPE ABSOLUTO)",
+            special: true,
+            action: async () => {
+              if (window.confirm("⚠️ OPERAÇÃO CRÍTICA: Deseja realizar uma LIMPEZA GERAL ABSOLUTA? Todos os dados de testes, actividades, planos, arquivo, biblioteca, economato e logs de todas as instituições serão ELIMINADOS PERMANENTEMENTE. Apenas os colaboradores e o Administrador Global serão preservados. Esta acção não pode ser desfeita.")) {
+                setIsCleaning(true);
+                setCleaningStep("Iniciando Purga Total do Sistema...");
+                try {
+                  const res = await firestoreService.wipeAllTestData();
+                  if (res.success) {
+                    alert(`✅ LIMPEZA GERAL CONCLUÍDA!\n\n${res.count} registos eliminados com sucesso.\nO sistema foi purgado de todos os dados de teste.`);
+                    window.location.reload();
+                  }
+                } catch (err: any) {
+                  console.error("Erro no Wipe:", err);
+                  alert("Erro ao realizar limpeza geral: " + (err?.message || err));
+                } finally {
+                  setIsCleaning(false);
+                  setCleaningStep(null);
+                }
+              }
+            },
+            icon: Trash2,
+            color: "bg-red-600",
+            hidden: !isSuperBossUser(user)
+          },
         ];
 
         const toggleSelection = (label: string) => {

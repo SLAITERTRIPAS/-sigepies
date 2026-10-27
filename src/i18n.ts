@@ -47,17 +47,62 @@ export function changeSystemLanguage(lang: SupportedLanguage | "auto", user?: an
   return resolved;
 }
 
-const listeners = new Set<(...args: any[]) => void>();
+const eventListeners = new Map<string, Set<(...args: any[]) => void>>();
 
-const i18n = {
+export const i18n = {
   language: "pt",
-  changeLanguage: changeSystemLanguage,
+  languages: ["pt", "en", "fr", "es"],
+  isInitialized: true,
+  options: {
+    fallbackLng: "pt",
+    defaultNS: "translation",
+  },
+  services: {
+    resourceStore: {
+      data: {},
+    },
+  },
+  store: {
+    data: {},
+  },
+  changeLanguage: async (lang: SupportedLanguage | "auto", callback?: any) => {
+    const res = changeSystemLanguage(lang);
+    if (callback) callback(null, res);
+    return Promise.resolve(res);
+  },
   on: (event: string, callback: (...args: any[]) => void) => {
-    listeners.add(callback);
+    if (!eventListeners.has(event)) {
+      eventListeners.set(event, new Set());
+    }
+    eventListeners.get(event)!.add(callback);
+    return i18n;
   },
   off: (event: string, callback: (...args: any[]) => void) => {
-    listeners.delete(callback);
+    if (eventListeners.has(event)) {
+      eventListeners.get(event)!.delete(callback);
+    }
+    return i18n;
   },
+  emit: (event: string, ...args: any[]) => {
+    if (eventListeners.has(event)) {
+      eventListeners.get(event)!.forEach((fn) => {
+        try {
+          fn(...args);
+        } catch (_) {}
+      });
+    }
+  },
+  loadNamespaces: async (_ns: any, callback?: any) => {
+    if (callback) callback();
+    return Promise.resolve();
+  },
+  hasResourceBundle: (_lng: string, _ns: string) => true,
+  getResourceBundle: (_lng: string, _ns: string) => ({}),
+  t: (key: string) => key,
+  exists: (_key: string) => true,
+  getFixedT: () => (key: string) => key,
+  use: () => i18n,
+  init: () => i18n,
 };
 
 export default i18n;

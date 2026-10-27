@@ -881,13 +881,19 @@ export function translateMenuTitle(title: string, lang: Language): string {
  */
 export function useTranslation() {
   const lang = useCurrentLanguage();
-  const t = (key: keyof typeof translations.pt) => getTranslation(lang, key);
+  const t = (key: string) => {
+    if (key in translations.pt) {
+      return getTranslation(lang, key as keyof typeof translations.pt);
+    }
+    return translateInstitutionalText(key, lang);
+  };
   const changeLanguage = (newLang: Language | "auto", user?: any) =>
     changeSystemLanguage(newLang, user);
 
   return {
     t,
     lang,
+    i18n,
     getTranslation: (arg1: any, arg2?: any) => {
       if (arg2 !== undefined) {
         return getTranslation(arg1 as Language, arg2 as keyof typeof translations.pt);
@@ -905,5 +911,6 @@ export function useTranslation() {
       translateInstitutionalText(text, overrideLang || lang),
   };
 }
+
 
 export default useTranslation;

@@ -239,7 +239,7 @@ export function monitorCurrentSession(
       if (!data || data.active === false) {
         isCleaningUp = true;
         onTerminated(
-          "A sua sessão foi encerrada remotamente através de outro dispositivo ou painel de gestão de sessões do SIGEP."
+          "A sua conta foi acedida através de outro dispositivo ou navegador. Por motivos de segurança institucional do SIGEP, apenas é permitida uma sessão ativa em simultâneo. A sessão neste dispositivo foi encerrada automaticamente."
         );
         return;
       }

@@ -3329,7 +3329,7 @@ export const EFETIVO_GERAL_DATA: Colaborador[] = [
     "tipo": "Docente",
     "unidade": "Órgão",
     "direcao": "Divisão de Engenharia",
-    "estado": "Reformado",
+    "estado": "Ativo",
     "email": "marcelino.cavo@songo.ac.mz",
     "efetivo": true,
     "cargo": "Assistente, Escalão 2",

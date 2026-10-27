@@ -781,6 +781,30 @@ export default function SobreSistemaView({
             <Layers size={16} />
             <span>Template de Resumo</span>
           </button>
+
+          {isSuperBossUser(user) && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (window.confirm("⚠️ OPERAÇÃO CRÍTICA: Deseja realizar uma LIMPEZA GERAL ABSOLUTA? Todos os dados de testes, actividades, planos, arquivo, biblioteca, economato e logs de todas as instituições serão ELIMINADOS PERMANENTEMENTE. Esta acção não pode ser desfeita.")) {
+                  try {
+                    const res = await firestoreService.wipeAllTestData();
+                    if (res.success) {
+                      alert(`✅ LIMPEZA GERAL CONCLUÍDA!\n\n${res.count} registos eliminados com sucesso.`);
+                      window.location.reload();
+                    }
+                  } catch (err: any) {
+                    alert("Erro ao realizar limpeza: " + err.message);
+                  }
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-950 hover:bg-black text-white font-black rounded-xl text-xs transition-all shadow-md hover:shadow-lg cursor-pointer border border-red-500/30"
+              title="LIMPEZA GERAL ABSOLUTA (Purga de Testes)"
+            >
+              <Trash2 size={16} className="text-red-500" />
+              <span>LIMPEZA GERAL (WIPE)</span>
+            </button>
+          )}
         </div>
       </div>
 

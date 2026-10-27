@@ -1065,6 +1065,7 @@ export const getRoles = (title: string = "") => {
       t.includes("secretariaexecutiva") ||
       t.includes("chefedogdg") ||
       (t.includes("gabinete") && !t.includes("diretorgeral")),
+    isAdmin: isDG || isDC || isCD || t.includes("admin") || t.includes("administrador") || t.includes("proprietario"),
   };
 };
 

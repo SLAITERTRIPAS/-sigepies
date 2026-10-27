@@ -46,6 +46,7 @@ import autoTable from "jspdf-autotable";
 import SectorMenuConfigModal from "../../components/SectorMenuConfigModal";
 
 import BoardOverview from "../bloco2_orgaos_gestao/BoardOverview";
+import InstitutionalOverview from "../bloco2_orgaos_gestao/InstitutionalOverview";
 const CalendarView = lazy(() => lazyRetry(() => import("../bloco5_sistema/CalendarView")));
 const AssignActivityView = lazy(() => lazyRetry(() => import("../bloco5_sistema/AssignActivityView")));
 const MatrixView = lazy(() => lazyRetry(() => import("../bloco5_sistema/MatrixView")));
@@ -626,6 +627,7 @@ export default function DirectorDashboard({
     // Standard baseline for all sectors according to requirement
     const baseItems = [
       { title: "Visão Geral", icon: LayoutGrid },
+      ...(isDGOrSuperBoss ? [{ title: "Visão Geral Institucional", icon: BarChart3 }] : []),
       { title: isDPEP ? "Gestão de Planos" : "Plano", icon: FileText },
       { title: "Ação Orçamental", icon: DollarSign },
       { title: "Calendário", icon: Calendar },
@@ -1135,6 +1137,9 @@ export default function DirectorDashboard({
   };
 
   const renderContent = () => {
+    if (activeItem === "Visão Geral Institucional") {
+      return <InstitutionalOverview onBack={() => setActiveItem("Visão Geral")} user={user} />;
+    }
     if (activeItem === "Gestão de Produtos e Preços") {
       return <GestaoProdutosPrecosView />;
     }
@@ -1775,7 +1780,7 @@ export default function DirectorDashboard({
 
     if (activeItem === "Visão Geral") {
       return (
-        <div className="flex flex-col gap-8 w-full">
+        <div className="w-full h-full flex-1 flex flex-col">
           <PersonalizedOverview
             user={user}
             title={title}
@@ -1790,199 +1795,6 @@ export default function DirectorDashboard({
             events={events}
             onNavigate={navigateTo}
           />
-          <VisaoGeralCards onNavigate={navigateTo} user={user} title={title} />
-          
-          {/* Seção Resumo Diretor Geral (Colaboradores, Corpo Discente, Plano de Atividades) */}
-          {canViewDetailedDashboard(user) && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-              {/* 1. Resumo dos Colaboradores */}
-              <button onClick={() => navigateTo("Gestão de Pessoal")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#0f172a] space-y-4 text-left hover:scale-[1.01] transition-transform">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                  <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm tracking-tight">Resumo dos Colaboradores</h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase">Total: {colaboradores.length} colaboradores</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
-                      {currentLang === "en" ? "By Academic Level:" : "Por Nível Académico:"}
-                    </span>
-                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-                      {colabNivelAcademico.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                          <span className="text-slate-700 truncate">{item.nivel}</span>
-                          <span className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
-                      {currentLang === "en" ? "By Study Area:" : "Por Área de Formação:"}
-                    </span>
-                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-                      {colabAreaFormacao.slice(0, 5).map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                          <span className="text-slate-700 truncate">{item.area}</span>
-                          <span className="bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100 flex justify-between items-center font-black">
-                    <span className="text-slate-600 text-[11px]">
-                      {currentLang === "en" ? "With Management Roles:" : "Com Cargos de Chefia:"}
-                    </span>
-                    <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl">
-                      {colabChefia.comChefia} {currentLang === "en" ? "roles" : "chefias"}
-                    </span>
-                  </div>
-                </div>
-              </button>
-
-              {/* 2. Corpo Discente */}
-              <button onClick={() => navigateTo("Corpo Discente")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#1e3a8a] space-y-4 text-left hover:scale-[1.01] transition-transform">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                  <div className="p-2 bg-indigo-100 text-indigo-900 rounded-xl">
-                    <GraduationCap size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm tracking-tight">
-                      {translateMenuTitle("Corpo Discente", currentLang)}
-                    </h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase">
-                      {currentLang === "en" ? `Total: ${estudantesDb.length} students` : `Total: ${estudantesDb.length} estudantes`}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
-                      {currentLang === "en" ? "By Program:" : "Por Curso:"}
-                    </span>
-                    <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-                      {discenteCurso.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                          <span className="text-slate-700 truncate">{item.curso}</span>
-                          <span className="bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
-                      {currentLang === "en" ? "By Birthplace (Origin):" : "Por Naturalidade (Origem):"}
-                    </span>
-                    <div className="max-h-24 overflow-y-auto space-y-1 pr-1">
-                      {discenteNaturalidade.slice(0, 4).map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg font-bold">
-                          <span className="text-slate-700 truncate">{item.naturalidade}</span>
-                          <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full text-[10px]">{item.total}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-black text-slate-700 uppercase tracking-wider text-[10px] block mb-1">
-                      {currentLang === "en" ? "By Level / Year:" : "Por Nível / Ano:"}
-                    </span>
-                    <div className="flex gap-2 flex-wrap">
-                      {discenteNivel.map((item, idx) => (
-                        <span key={idx} className="bg-blue-50 text-blue-900 border border-blue-200 px-2.5 py-1 rounded-xl font-black text-[10px]">
-                          {item.nivel}: {item.total}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* 3. Plano de Atividade */}
-              <button onClick={() => navigateTo("Plano")} className="bg-white border-2 border-slate-900 rounded-3xl p-6 shadow-[6px_6px_0px_0px_#f59e0b] space-y-4 text-left hover:scale-[1.01] transition-transform">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                  <div className="p-2 bg-amber-100 text-amber-900 rounded-xl">
-                    <Calendar size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm tracking-tight">
-                      {translateMenuTitle("Plano de Atividades", currentLang)}
-                    </h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase">
-                      {currentLang === "en" ? `Total: ${planoAtividadesStats.total} activities` : `Total: ${planoAtividadesStats.total} atividades`}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
-                      <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-wider">
-                        {currentLang === "en" ? "Completed" : "Já Executadas"}
-                      </span>
-                      <span className="text-xl font-black text-emerald-900">{planoAtividadesStats.executadas}</span>
-                    </div>
-                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
-                      <span className="block text-[9px] font-black text-amber-600 uppercase tracking-wider">
-                        {currentLang === "en" ? "Pending" : "Por Executar"}
-                      </span>
-                      <span className="text-xl font-black text-amber-900">{planoAtividadesStats.porExecutar}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl space-y-2">
-                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      {currentLang === "en" ? "Budget Analysis" : "Análise por Orçamento"}
-                    </span>
-                    <div className="flex justify-between font-bold text-slate-800">
-                      <span>{currentLang === "en" ? "Total Budget:" : "Orçamento Total:"}</span>
-                      <span>{planoAtividadesStats.orcamentoTotal.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ", { style: "currency", currency: "MZN" })}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-emerald-700 text-[11px]">
-                      <span>{currentLang === "en" ? "Executed:" : "Executado:"}</span>
-                      <span>{planoAtividadesStats.orcamentoExecutadas.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ", { style: "currency", currency: "MZN" })}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-amber-700 text-[11px]">
-                      <span>{currentLang === "en" ? "Pending:" : "Por Executar:"}</span>
-                      <span>{planoAtividadesStats.orcamentoPorExecutar.toLocaleString(currentLang === "en" ? "en-US" : "pt-MZ", { style: "currency", currency: "MZN" })}</span>
-                    </div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {canViewDetailedDashboard(user) && (
-            <div className="w-full">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <BarChart2 className="text-blue-900" size={18} />
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Análise Estatística em Tempo Real</h2>
-                </div>
-                <button
-                  onClick={handleGeneratePDFReport}
-                  className="flex items-center gap-2 bg-blue-900 text-white px-5 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-800 transition-all shadow-[4px_4px_0px_0px_#1e3a8a] active:translate-x-1 active:translate-y-1 active:shadow-none shrink-0"
-                >
-                  <FileText size={16} />
-                  Gerar Relatório PDF Mensal
-                </button>
-              </div>
-              <InstitutionalCharts 
-                processos={processos} 
-                colaboradores={colaboradores} 
-                serviceRequests={serviceRequests} 
-              />
-            </div>
-          )}
         </div>
       );
     }
@@ -2108,7 +1920,8 @@ export default function DirectorDashboard({
       <div className={`flex-1 overflow-y-auto flex flex-col relative w-full h-full ${
         activeItem === "Caixa de Mensagens" ||
         activeItem === "Estatística" ||
-        activeItem === "Bolsa de Estudos"
+        activeItem === "Bolsa de Estudos" ||
+        activeItem === "Visão Geral"
           ? "p-0"
           : "p-4 md:p-8"
       }`}>
@@ -2430,7 +2243,7 @@ export default function DirectorDashboard({
           </div>
         )}
 
-        {activeItem !== "Caixa de Mensagens" && activeItem !== "Estatística" && activeItem !== "Bolsa de Estudos" && (
+        {activeItem !== "Caixa de Mensagens" && activeItem !== "Estatística" && activeItem !== "Bolsa de Estudos" && activeItem !== "Visão Geral" && (
           <h2 className="text-2xl font-bold text-slate-800 mb-6 font-serif tracking-tight">
             {title} - {activeItem}
           </h2>
