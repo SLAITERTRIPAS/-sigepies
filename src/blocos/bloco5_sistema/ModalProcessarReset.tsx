@@ -121,6 +121,12 @@ export default function ModalProcessarReset({
                 <AlertCircle size={32} className="text-red-600" />
             </div>
             <h2 className="text-xl font-black mb-4">Redefinição de Senha</h2>
+            {request.message && (
+                <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-6 text-left">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Motivo do Pedido:</p>
+                    <p className="text-xs text-blue-900 italic leading-relaxed">"{request.message}"</p>
+                </div>
+            )}
             <p className="text-slate-600 mb-8">Tem certeza que deseja redefinir a senha para <span className="font-bold">1234</span> para o utilizador: <span className="font-bold">{request.identifier}</span>?</p>
             
             <button

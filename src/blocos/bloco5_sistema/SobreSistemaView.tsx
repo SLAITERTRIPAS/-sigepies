@@ -24,6 +24,7 @@ import { cn } from "../../lib/utils";
 import SigepLogo from "../../components/SigepLogo";
 import { firestoreService } from "../../lib/firestoreService";
 import { optimizeImageForFirestore } from "../../lib/imageService";
+import { isSuperBossUser } from "../../lib/auth";
 
 export interface SobreSistemaViewProps {
   currentLogo?: string | null;

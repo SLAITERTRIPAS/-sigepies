@@ -52,6 +52,7 @@ import { IntelligentDiagnosticsView } from "./IntelligentDiagnosticsView";
 import SobreSistemaView from "./SobreSistemaView";
 import { BackgroundRemoverView } from "../../components/BackgroundRemoverView";
 import BiografiaView from "./BiografiaView";
+import { PasswordResetMonitoringView } from "./PasswordResetMonitoringView";
 
 import CalendarView from "../bloco5_sistema/CalendarView";
 import { collection, getDocs } from "firebase/firestore";
@@ -718,6 +719,7 @@ export default function SistemaView({
     { title: "Sessões Ativas", icon: UserCheck },
     { title: "Log de Actividade", icon: Clock },
     { title: "Gestão de Utilizadores", icon: Users },
+    { title: "Monitorização de Senhas", icon: ShieldAlert },
     { title: "Gestão de Produtos e Preços", icon: Box },
     { title: "Estrutura Hierárquica", icon: Network },
     { title: "Template de Resumo", icon: Layout },
@@ -737,6 +739,7 @@ export default function SistemaView({
     { title: "Sessões Ativas", icon: UserCheck, hidden: isGlobalAdmin ? false : !canManageUsers },
     { title: "Log de Actividade", icon: Clock },
     { title: "Gestão de Utilizadores", icon: Users, hidden: isGlobalAdmin ? false : !canManageUsers },
+    { title: "Monitorização de Senhas", icon: ShieldAlert, hidden: isGlobalAdmin ? false : !canManageUsers },
     { title: "Gestão de Produtos e Preços", icon: Box, hidden: isGlobalAdmin ? false : !(canManageUsers || isUGEAUser) },
     { title: "Estrutura Hierárquica", icon: Network, hidden: !isGlobalAdmin },
     { title: "Atualização", icon: Zap, hidden: isGlobalAdmin ? false : !canManageUsers },
@@ -1194,6 +1197,8 @@ export default function SistemaView({
             onRegistarClick={() => handleOpenRegistration("user")}
           />
         );
+      case "Monitorização de Senhas":
+        return <PasswordResetMonitoringView user={user} />;
       case "Gestão de Produtos e Preços":
         return <GestaoProdutosPrecosView />;
       case "Histórico de Chefias":

@@ -59,7 +59,7 @@ import { ProcessingCircle } from "./components/ui/ProcessingCircle";
 import { MENU_NAVIGATION_MAP, getMenuNavigationConfig } from "./lib/menuNavigationConfig";
 import {
   firestoreService,
-  wipeDatabaseExceptExclusions,
+  syncUserPasswordAcrossCollections,
   ensureFirebaseAuth,
   fetchUserDataByUid,
 } from "./lib/firestoreService";
@@ -122,10 +122,13 @@ export default function App() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [historyStack, setHistoryStack] = useState<NavigationSnapshot[]>([]);
 
-  // Efeito de autenticação rigoroso
+  // Efeito de autenticação rigoroso e centralizado
   useEffect(() => {
+    // Garantir autenticação técnica inicial
+    ensureFirebaseAuth();
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      // Ignorar autenticações anónimas técnicas (não representam uma sessão de utilizador final)
+      // Ignorar autenticações anónimas técnicas para estado de loading, mas processar se necessário
       if (user && user.isAnonymous) {
         setLoadingUser(false);
         return;
@@ -136,71 +139,67 @@ export default function App() {
           setLoadingUser(true);
           const userData = await fetchUserDataByUid(user.uid);
           
+          let finalUser: any = null;
+
           if (!userData.profile && !userData.colaborador) {
             // Se for o Administrador Geral
-            if (user.email && user.email.toLowerCase().trim() === "slaitertripas@gmail.com") {
-              const adminUser = {
+            if (user.email && (user.email.toLowerCase().trim() === "slaitertripas@gmail.com" || user.email.toLowerCase().trim() === "fttripas@gmail.com")) {
+              finalUser = {
                 uid: user.uid,
-                email: "slaitertripas@gmail.com",
-                name: "Slaiter Tripas",
-                nome: "Slaiter Tripas",
+                email: user.email,
+                name: "Administrador Global",
+                nome: "Administrador Global",
                 role: "Proprietário",
                 status: "Ativo",
                 isOwner: true,
-                isProgrammer: true
+                isProgrammer: true,
+                isGlobalAdmin: true
               };
-              setCurrentUser(adminUser);
-              localStorage.setItem("sigep_logged_in_user", JSON.stringify(adminUser));
             } else {
-              // Utilizador registado previamente na sessão local
+              // Tentativa de recuperação local se o Firestore falhar momentaneamente
               const stored = localStorage.getItem("sigep_logged_in_user");
               if (stored) {
                 try {
                   const parsed = JSON.parse(stored);
-                  if (parsed && parsed.name !== "Novo Utilizador" && parsed.nome !== "Novo Utilizador") {
-                    setCurrentUser(parsed);
-                  }
+                  if (parsed && parsed.uid === user.uid) finalUser = parsed;
                 } catch (_) {}
               }
             }
           } else {
-            // Combina perfil e colaborador num único objeto de sessão
-            const mergedUser: any = {
+            finalUser = {
               uid: user.uid,
               ...userData.profile,
               ...userData.colaborador,
               email: user.email || (userData.profile as any)?.email || (userData.colaborador as any)?.email
             };
+          }
 
-            // Garantir que nunca haja "Novo Utilizador" no nome
-            if (!mergedUser.name || mergedUser.name === "Novo Utilizador") {
-              mergedUser.name = mergedUser.nome || mergedUser.nomeCompleto || mergedUser.nomeReal || (mergedUser.email ? mergedUser.email.split("@")[0] : "Colaborador");
+          if (finalUser) {
+            // Normalização de Nome
+            if (!finalUser.name || finalUser.name === "Novo Utilizador") {
+              finalUser.name = finalUser.nome || finalUser.nomeCompleto || (finalUser.email ? finalUser.email.split("@")[0] : "Colaborador");
             }
-            if (mergedUser.nome === "Novo Utilizador") {
-              mergedUser.nome = mergedUser.name;
-            }
+            finalUser.nome = finalUser.name;
 
-            setCurrentUser(mergedUser);
-            localStorage.setItem("sigep_logged_in_user", JSON.stringify(mergedUser));
+            setCurrentUser(finalUser);
+            localStorage.setItem("sigep_logged_in_user", JSON.stringify(finalUser));
+            
+            // Sync de Idioma
+            const activeLanguage = resolveInitialLanguage(finalUser.idioma);
+            setLanguagePreference(activeLanguage, finalUser);
           }
         } catch (e) {
-          console.error("Erro ao carregar dados do utilizador:", e);
+          console.error("Erro ao carregar sessão:", e);
         } finally {
           setLoadingUser(false);
         }
       } else {
+        // Sem utilizador Firebase
         const stored = localStorage.getItem("sigep_logged_in_user");
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            if (parsed) {
-              if (parsed.name === "Novo Utilizador" || parsed.nome === "Novo Utilizador") {
-                parsed.name = parsed.nomeCompleto || parsed.nomeReal || (parsed.email ? parsed.email.split("@")[0] : "Colaborador");
-                parsed.nome = parsed.name;
-                localStorage.setItem("sigep_logged_in_user", JSON.stringify(parsed));
-              }
-              setCurrentUser(parsed);
-            }
+            if (parsed) setCurrentUser(parsed);
           } catch (_) {}
         }
         setLoadingUser(false);
@@ -615,119 +614,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentUser]);
 
-  useEffect(() => {
-    // Garantir autenticação do Firebase imediatamente no arranque para evitar erros de permissão
-    ensureFirebaseAuth();
 
-    // InitialAuthStateCheck de alta velocidade para arranque instantâneo
-    const authUnsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (!firebaseUser) {
-          ensureFirebaseAuth();
-          return;
-        }
-
-        let initialUser: any = null;
-
-        try {
-          const storedUserStr =
-            localStorage.getItem("sigep_logged_in_user") ||
-            localStorage.getItem("sigep_user");
-          if (storedUserStr) {
-            const storedUser = JSON.parse(storedUserStr);
-            if (
-              storedUser &&
-              (storedUser.email ||
-                storedUser.nuit ||
-                storedUser.id ||
-                storedUser.name)
-            ) {
-              initialUser = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || "",
-                id: firebaseUser.uid,
-                name:
-                  firebaseUser.displayName ||
-                  (firebaseUser.email
-                    ? firebaseUser.email.split("@")[0]
-                    : "Utilizador"),
-                role: "Utilizador",
-                status: "Ativo",
-                ...storedUser,
-              };
-
-              // A capa de entrada inicial ('presentation') deve ser preservada incondicionalmente
-              // até que o utilizador clique explicitamente em Entrar no Sistema.
-            }
-          }
-        } catch (e) {
-          console.warn("Erro ao recuperar utilizador local:", e);
-        }
-
-        if (initialUser) {
-          setCurrentUser(initialUser);
-          setView((currentView: any) => {
-            if (currentView === "presentation") {
-              return "presentation";
-            }
-            return currentView;
-          });
-        } else {
-          setCurrentUser(null);
-          setView((currentView: any) => {
-            if (currentView === "presentation") {
-              return "presentation";
-            }
-            return "login";
-          });
-        }
-        
-        // Background Sync não-bloqueante
-        if (initialUser && (initialUser.email || (initialUser as any).nuit)) {
-          setTimeout(async () => {
-            try {
-              const usersRef = collection(db, "users");
-              const q = (initialUser as any).email
-                ? query(usersRef, where("email", "==", String((initialUser as any).email).toLowerCase().trim()))
-                : query(usersRef, where("nuit", "==", String((initialUser as any).nuit).trim()));
-
-              const snap = await Promise.race([
-                getDocs(q),
-                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout sync")), 2000))
-              ]) as any;
-
-              if (snap && !snap.empty) {
-                const latestData = { ...snap.docs[0].data(), id: snap.docs[0].id } as any;
-                const refinedRole = determineUserRole(latestData);
-
-                // Deteção e aplicação automática de idioma na autenticação (Ordem de prioridade 1º gravado, 2º perfil, 3º navegador, 4º pt)
-                const userLanguage = latestData.idioma || initialUser?.idioma || null;
-                const activeLanguage = resolveInitialLanguage(userLanguage);
-                setLanguagePreference(activeLanguage, latestData);
-
-                // Suporte a mais de 50.000 utilizadores em simultâneo (Multi-sessão concorrente sem bloqueios de token)
-                const localSessionToken = localStorage.getItem("sigep_session_token") || ("sigep_sess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 12));
-                localStorage.setItem("sigep_session_token", localSessionToken);
-                
-                setCurrentUser((prev: any) => {
-                  const updated = { ...prev, ...latestData, role: refinedRole, mustChangePassword: false };
-                  localStorage.setItem("sigep_logged_in_user", safeJSONStringify(updated));
-                  localStorage.setItem("sigep_user", safeJSONStringify(updated));
-                  return updated;
-                });
-              }
-            } catch (syncErr) {
-              console.warn("Background sync skipped:", syncErr);
-            }
-          }, 1000);
-        }
-      } catch (err) {
-        console.error("Erro na inicialização:", err);
-      }
-    });
-
-    return () => authUnsub();
-  }, []);
 
   // Gestão de Multi-Sessões Concorrentes e Monitorização em Tempo Real (SIGEP)
   // Permite múltiplos logins simultâneos em computadores/dispositivos diferentes.

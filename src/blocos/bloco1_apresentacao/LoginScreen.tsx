@@ -50,7 +50,7 @@ import {
   clearIndexedDbPersistence,
   terminate,
 } from "firebase/firestore";
-import { firestoreService } from "../../lib/firestoreService";
+import { firestoreService, syncUserPasswordAcrossCollections } from "../../lib/firestoreService";
 import { isChefeUser, isInstitutionalAdminAccount, isSuperBossUser } from "../../lib/auth";
 import { getSystemLogo } from "../../lib/logoService";
 import { SigepLogo } from "../../components/SigepLogo";
@@ -1409,75 +1409,10 @@ export default function LoginScreen({
         const nuitStr = String(newUser.nuit || "").trim();
         const nuitNum = /^\d+$/.test(nuitStr) ? Number(nuitStr) : null;
 
-        // 1. Encontrar TODOS os documentos em 'users' e 'colaboradores' que correspondem a este utilizador
-        const usersRef = collection(db, "users");
-        const colRef = collection(db, "colaboradores");
+        // 1. Sincronizar em todas as coleções de forma centralizada
+        await syncUserPasswordAcrossCollections(matchedUser.id, newPassword, newUser);
 
-        const queries = [];
-        if (emailStr) {
-          queries.push(getDocs(query(usersRef, where("email", "==", emailStr))));
-          queries.push(getDocs(query(colRef, where("email", "==", emailStr))));
-        }
-        if (nuitStr) {
-          queries.push(getDocs(query(usersRef, where("nuit", "==", nuitStr))));
-          queries.push(getDocs(query(colRef, where("nuit", "==", nuitStr))));
-        }
-        if (nuitNum !== null) {
-          queries.push(getDocs(query(usersRef, where("nuit", "==", nuitNum))));
-          queries.push(getDocs(query(colRef, where("nuit", "==", nuitNum))));
-        }
-
-        const results = await Promise.all(queries);
-        const allDocsToUpdate: { ref: any, data: any, collection: string }[] = [];
-
-        results.forEach((snap, idx) => {
-          const colName = (idx % 2 === 0) ? (emailStr ? "users" : "colaboradores") : (emailStr ? "colaboradores" : "users");
-          // Correction: simple way to track collection
-          const actualColName = queries.length > 0 ? (idx % 2 === 0 ? "users" : "colaboradores") : "users";
-          
-          snap.forEach(d => {
-            allDocsToUpdate.push({
-              ref: d.ref,
-              data: d.data(),
-              collection: d.ref.parent.id
-            });
-          });
-        });
-
-        // Adicionar o documento atual se não foi encontrado
-        if (allDocsToUpdate.length === 0 && matchedUser.id) {
-          allDocsToUpdate.push({
-            ref: doc(db, "users", matchedUser.id),
-            data: matchedUser,
-            collection: "users"
-          });
-        }
-
-        // Remover duplicados por path
-        const uniqueDocs = allDocsToUpdate.filter((v, i, a) => a.findIndex(t => t.ref.path === v.ref.path) === i);
-
-        console.log(`[Password Sync] Atualizando ${uniqueDocs.length} documentos em todas as coleções.`);
-
-        // 2. Atualizar TODOS os documentos encontrados com a nova senha e sinalizadores de bloqueio
-        await Promise.all(uniqueDocs.map(item => {
-          const isUserCol = item.collection === "users";
-          const updateData = {
-            password: newPassword,
-            mustChangePassword: false,
-            isFirstAccess: false,
-            senhaPadraoBloqueada: true,
-            updatedAt: serverTimestamp(),
-          };
-
-          // Se for na coleção users, garantir que temos o perfil completo
-          const finalData = isUserCol ? { ...newUser, ...updateData } : updateData;
-          
-          return setDoc(item.ref, finalData, { merge: true }).catch(err => 
-            console.warn(`Erro ao atualizar ${item.ref.path}:`, err)
-          );
-        }));
-
-        // 3. Atualizar Cache Local e Sessão
+        // 2. Atualizar Cache Local e Sessão
         const finalUser = {
           ...newUser,
           password: newPassword,
@@ -1491,17 +1426,13 @@ export default function LoginScreen({
         localStorage.setItem("sigep_session_token", sessionToken);
 
         if (auth.currentUser) {
-          // Atualizar o primeiro documento encontrado com o vínculo de Auth UID
-          const primaryDoc = uniqueDocs.find(d => d.collection === "users") || uniqueDocs[0];
-          if (primaryDoc) {
-            await updateDoc(primaryDoc.ref, {
-              authUid: auth.currentUser.uid,
-              currentSessionToken: sessionToken,
-              lastLoginAt: new Date().toISOString(),
-              lastSeenAt: new Date().toISOString(),
-              isOnline: true,
-            });
-          }
+          await updateDoc(doc(db, "users", matchedUser.id), {
+            authUid: auth.currentUser.uid,
+            currentSessionToken: sessionToken,
+            lastLoginAt: new Date().toISOString(),
+            lastSeenAt: new Date().toISOString(),
+            isOnline: true,
+          });
         }
 
         setSuccess("Senha criada e sincronizada com sucesso em todos os registos!");

@@ -465,7 +465,8 @@ export default function NotificationCenter({
                           {item.solicitante || item.origem || item.identifier}
                         </h4>
                         <p className="text-[10px] text-slate-500 font-medium italic mt-1 line-clamp-2">
-                          {item.etapaAtual ? "Requisição Interna" : item.numero ? "Documento" : "Solicitação de redefinição de senha"} aguardando seu parecer técnico/administrativo.
+                          {item.etapaAtual ? "Requisição Interna" : item.numero ? "Documento" : 
+                            item.message ? `Motivo: "${item.message}"` : "Solicitação de redefinição de senha"} aguardando seu parecer técnico/administrativo.
                         </p>
                         <div className="flex items-center gap-1.5 mt-3 text-blue-600 opacity-0 group-hover:opacity-100 transition-all">
                           <span className="text-[10px] font-black">

@@ -2,7 +2,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { safeJSONStringify } from "./utils";
 import {
-  getFirestore,
+  initializeFirestore,
   setLogLevel,
 } from "firebase/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
@@ -22,7 +22,12 @@ const dbId =
     : firebaseConfig.firestoreDatabaseId;
 
 const dbIdToUse = dbId || "(default)";
-const dbInstance = getFirestore(app, dbIdToUse === "(default)" ? undefined : dbIdToUse);
+
+// Initialize Firestore with experimentalForceLongPolling to avoid WebSocket issues in sandboxed environments
+const dbInstance = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  ignoreUndefinedProperties: true,
+}, dbIdToUse === "(default)" ? undefined : dbIdToUse);
 
 
 export const db = dbInstance;

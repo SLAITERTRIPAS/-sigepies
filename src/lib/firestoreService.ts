@@ -211,12 +211,86 @@ export async function fetchUserDataByUid(uid: string) {
   }
 }
 
+export async function syncUserPasswordAcrossCollections(userId: string, newPassword: string, userData: any) {
+  try {
+    const emailStr = String(userData.email || "").toLowerCase().trim();
+    const nuitStr = String(userData.nuit || "").trim();
+    const nuitNum = /^\d+$/.test(nuitStr) ? Number(nuitStr) : null;
+
+    const usersRef = collection(db, "users");
+    const colRef = collection(db, "colaboradores");
+
+    const queries = [];
+    if (emailStr) {
+      queries.push(getDocs(query(usersRef, where("email", "==", emailStr))));
+      queries.push(getDocs(query(colRef, where("email", "==", emailStr))));
+    }
+    if (nuitStr) {
+      queries.push(getDocs(query(usersRef, where("nuit", "==", nuitStr))));
+      queries.push(getDocs(query(colRef, where("nuit", "==", nuitStr))));
+    }
+    if (nuitNum !== null) {
+      queries.push(getDocs(query(usersRef, where("nuit", "==", nuitNum))));
+      queries.push(getDocs(query(colRef, where("nuit", "==", nuitNum))));
+    }
+
+    const results = await Promise.all(queries);
+    const uniquePaths = new Set<string>();
+    const updatePromises: Promise<any>[] = [];
+
+    const updateData = {
+      password: newPassword,
+      mustChangePassword: false,
+      isFirstAccess: false,
+      senhaPadraoBloqueada: true,
+      updatedAt: serverTimestamp(),
+    };
+
+    results.forEach(snap => {
+      snap.forEach(d => {
+        if (!uniquePaths.has(d.ref.path)) {
+          uniquePaths.add(d.ref.path);
+          updatePromises.push(
+            updateDoc(d.ref, updateData).catch(err => {
+              console.warn(`[Password Sync] Falha ao atualizar ${d.ref.path}:`, err.message);
+              // Não re-lançamos para permitir que outros documentos sejam atualizados
+            })
+          );
+        }
+      });
+    });
+
+    // Garantir que o documento principal do usuário também seja atualizado se não estiver nos resultados
+    const mainUserRef = doc(db, "users", userId);
+    if (!uniquePaths.has(mainUserRef.path)) {
+      updatePromises.push(
+        updateDoc(mainUserRef, updateData).catch(err => {
+          console.warn(`[Password Sync] Falha ao atualizar doc principal ${userId}:`, err.message);
+        })
+      );
+    }
+
+    await Promise.all(updatePromises);
+    console.log(`[Password Sync] Sincronização concluída para ${uniquePaths.size + 1} documentos.`);
+    return { success: true };
+  } catch (error) {
+    console.error("Erro na sincronização de senha:", error);
+    throw error;
+  }
+}
+
 export async function ensureFirebaseAuth() {
-  if (!auth.currentUser) {
+  const user = auth.currentUser;
+  if (!user) {
     try {
+      // Tentar recuperar credenciais do cache local se existirem para evitar login anônimo desnecessário
+      const stored = localStorage.getItem("sigep_logged_in_user");
+      if (stored) {
+        // Se houver dados de usuário mas sem sessão ativa, o onAuthStateChanged no App.tsx tratará disso.
+      }
       await signInAnonymously(auth);
     } catch (e) {
-      console.warn("Aviso: Falha na autenticação anônima do Firebase:", e);
+      console.warn("Aviso: Falha na autenticação técnica do Firebase:", e);
     }
   }
 }

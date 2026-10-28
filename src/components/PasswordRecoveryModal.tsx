@@ -12,6 +12,7 @@
 import React, { useState } from "react";
 import { Shield, Key, Mail, CheckCircle2, AlertCircle, X, Lock, User, HelpCircle } from "lucide-react";
 import { authRecoveryService } from "../lib/authRecoveryService";
+import { firestoreService } from "../lib/firestoreService";
 import { EFETIVO_GERAL_DATA } from "../constants/colaboradoresList";
 import { normalize as n, safeJSONParse } from "../lib/utils";
 import { logAuditEvent } from "../lib/auditService";
@@ -27,7 +28,7 @@ export const PasswordRecoveryModal: React.FC<PasswordRecoveryModalProps> = ({
   onSuccess,
 }) => {
   const { t } = useTranslation();
-  const [step, setStep] = useState<"lookup" | "dynamic_questions" | "otp_verification" | "new_password">("lookup");
+  const [step, setStep] = useState<"lookup" | "dynamic_questions" | "otp_verification" | "new_password" | "contact_admin">("lookup");
   
   const [userInput, setUserInput] = useState("");
   const [foundUser, setFoundUser] = useState<any | null>(null);
@@ -195,6 +196,33 @@ export const PasswordRecoveryModal: React.FC<PasswordRecoveryModalProps> = ({
     setStep("new_password");
   };
 
+  const [adminMessage, setAdminMessage] = useState("");
+  const handleContactAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+
+    try {
+      await (firestoreService as any).password_reset_requests.add({
+        identifier: userInput,
+        message: adminMessage,
+        status: "Pendente",
+        type: "password_reset",
+        createdAt: new Date().toISOString(),
+        requestSource: "recovery_modal"
+      });
+
+      setSuccessMsg("Pedido enviado ao administrador com sucesso! Por favor, aguarde o processamento.");
+      setTimeout(() => {
+        onClose();
+      }, 3000);
+    } catch (err: any) {
+      setErrorMsg("Erro ao enviar pedido: " + (err.message || String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Passo 4: Definir Nova Senha
   const handleResetPassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,11 +352,71 @@ export const PasswordRecoveryModal: React.FC<PasswordRecoveryModalProps> = ({
                   Cancelar
                 </button>
                 <button
+                  type="button"
+                  onClick={() => setStep("contact_admin")}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                >
+                  Contactar Admin
+                </button>
+                <button
                   type="submit"
                   disabled={loading}
                   className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-blue-900/20 cursor-pointer flex items-center gap-2"
                 >
                   {loading ? "A localizar..." : "Continuar"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Passo: Contactar Administrador */}
+          {step === "contact_admin" && (
+            <form onSubmit={handleContactAdmin} className="space-y-4">
+              <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-xs text-blue-900">
+                <p className="font-bold mb-1 italic">Pedido de Suporte Técnico:</p>
+                <p className="text-[11px] text-blue-800">Se não consegue recuperar o acesso automaticamente, envie uma mensagem ao administrador do sistema para redefinição manual.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  O seu E-mail, NUIT ou ID
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  placeholder="Introduza como o admin o pode identificar..."
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  Mensagem / Motivo (Opcional)
+                </label>
+                <textarea
+                  value={adminMessage}
+                  onChange={(e) => setAdminMessage(e.target.value)}
+                  placeholder="Explique o motivo do pedido..."
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white transition h-24 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setStep("lookup")}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-blue-900/20 cursor-pointer"
+                >
+                  {loading ? "A enviar..." : "Enviar Mensagem ao Admin"}
                 </button>
               </div>
             </form>
